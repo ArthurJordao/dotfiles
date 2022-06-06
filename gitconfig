@@ -6,5 +6,7 @@
 [user]
 	name = ArthurJordao
 	email = arthurbernardijordao@gmail.com
+[core]
+	excludesfile = /Users/matheus.ashton/.gitignore
 [pull]
 	rebase = false
