@@ -1,3 +1,12 @@
-- clean: []
-- link: {}
+- defaults:
+    link:
+      create: true
+      relink: true
+- clean: ['~', '.config']
+- link: 
+    ~/.zshrc:
+    ~/.config/lvim: lvim
+    ~/.config/kitty: kitty
+    ~/.gitignore:
+    ~/.gitconfig:
 - shell: []
