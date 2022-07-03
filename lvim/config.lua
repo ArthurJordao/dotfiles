@@ -67,6 +67,8 @@ lvim.builtin.treesitter.ensure_installed = {
   "lua",
   "python",
   "typescript",
+  "haskell",
+  "elm",
   "tsx",
   "css",
   "rust",
@@ -74,7 +76,6 @@ lvim.builtin.treesitter.ensure_installed = {
   "yaml",
 }
 
-lvim.builtin.treesitter.ignore_install = { "haskell" }
 lvim.builtin.treesitter.highlight.enabled = true
 
 -- generic LSP settings
@@ -144,12 +145,12 @@ lvim.plugins = {
     "folke/trouble.nvim",
     cmd = "TroubleToggle",
   },
-  { "arcticicestudio/nord-vim" },
   { "direnv/direnv.vim" },
   { "sainnhe/gruvbox-material" },
   { "easymotion/vim-easymotion" },
   { "mg979/vim-visual-multi" },
-  { "wakatime/vim-wakatime" }
+  { "wakatime/vim-wakatime" },
+  { "mattn/emmet-vim" }
 }
 
 -- Autocommands (https://neovim.io/doc/user/autocmd.html)

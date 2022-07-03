@@ -9,4 +9,6 @@
     ~/.config/kitty: kitty
     ~/.gitignore:
     ~/.gitconfig:
-- shell: []
+    ~/Pictures/wallpaper.png: wallpaper.png
+- shell:
+  - osascript -e "tell application \"System Events\" to tell every desktop to set picture to \"~/Pictures/wallpaper.png\" as POSIX file"
