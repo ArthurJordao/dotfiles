@@ -55,7 +55,7 @@ lvim.builtin.alpha.active = true
 lvim.builtin.alpha.mode = "dashboard"
 lvim.builtin.notify.active = true
 lvim.builtin.terminal.active = true
-lvim.builtin.nvimtree.setup.view.side = "left"
+lvim.builtin.nvimtree.setup.view.side = "right"
 lvim.builtin.nvimtree.show_icons.git = 0
 
 -- if you don't want all the parsers change this to a table of the ones you want
@@ -63,6 +63,7 @@ lvim.builtin.treesitter.ensure_installed = {
   "bash",
   "c",
   "javascript",
+  "clojure",
   "json",
   "lua",
   "python",
@@ -150,7 +151,14 @@ lvim.plugins = {
   { "easymotion/vim-easymotion" },
   { "mg979/vim-visual-multi" },
   { "wakatime/vim-wakatime" },
-  { "mattn/emmet-vim" }
+  { "mattn/emmet-vim" },
+  { "p00f/nvim-ts-rainbow" }
+}
+
+lvim.builtin.treesitter.rainbow = {
+  enable = true,
+  extended_mode = true, -- Also highlight non-bracket delimiters like html tags, boolean or table: lang -> boolean
+  max_file_lines = nil, -- Do not enable for files with more than n lines, int
 }
 
 -- Autocommands (https://neovim.io/doc/user/autocmd.html)

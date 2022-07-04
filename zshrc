@@ -21,3 +21,7 @@ export PATH=$PATH:$HOME/.emacs.d/bin
 
 
 [ -f "/Users/$HOME/.ghcup/env" ] && source "/Users/$HOME/.ghcup/env" # ghcup-env
+
+#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
+export SDKMAN_DIR="$HOME/.sdkman"
+[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
