@@ -22,3 +22,9 @@ eval "$(direnv hook zsh)"
 [ -f "/Users/$HOME/.ghcup/env" ] && source "/Users/$HOME/.ghcup/env" 
 export SDKMAN_DIR="$HOME/.sdkman"
 [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
+
+
+alias cat=bat
+alias ll="exa -l --icons"
+alias l="exa -la --icons"
+alias ls="exa"

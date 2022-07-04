@@ -4,11 +4,13 @@
       relink: true
 - clean: ['~', '.config']
 - link: 
-    ~/.zshrc:
     ~/.config/lvim: lvim
     ~/.config/kitty: kitty
+    ~/.config/zsh: zsh
     ~/.gitignore:
     ~/.gitconfig:
     ~/Pictures/wallpaper.png: wallpaper.png
+    ~/.profile:
+    ~/.zprofile:
 - shell:
   - osascript -e "tell application \"System Events\" to tell every desktop to set picture to \"~/Pictures/wallpaper.png\" as POSIX file"
