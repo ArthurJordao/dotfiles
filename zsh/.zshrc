@@ -1,30 +1,6 @@
-export PATH=$HOME/bin:/usr/local/bin:$HOME/.local/bin:$PATH:$HOME/.emacs.d/bin
-
-if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
-  . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
-fi
-
-export ZSH="$HOME/.oh-my-zsh"
-
-ZSH_THEME="robbyrussell"
-plugins=(git fzf)
-
-source $ZSH/oh-my-zsh.sh
-export EDITOR=lvim
-
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-
-eval "$(direnv hook zsh)"
-
-
-[ -f "/Users/$HOME/.ghcup/env" ] && source "/Users/$HOME/.ghcup/env" 
-export SDKMAN_DIR="$HOME/.sdkman"
-[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
-
-
-alias cat=bat
-alias ll="exa -l --icons"
-alias l="exa -la --icons"
-alias ls="exa"
+source "$ZDOTDIR/functions"
+zsh_add_file "alias"
+zsh_add_file "prompt"
+zsh_add_file "options"
+zsh_add_file "plugin"
+zsh_add_file "export"
