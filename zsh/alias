@@ -7,3 +7,6 @@ alias zsh-update-plugins="find "$ZDOTDIR/plugins" -type d -exec test -e '{}/.git
 alias cp="cp -i"
 alias mv='mv -i'
 alias rm='rm -i'
+alias ls="ls --color=auto"
+alias ll="ls -l"
+alias l="ls -la"
