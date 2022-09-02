@@ -2,7 +2,7 @@
 lvim.leader = "space"
 lvim.keys.normal_mode["<C-s>"] = ":w<cr>"
 lvim.keys.normal_mode["<leader>r"] = ":NvimTreeRefresh<cr>"
-
+lvim.keys.visual_mode["p"] = '"_dP'
 lvim.builtin.which_key.mappings["P"] = { "<cmd>Telescope projects<CR>", "Projects" }
 lvim.builtin.which_key.mappings["t"] = {
   name = "+Trouble",
@@ -20,7 +20,7 @@ lvim.plugins = {
     "folke/trouble.nvim",
     cmd = "TroubleToggle",
   },
-  { "direnv/direnv.vim" },
+  { 'edluffy/hologram.nvim' },
   { "sainnhe/gruvbox-material" },
   { "easymotion/vim-easymotion" },
   { "mg979/vim-visual-multi" },

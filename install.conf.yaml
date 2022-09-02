@@ -16,4 +16,4 @@
 - shell:
   - osascript -e "tell application \"System Events\" to tell every desktop to set picture to \"~/Pictures/wallpaper.png\" as POSIX file"
   - brew bundle --file ~/Brewfile
-  - if [ $0 != "-zsh" ]; then chsh -s /bin/zsh;
+  - if [ $0 != "-zsh" ]; then chsh -s /bin/zsh; fi
