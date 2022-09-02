@@ -3,6 +3,8 @@ lvim.leader = "space"
 lvim.keys.normal_mode["<C-s>"] = ":w<cr>"
 lvim.keys.normal_mode["<leader>r"] = ":NvimTreeRefresh<cr>"
 lvim.keys.visual_mode["p"] = '"_dP'
+lvim.keys.normal_mode["fa"] = require("harpoon.mark").add_file
+lvim.keys.normal_mode["fb"] = require("harpoon.ui").toggle_quick_menu
 lvim.builtin.which_key.mappings["P"] = { "<cmd>Telescope projects<CR>", "Projects" }
 lvim.builtin.which_key.mappings["t"] = {
   name = "+Trouble",
@@ -26,7 +28,8 @@ lvim.plugins = {
   { "mg979/vim-visual-multi" },
   { "wakatime/vim-wakatime" },
   { "mattn/emmet-vim" },
-  { "p00f/nvim-ts-rainbow" }
+  { "p00f/nvim-ts-rainbow" },
+  { "ThePrimeagen/harpoon" }
 }
 
 --Preferences
