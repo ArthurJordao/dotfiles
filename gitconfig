@@ -4,7 +4,7 @@
 	process = git-lfs filter-process
 	required = true
 [user]
-	name = ArthurJordao
+	name = Arthur Bernardi Jordão
 	email = arthurbernardijordao@gmail.com
 [core]
 	excludesfile = ~/.gitignore

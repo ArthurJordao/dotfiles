@@ -1,10 +1,12 @@
---Bindings
+lvim.log.level = "warn"
+lvim.format_on_save = false
+lvim.colorscheme = "gruvbox-material"
 lvim.leader = "space"
 lvim.keys.normal_mode["<C-s>"] = ":w<cr>"
 lvim.keys.normal_mode["<leader>r"] = ":NvimTreeRefresh<cr>"
 lvim.keys.visual_mode["p"] = '"_dP'
-lvim.keys.normal_mode["fa"] = require("harpoon.mark").add_file
-lvim.keys.normal_mode["fb"] = require("harpoon.ui").toggle_quick_menu
+lvim.keys.normal_mode["k"] = "kzz"
+lvim.keys.normal_mode["j"] = "jzz"
 lvim.builtin.which_key.mappings["P"] = { "<cmd>Telescope projects<CR>", "Projects" }
 lvim.builtin.which_key.mappings["t"] = {
   name = "+Trouble",
@@ -15,51 +17,53 @@ lvim.builtin.which_key.mappings["t"] = {
   l = { "<cmd>Trouble loclist<cr>", "LocationList" },
   w = { "<cmd>Trouble workspace_diagnostics<cr>", "Wordspace Diagnostics" },
 }
-
---Plugins
-lvim.plugins = {
-  {
-    "folke/trouble.nvim",
-    cmd = "TroubleToggle",
-  },
-  { 'edluffy/hologram.nvim' },
-  { "sainnhe/gruvbox-material" },
-  { "easymotion/vim-easymotion" },
-  { "mg979/vim-visual-multi" },
-  { "wakatime/vim-wakatime" },
-  { "mattn/emmet-vim" },
-  { "p00f/nvim-ts-rainbow" },
-  { "ThePrimeagen/harpoon" }
-}
-
---Preferences
-lvim.log.level = "warn"
-lvim.format_on_save = false
-lvim.colorscheme = "gruvbox-material"
-
 lvim.builtin.alpha.active = true
 lvim.builtin.alpha.mode = "dashboard"
-lvim.builtin.notify.active = true
 lvim.builtin.terminal.active = true
-lvim.builtin.nvimtree.setup.view.side = "right"
+lvim.builtin.nvimtree.setup.view.side = "left"
+lvim.builtin.nvimtree.setup.renderer.icons.show.git = false
 
---Treesitter
+vim.cmd [[
+  augroup numbertoggle
+    autocmd!
+    autocmd BufEnter,FocusGained,InsertLeave,WinEnter * if &nu && mode() != "i" | set rnu   | endif
+    autocmd BufLeave,FocusLost,InsertEnter,WinLeave   * if &nu                  | set nornu | endif
+  augroup END
+]]
 lvim.builtin.treesitter.ensure_installed = {
   "bash",
   "c",
   "javascript",
-  "clojure",
   "json",
   "lua",
   "python",
   "typescript",
-  "haskell",
-  "elm",
   "tsx",
   "css",
   "rust",
   "java",
   "yaml",
+  "haskell",
+  "elm",
+}
+
+lvim.builtin.treesitter.highlight.enable = true
+
+lvim.lsp.installer.setup.ensure_installed = {
+    "sumneko_lua",
+    "jsonls",
+}
+
+lvim.plugins = {
+    {
+      "folke/trouble.nvim",
+      cmd = "TroubleToggle",
+    },
+  { "sainnhe/gruvbox-material" },
+  { "wakatime/vim-wakatime" },
+  { "p00f/nvim-ts-rainbow" },
+  { "machakann/vim-sandwich" },
+  { "nvim-treesitter/nvim-treesitter-context" },
 }
 
 lvim.builtin.treesitter.rainbow = {
@@ -67,5 +71,3 @@ lvim.builtin.treesitter.rainbow = {
   extended_mode = true,
   max_file_lines = nil,
 }
-
-lvim.builtin.treesitter.highlight.enabled = true
