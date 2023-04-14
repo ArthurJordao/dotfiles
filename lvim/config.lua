@@ -169,12 +169,14 @@ lvim.builtin.treesitter.highlight.enable = true
 
 -- Additional Plugins
 lvim.plugins = {
-    {
-      "folke/trouble.nvim",
-      cmd = "TroubleToggle",
-    },
+  {
+    "folke/trouble.nvim",
+    cmd = "TroubleToggle",
+  },
   { "sainnhe/gruvbox-material" },
   { "machakann/vim-sandwich" },
+  { "eandrju/cellular-automaton.nvim" },
+  { "github/copilot.vim" },
 }
 
 -- Autocommands (https://neovim.io/doc/user/autocmd.html)
@@ -190,4 +192,3 @@ lvim.plugins = {
 --     require("nvim-treesitter.highlight").attach(0, "bash")
 --   end,
 -- })
-

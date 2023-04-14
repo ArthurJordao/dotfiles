@@ -1,0 +1,1007 @@
+aide setup -m
+cd monolith
+sudo caddy start
+aide watch monolith
+aide watch monolith
+aide watch monolith
+aide watch monolith
+aide watch monolith -q
+aide watch monolith -q
+aide watch monolith -q
+aide watch monolith -q
+firstaide-update
+aide watch monolith -q
+cd dev/noredink/NoRedInk
+aide watch content-creation
+aide watch content-creation
+aide watch content-creation
+aide watch content-creation
+cd dev/noredink/NoRedInk
+git status
+git status
+git status
+git diff lib/scaffolding/elm/src/Nri/Scaffolding.elm
+git status
+git add monolith/ui lib/ content-creation
+git commit -m "Add left actions to question box"
+git push
+git push --set-upstream origin phx-481-implement-questionbox-v3-instead-of-v2
+git status
+aide watch quiz-engine-http
+aide watch quiz-engine-http
+cd dev/noredink/NoRedInk
+ls
+lvim .
+lvim .
+lvim .
+cd dev/noredink/NoRedInk
+aide watch content-creation
+aide watch content-creation
+exit
+cd dev/noredink/NoRedInk
+git pull origin master
+lvim .
+exit
+cd dev/noredink/NoRedInk
+git status
+git add lib monolith/ui monolith/script content-creation
+git status
+git commit 
+git push
+git status
+git add monolith/ui
+git add monolith/app
+git status
+git restore --staged monolith/app/assets/stylesheets/quiz-question.sass
+git status
+git commit -m "Fix position on multiple choice"
+git push
+git status
+git status
+git add lib/scaffolding monolith/ui
+git commit -m "Remove position from question box for now, as it's not working with position relative from parent"
+git push
+git push
+cd monolith/ui
+aide format .
+git status
+git add .
+git commit -m "Format"
+git push
+git pull
+git push
+cd ..
+cd ..
+lib/scaffolding/elm/src/Nri/Scaffolding/Sentence.elm 
+cd lib/scaffolding/elm/src/Nri/Scaffolding/Sentence.elm 
+cd lib/scaffolding/elm/src/Nri/Scaffolding/
+cd ..
+cd ..
+cd ..
+elm-format .
+cd ..
+cd ..
+cd ..
+cd content-creation/elm
+elm-format .
+git status
+git status
+cd ..
+cd ..
+git status
+git diff monolith/app/assets/stylesheets/quiz-question.sass
+git checkout monolith/app/assets/stylesheets/quiz-question.sass
+git status
+git add content-creation/elm lib
+git status
+git commit -m "Format lib scaffolding and ccs"
+git push
+cd lib/scaffolding
+git status
+cd elm
+elm-test 
+git status
+git add tests
+git commit -m "Fix test"
+git push
+cd ../..
+cd ..
+monolith/script/elm-deprecated-imports-ratchet.py --elm-json=content-creation/elm/elm.json --imports-file=content-creation/elm/deprecated-imports.csv --deprecate=AssetPath --deprecate=Html --deprecate=Html.Attributes --deprecate=Html.Events --deprecate=Html.Keyed --deprecate=Html.Lazy --deprecate=Nri.Animation --deprecate=Nri.DEPRECATED.CssHelpers --deprecate=Nri.SecondaryBreadCrumb --deprecate=Nri.Inputs.Styles --deprecate=Nri.PageContent --deprecate=Nri.Pathway.Search --deprecate=Nri.Writing.RichText --deprecate=Nri.WritingCycles.Heatmap --deprecate=Nri.WritingCycles.WritingCycle --deprecate=Svg --deprecate=Svg.Attributes --deprecate=Highlighter --deprecate=Highlighter.Tool --deprecate=Highlighter.Highlightable --deprecate=Nri.MultiHighlighter.Tools --deprecate=Nri.Panel --deprecate=Nri.SecondaryBreadCrumb update
+git status
+git add content-creation/elm/deprecated-imports.csv
+git commit -m "Fix deprecated import"
+git push
+git push
+git status
+exit
+cd dev/noredink/NoRedInk
+aide watch content-creation
+exit
+cd dev/noredink/NoRedInk
+aide watch quiz-engine-http
+rm -rf _build/cabal-stuff
+aide watch quiz-engine-http
+rm -rf _build/cabal-stuff
+ls _build
+firstaide-update
+aide watch quiz-engine-http
+aide watch quiz-engine-http
+exit
+cd dev/noredink/noredink-ui
+lvim .
+cd dev/noredink/NoRedInk
+ls
+git status
+aide watch monolith -q
+cd monolith
+bundle install
+sudo caddy start
+aide watch monolith -q
+aide setup -m
+aide watch monolith -q
+aide watch monolith -q
+aide watch monolith -q
+cd ../../
+ls
+cd noredink-ui
+ls
+nix-shell
+cd dev/noredink/noredink-ui
+git status
+git diff
+git status
+nix-shell
+cd dev/noredink/noredink-ui
+git status
+lvim .
+cd dev/noredink/noredink-ui
+nix-shell
+cd dev/noredink/noredink-ui
+git status
+git tags
+git tag
+exit
+cd dev/noredink/NoRedInk
+cd monolith/
+sudo caddy start
+cd ..
+aide watch quiz-engine-http
+aide watch quiz-engine-http
+exit
+exit
+cd dev/noredink/NoRedInk
+aide watch quiz-engine-http
+aide setup -m
+cd monolith/ui
+elm-format .
+git status
+aide watch quiz-engine-http
+cd ..
+cd ..
+git status
+git status
+git add content-creation lib monolith/ui
+git commit -m "Use question box v4"
+git push
+git checkout master lib/scaffolding/elm/generated/Generated/Backend/*
+git status
+git add lib
+git commit -m "Revert generated files"
+git push
+git pull origin master
+git status
+git checkout .
+git pull origin master
+git status
+git merge --abort
+git status
+git checkout monolith/db
+git merge --abort
+git status
+git diff
+git diff content-creation/elm/src/Scaffolding/Flow/CreateStep.elm
+git checkout content-creation/elm/src/Scaffolding/Flow/CreateStep.elm
+git status
+cd lib/scaffolding
+cd elm
+elm-format src/Nri/Scaffolding/Sentence.elm
+git status
+git add src/Nri/Scaffolding/Sentence.elm
+git restore --staged src/Nri/Scaffolding/Sentence.elm
+git status
+git diff src/Nri/Scaffolding/Sentence.elm
+git diff src/Nri/Scaffolding/Sentence.elm
+git status
+elm-format src/Nri/Scaffolding/Sentence.elm
+git add .
+git commit -m "Fix problem in the question box v4 when question box points to a element inside emphasis"
+git push
+git status
+git status
+git status
+elm-format src/
+git status
+git add src
+git commit -m "Fix styles on blank elements"
+git push
+cd ../
+cd ..
+cd ..
+git status
+git checkout .
+git pull origin bat/menu-v4-other-instances
+git status
+git add lib/scaffolding/elm
+cd ..
+cd NoRedInk
+git status
+git add content-creation/elm/deprecated-imports.csv
+git add monolith/ui/src/Page/Learn/Quiz/TrySimilar/Main.elm
+git status
+git commit 
+git push
+git pull origin bat/menu-v4-other-instances
+git status
+git add monolith/ui/elm.json
+git commit 
+git push
+git pull
+monolith/script/elm-deprecated-imports-ratchet.py --elm-json=content-creation/elm/elm.json --imports-file=content-creation/elm/deprecated-imports.csv --deprecate=AssetPath --deprecate=Html --deprecate=Html.Attributes --deprecate=Html.Events --deprecate=Html.Keyed --deprecate=Html.Lazy --deprecate=Nri.Animation --deprecate=Nri.DEPRECATED.CssHelpers --deprecate=Nri.SecondaryBreadCrumb --deprecate=Nri.Inputs.Styles --deprecate=Nri.PageContent --deprecate=Nri.Pathway.Search --deprecate=Nri.Writing.RichText --deprecate=Nri.WritingCycles.Heatmap --deprecate=Nri.WritingCycles.WritingCycle --deprecate=Svg --deprecate=Svg.Attributes --deprecate=Highlighter --deprecate=Highlighter.Tool --deprecate=Highlighter.Highlightable --deprecate=Nri.MultiHighlighter.Tools --deprecate=Nri.Panel --deprecate=Nri.SecondaryBreadCrumb update
+git status
+git add content-creation/elm/deprecated-imports.csv
+git push
+git status
+cd lib/scaffolding/elm
+git status
+elm format .
+git status
+elm-format .
+git status
+git add .
+git restore --staged generated
+git status
+git checkout generated
+git commit -m "Fix label overriding text"
+git push
+git status
+git src/Nri/Scaffolding/Sentence.elm
+git diff src/Nri/Scaffolding/Sentence.elm
+git status
+elm-format src/Nri/Scaffolding/Sentence.elm
+git src
+git add src
+git commit -m "Fix measurement position when there is no question box position"
+git push
+cd dev/noredink/NoRedInk
+aide watch content-creation
+firstaide-update
+firstaide-update
+firstaide-update
+aide watch content-creation
+aide watch content-creation
+aide watch content-creation
+aide watch content-creation
+aide watch content-creation
+cd dev/noredink/noredink-ui
+git status
+git checkout master
+git pull
+git pull
+git checkout -b 1.4.2-bump
+git status
+lvim .
+git checkout -b 22.1.0
+git checkout -b 22.1.0-bump
+git status
+lvim .
+git push
+git add .
+git commit -m "Bump 22.1.0"
+git push
+git status
+elm diff
+git checkout master\
+
+git pull
+git status
+cd dev/noredink/noredink-ui
+nix-shell
+git status
+git tag -a 22.1.0 -m "release version 22.1.0"\
+
+[200~git push origin 22.1.0~]
+git push origin 22.1.0
+ git push origin 22.1.0
+git branch -d 22.1.0
+ git push origin 22.1.0
+git push origin 22.1.0
+nix-shell
+cd ../NoRedInk
+git status
+git checkout .
+git pull origin bat/menu-v4-other-instances
+git status
+git status
+git add content-creation monolith
+git status
+git commit 
+git push
+aide setup -m 
+git status
+git add content-creation
+git diff content-creation/elm/elm.json
+git restore --staged content-creation/elm/elm.json
+git status
+git diff content-creation/elm/elm.json
+aide setup -m 
+aide setup -m 
+git status
+git checkout .
+git pull origin bat/menu-v4-other-instances
+git status
+aide setup -m 
+git status
+git add .
+git commit
+git push
+aide setup -m 
+aide watch monolith -q
+aide watch monolith
+aide watch monolith -q
+cd dev/noredink/NoRedInk
+lvim .
+lvim .
+cd dev/noredink/NoRedInk
+git status
+git add lib/scaffolding/elm
+git status
+git add lib/scaffolding/elm
+git commit -m "Add position relative to question box containers"
+git push
+firstaide-update
+exit
+exit
+cd dev/noredink/noredink-ui
+lvim .
+exit
+cd dev/noredink/noredink-ui
+git pull
+nix-shell
+exit
+cd dev/noredink/NoRedInk
+lvim .
+exit
+cd dev/noredink/nore
+cd dev/noredink/noredink-ui
+lvim .
+exit
+cd dev/arthurjordao.dev
+git status
+git add static
+git commit -m "Add netlify cms"
+git push
+git pull
+git status
+git add .
+git add .
+git commit -m "Add posts link"
+git push
+cd ..
+git status
+ls
+cd simple-web-site
+ls
+git status
+cat index.html
+exit
+cd dev/arthurjordao.dev
+git pull
+cd themes/personal-theme
+git status
+git pull
+git status
+git pull
+cd ..
+git status
+git add .
+git commit -m "Update personal theme"
+git push
+git status
+cd ..
+hugo server
+git status
+git status resources/_gen/assets/scss/assets/
+git diff resources/_gen/assets/scss/assets/
+git status
+git git status
+git status
+git add .
+git commit -m "Change post image path"
+git push
+git status
+git add .
+git commit -m "Use editorial workflow"
+git push
+git pull
+git push
+ls -la content/posts/my-first-post/screen-shot-2022-12-09-at-15.21.10.png
+exit
+exit
+cd dev/arthurjordao.dev
+ls
+git status
+lvim .
+exit
+cd dev/
+hx
+which hx
+brew uninstall
+brew uninstall hx
+brew uninstall helix
+git clone git@github.com:helix-editor/helix.git
+git origin add pinelang git@github.com:pinelang/helix-tree-explorer.git
+git remote add pinelang git@github.com:pinelang/helix-tree-explorer.git
+cd helix
+direnv allow
+direnv allow --extra-experimental-features nix-command
+cargo install --locked --path helix-term\
+
+direnv allow 
+nix --help
+nix upgrade-nix
+sudo nix upgrade-nix
+nix
+nix --extra-experimental-features nix-command
+nix --help 
+vim ~/.config/nix/nix.conf
+nix profile install github:srid/emanote --extra-experimental-features nix-command --extra-experimental-features flakes
+direnv allow 
+exit
+brew install helix
+hx
+cd dev/noredink/NoRedInk
+hx
+exit
+brew uninstall helix
+exit
+cd dev/helix
+cargo install --locked --path helix-term\
+
+xcode-select --install\
+
+cargo install --locked --path helix-term\
+
+hx
+ls
+git remote 
+ls
+git pull
+git remote add pinelang git@github.com:pinelang/helix-tree-explorer.git
+git status
+git checkout pinelang tree_explorer
+git fetch pinelang
+git checkout tree_explore
+cargo install --locked --path helix-term\
+
+hx
+hx
+exit
+hx
+hx --grammar fetch
+hx --grammar build
+hx
+cd dev/noredink/NoRedInk
+hx
+hx
+hx
+exit
+cd dev/AkameSayurii.github.io
+git status
+git pull
+lvim .
+git pull
+exit
+cd dev/AkameSayurii.github.io
+git status
+git add .
+git commit -m "Add admin page"
+git push
+git status
+git add .
+git commit -m "Fix pages"
+git push
+git status
+git add .
+git commit -m "Fix slider image"
+git push
+git status
+git add .
+git commit -m "Fix subtitles"
+git push
+git status
+git diff
+git add .
+git commit -m "Fix images field"
+git push
+git status
+git add .
+git commit -m "Fix image path"
+git push
+git status
+git add .
+git commit -m "Fix image path again"
+git push
+git status
+git add .
+git commit -m "Fix image path again"
+git push
+git status
+git commit -m "Fix image path againnnn"
+git add .
+git commit -m "Fix image path againnnn"
+git push
+git status
+git diff
+git add .
+git commit -m "Add other sections configuration"
+git push
+git status
+git add .
+git commit -m "Fix title->label"
+git push
+git status
+git add .
+git commit -m "Fix answers"
+git push
+git status
+git add .
+git commit -m "Fix video desc config"
+git push
+git status
+hugo server
+git status
+cd themes/website-theme
+git status
+git add .
+git commit -m "Remove map"
+git push
+cd ..
+git status
+cd ..
+git status
+git add .
+git commit -m "Remove map"
+git push
+git status
+hugo server
+hugo server
+git status
+git status
+hugo server
+hugo server
+hugo server
+git diff
+cd themes/website-theme
+git status
+git diff
+cd ..
+cd ..
+hugo server
+cd themes/website-theme
+git stash
+git status
+cd ..
+cd ..
+hugo server
+cd themes/website-theme
+git stash pop
+cd ..
+cd ..
+hugo server
+git diff
+cd themes/website-theme
+git diff
+git diff
+git status
+git status
+cd ..
+cd ..
+hugo server
+git status
+cd themes/website-theme
+git add .
+git commit -m "Remove map dependencies"
+git push
+cd ..
+cd ..
+git add .
+git commit -m "update site theme"
+git push
+git status
+git log
+git status
+git diff static/vendor/g-map/gmap.js
+git diff -- static/vendor/g-map/gmap.js
+git status
+cd themes/website-theme
+git add .
+git commit -m "Remove other maps dependencies"
+git add push
+git push
+cd ..
+cd ..
+git add .
+git commit -m "Update themes"
+git push
+git status
+cd themes/website-theme
+git add .
+git commit -m "Remove last gmap dependency"
+git push
+cd ..
+git status
+git add .
+git commit -m "update themes again"
+git push
+git status
+cd ..
+git status
+git pull
+git add .
+git commit -m "Use text when it makes sense"
+git push
+git status
+git add .
+git commit -m "Fix description widget"
+git push
+git status
+git add .
+git commit -m "Add enabled section"
+git push
+git status
+git add .
+git commit -m "Fix widget title"
+git push
+git status
+git add .
+git commit -m "Use boolean instead of checkbox"
+git push
+git status
+git add .
+git commit -m "Fix enable property"
+git push
+hugo server
+git status
+git add .
+git status 
+cd themes/website-theme
+ls
+git status
+git add .
+git status
+git add .
+git commit -m "Modify favicon"
+git push
+cd ..
+cd ..
+git status
+git add .
+git commit -m "Modify favicon"
+git push
+git pull
+git push
+git status
+cd themes/website-theme
+git status
+git status
+git add .
+git commit -m "Adjust spacement between header and content"
+git push
+cd ..
+cd ..
+git status
+git add .
+git commit -m "Update theme"
+git push
+git log
+git status
+cd themes/website-theme
+git status
+git add .
+git commit -m "Update padding to improve id navigation"
+git push
+git status
+git status
+git status
+git diff
+git status
+git add .
+git commit -m "Update theme"
+git push
+cd ..
+cd ..
+git status
+git add .
+git commit -m "update theme"
+git push
+git status
+cd themes/website-theme
+git status
+git add .
+git commit -m "Update padding on why therapy"
+git push
+cd ..
+cd ..
+git add .
+git commit -m "update theme"
+git push
+git status
+cd themes/website-theme
+git status
+git add .
+git commit -m "Justify about"
+git push
+cd ../..
+git status
+git add .
+git commit -m "Update theme"
+git push
+git status
+cd themes/website-theme
+git status
+git add .
+git commit -m "Translate to portuguese"
+git push
+cd ../..
+git status
+git add .
+git commit -m "Update theme"
+git pull
+git push
+exit
+cd dev/AkameSayurii.github.io
+git status
+hugo server
+hugo server
+exit
+cd dev/noredink/NoRedInk
+git status
+aide watch quiz-engine-http
+firstaide-update
+say done
+aide watch quiz-engine-http
+aide watch quiz-engine-http
+aide watch quiz-engine-http
+aide watch quiz-engine-http
+aide watch quiz-engine-http
+aide watch quiz-engine-http
+aide watch quiz-engine-http
+git status
+exit
+cd dev/noredink/NoRedInk
+cd monolith/
+sudo caddy start
+aide watch content-creation
+aide watch content-creation
+aide watch content-creation
+aide watch content-creation
+aide watch content-creation
+pgrep ghc | xargs kill -9
+pgrep ghc | xargs kill -9
+aide watch content-creation
+exit
+cd dev/noredink/NoRedInk
+git checkout master
+git checkout monolith/db/schema.rb
+git checkout master
+git checkout monolith/config/application.yml
+git checkout master
+git pull
+exit
+cd dev/noredink/NoRedInk
+git status
+git push
+git status
+git status
+git add lib/scaffolding/elm/generated/Generated/Backend/ScaffoldingExample.elm
+git commit -m "Fix typo"
+git push
+git checkout .
+aide watch tutorials
+aide watch tutorials
+aide watch tutorials
+aide watch tutorials
+aide watch tutorials
+aide watch tutorials
+git status
+git pull origin master
+git status
+cd monolith
+cd ..
+monolith/script/elm-deprecated-imports-ratchet.py --elm-json=lib/scaffolding/elm/elm.json --imports-file=lib/scaffolding/elm/deprecated-imports.csv --deprecate=AssetPath --deprecate=Html --deprecate=Html.Attributes --deprecate=Html.Events --deprecate=Html.Keyed --deprecate=Html.Lazy --deprecate=Nri.Animation --deprecate=Nri.DEPRECATED.CssHelpers --deprecate=Nri.SecondaryBreadCrumb --deprecate=Nri.Inputs.Styles --deprecate=Nri.PageContent --deprecate=Nri.Pathway.Search --deprecate=Nri.Writing.RichText --deprecate=Nri.WritingCycles.Heatmap --deprecate=Nri.WritingCycles.WritingCycle --deprecate=Svg --deprecate=Svg.Attributes --deprecate=Highlighter --deprecate=Highlighter.Tool --deprecate=Highlighter.Highlightable --deprecate=Nri.MultiHighlighter.Tools --deprecate=Nri.Panel --deprecate=Nri.SecondaryBreadCrumb update
+git status
+git add lib/scaffolding/elm/deprecated-imports.csv
+git status
+git commit -m "Update deprecated imports"
+git push
+aide watch tutorials
+exit
+cd dev/noredink/NoRedInk
+lvim .
+vim elm/generated/Generated/Backend/ScaffoldingExample.elm
+vim lib/scaffolding/elm/generated/Generated/Backend/ScaffoldingExample.elm
+cat lib/scaffolding/elm/generated/Generated/Backend/ScaffoldingExample.elm
+nano lib/scaffolding/elm/generated/Generated/Backend/ScaffoldingExample.elm
+git status
+nano lib/scaffolding/elm/generated/Generated/Backend/ScaffoldingExample.elm
+git status
+cd lib/scaffolding
+git status
+ls
+cabal generate
+cabal run generate
+git status
+git diff elm/generated/Generated/Backend/ScaffoldingExample.elm
+git status
+git add .
+git commit -m "Fix generated files"
+git status
+git push
+cd ..
+cd ..
+lvim .
+exit
+cd dev/noredink/noredink-ui
+git status
+git status
+git add .
+git commit -m "Remove unneeded css"
+git push
+git status
+git status
+git add .
+git commit -m "Move max width to view balloon function"
+git push
+exit
+cd dev/noredink/noredink-ui
+git status
+git diff 
+git status
+git checkout .
+git pull
+nix-shell
+exit
+cd dev/noredink/NoRedInk
+git status
+aide setup -m 
+git pull
+	git status
+aide watch monolith -q
+aide watch monolith -q
+aide watch monolith -q
+aide watch monolith -q
+git fetch
+git checkout que-625-pre-generate-scaffolding-texts
+git status
+aide watch monolith -q
+bundle install
+cd monolith
+bundle install
+aide watch monolith -q
+  bin/rails db:migrate RAILS_ENV=development
+aide watch monolith -q
+firstaide-update
+firstaide-update
+exit
+exit
+exit
+cd dev/AkameSayurii.github.io
+git status
+git checkout 
+cd themes
+website-theme
+git status
+git pull
+cd ..
+git pull
+git status
+cd website-theme
+git status
+lvim .
+exit
+cd dev/AkameSayurii.github.io
+hugo server
+git status
+git add .
+cd themes/website-theme
+git status
+git add .
+git commit -m "Change primary color"
+git push
+git status
+cd ..
+git status
+git add .
+git commit -m "Change theme"
+git push
+hugo server
+cd ..
+cd ..
+cd AkameSayurii.github.io
+hugo server
+hugo server
+hugo server
+git status
+git diff
+cd themes/website-theme
+git status
+git add .
+git commit -m "Add language support"
+git push
+cd ..
+cd ..
+git add .
+git commit -m "Update theme"
+git push
+exit
+cd dev/arthurjordao.dev
+lvim .
+git status
+exit
+cd dev/noredink/noredink-ui
+git status
+git log
+git reset --hard 5382eef8a3c02c9f0c2024a2d7ba476ba0c2f4c9
+git status
+git push --force
+nix-shell
+exit
+cd dev/noredink/noredink-ui
+git checkout master
+git pull
+git checkout -b  bump-2023-03-03
+elm diff
+elm bump
+git status
+git add .
+git commit -m "Bump nri ui to 22.4.0"
+git push
+git status
+git checkout master
+git pull
+elm publish 
+git tag -a 22.4.0 -m "22.4.0 release"
+git push origin 22.4.0
+elm publish 
+git exit
+exit
+exit
+cd dev/AkameSayurii.github.io
+hugo server
+exit
+cd dev/AkameSayurii.github.io
+git pull
+lvim .
+exit
+cd dev/AkameSayurii.github.io
+lvim .
+git status
+cd themes
+cd website-theme
+git status
+cat assets/scss/_variables.scss
+git checkout .
+git pull
+lvim .
+lvim .
+git status
+git add .
+git commit -m "Modify secondary color"
+git push
+cd ..
+cd ..
+git pull
+git add .
+git commit -m "Update theme"
+git push
+exit
