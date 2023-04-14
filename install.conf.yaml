@@ -4,7 +4,6 @@
       relink: true
 - clean: ['~', '.config']
 - link: 
-    ~/.config/lvim: lvim
     ~/.config/kitty: kitty
     ~/.config/zsh: zsh
     ~/.gitignore:
