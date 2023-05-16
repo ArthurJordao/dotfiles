@@ -6,6 +6,7 @@
 [user]
 	name = Arthur Bernardi Jordão
 	email = arthurbernardijordao@gmail.com
+	signingkey = 3AF402314526D39D45CBACA8D62340DADE749208
 [core]
 	excludesfile = ~/.gitignore
 [pull]
@@ -14,3 +15,5 @@
 	autoSetupRemote = true
 [init]
 	defaultBranch = main
+[commit]
+	gpgsign = true
