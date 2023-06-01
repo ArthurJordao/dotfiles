@@ -2,3 +2,5 @@ font:
   size: 18.0
   normal:
     family: "JetBrainsMono Nerd Font"
+import:
+  - ~/.config/alacritty/themes/gruvbox_material.yml
