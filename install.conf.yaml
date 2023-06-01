@@ -2,8 +2,8 @@
     link:
       create: true
       relink: true
-- clean: ['~', '.config']
-- link: 
+- clean: ["~", ".config"]
+- link:
     ~/.config/kitty: kitty
     ~/.config/zsh: zsh
     ~/.gitignore:
@@ -13,7 +13,8 @@
     ~/.zprofile:
     ~/Brewfile:
     ~/.config/nvim/lua/user: astrovim-config
+    ~/.config/alacritty.yml: alacritty.yml
 - shell:
-  - osascript -e "tell application \"System Events\" to tell every desktop to set picture to \"~/Pictures/wallpaper.png\" as POSIX file"
-  - brew bundle --file ~/Brewfile
-  - if [ $0 != "-zsh" ]; then chsh -s /bin/zsh; fi
+    - osascript -e "tell application \"System Events\" to tell every desktop to set picture to \"~/Pictures/wallpaper.png\" as POSIX file"
+    - brew bundle --file ~/Brewfile
+    - if [ $0 != "-zsh" ]; then chsh -s /bin/zsh; fi
