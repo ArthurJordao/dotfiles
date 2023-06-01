@@ -16,6 +16,7 @@ brew 'tmux'
 brew 'tree-sitter'
 brew 'zsh'
 brew 'zsh-completions'
+brew 'tmuxinator'
 
 cask 'font-jetbrains-mono'
 cask 'font-jetbrains-mono-nerd-font'
