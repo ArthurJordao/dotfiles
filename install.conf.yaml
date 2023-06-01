@@ -13,7 +13,7 @@
     ~/.zprofile:
     ~/Brewfile:
     ~/.config/nvim/lua/user: astrovim-config
-    ~/.config/alacritty.yml: alacritty.yml
+    ~/.config/alacritty: alacritty
 - shell:
     - osascript -e "tell application \"System Events\" to tell every desktop to set picture to \"~/Pictures/wallpaper.png\" as POSIX file"
     - brew bundle --file ~/Brewfile
