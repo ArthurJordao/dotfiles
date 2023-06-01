@@ -14,6 +14,7 @@
     ~/.config/nvim/lua/user: astrovim-config
     ~/.config/alacritty: alacritty
     ~/.config/tmux: tmux
+    ~/.config/tmuxinator: tmuxinator
 - shell:
     - osascript -e "tell application \"System Events\" to tell every desktop to set picture to \"~/Pictures/wallpaper.png\" as POSIX file"
     - brew bundle --file ~/Brewfile
