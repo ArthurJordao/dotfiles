@@ -2,5 +2,7 @@ font:
   size: 18.0
   normal:
     family: "JetBrainsMono Nerd Font"
+shell:
+  program: /usr/local/bin/tmux
 import:
   - ~/.config/alacritty/themes/gruvbox_material.yml
