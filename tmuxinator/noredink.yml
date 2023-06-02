@@ -9,6 +9,9 @@ windows:
       layout: main-vertical
       panes:
         -
-        -
-        -
-        -
+        - monolith:
+            - tmux send-keys -t servers.2 "aide watch monolith"
+        - rostering:
+            - tmux send-keys -t servers.3 "aide watch rostering"
+        - drafts:
+            - tmux send-keys -t servers.4 "aide watch drafts"
