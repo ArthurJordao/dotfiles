@@ -27,6 +27,6 @@ zle -N down-line-or-beginning-search
 
 # Colors
 autoload -Uz colors && colors
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
-- [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 compinit
