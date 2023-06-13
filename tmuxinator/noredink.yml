@@ -13,6 +13,6 @@ windows:
             - tmux send-keys -t servers.3 "aide watch rostering"
             - tmux send-keys -t servers.4 "aide watch drafts"
             - clear
-        - monolith:
-        - rostering:
-        - drafts:
+        -
+        -
+        -
