@@ -1,6 +1,6 @@
 # /Users/arthurjordao/.config/tmuxinator/nri-sidescreen.yml
 
-name: noredink
+name: nri-sidescreen
 root: ~/dev/noredink/NoRedInk/
 
 windows:
