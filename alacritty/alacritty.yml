@@ -6,3 +6,6 @@ shell:
   program: /opt/homebrew/bin/tmux
 import:
   - ~/.config/alacritty/themes/gruvbox_material.yml
+key_bindings:
+  - { key: N,  mods: Command, action: SpawnNewInstance }
+
