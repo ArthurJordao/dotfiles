@@ -1,0 +1,18 @@
+# /Users/arthurjordao/.config/tmuxinator/nri-sidescreen.yml
+
+name: noredink
+root: ~/dev/noredink/NoRedInk/
+
+windows:
+  - servers:
+      layout: vertical
+      panes:
+        - default:
+            - tmux send-keys -t servers.2 "aide watch monolith"
+            - tmux send-keys -t servers.3 "aide watch rostering"
+            - tmux send-keys -t servers.4 "aide watch drafts"
+            - clear
+        - monolith:
+        - rostering:
+        - drafts:
+
