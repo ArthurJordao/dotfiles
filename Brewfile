@@ -17,6 +17,7 @@ brew 'tree-sitter'
 brew 'zsh'
 brew 'zsh-completions'
 brew 'tmuxinator'
+brew 'fd'
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'
