@@ -18,6 +18,7 @@ brew 'zsh'
 brew 'zsh-completions'
 brew 'tmuxinator'
 brew 'fd'
+brew 'elixir'
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'
