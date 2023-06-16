@@ -1,0 +1,10 @@
+# /Users/arthurjordao/.config/tmuxinator/website.yml
+
+name: website
+root: ~/dev/website/
+
+windows:
+  - editor:
+      panes:
+        - nvim .
+  - server: npm run dev
