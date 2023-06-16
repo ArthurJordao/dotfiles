@@ -20,6 +20,7 @@ brew 'tmuxinator'
 brew 'fd'
 brew 'elixir'
 brew 'node'
+brew 'gnupg'
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'
