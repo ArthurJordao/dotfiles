@@ -21,6 +21,7 @@ brew 'fd'
 brew 'elixir'
 brew 'node'
 brew 'gnupg'
+brew 'pinentry-mac'
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'
