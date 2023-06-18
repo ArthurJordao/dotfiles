@@ -24,4 +24,5 @@ key_bindings:
   - { key: N,  mods: Command, action: SpawnNewInstance }
   - { key: W, mods: Command, chars: "\x0A&" }
   - { key: T, mods: Command, chars: "\x0Ac" }
-
+env:
+  TERM: xterm-256color
