@@ -6,7 +6,6 @@ window:
   dimensions:
     columns: 133
     lines: 40
-  decorations: transparent
 font:
   size: 18.0
   normal:
