@@ -18,7 +18,7 @@ shell:
     - -s
     - main
 import:
-  - ~/.config/alacritty/themes/gruvbox_material.yml
+  - ~/.config/alacritty/themes/rose_pine.yml
 key_bindings:
   - { key: N,  mods: Command, action: SpawnNewInstance }
   - { key: W, mods: Command, chars: "\x0A&" }
