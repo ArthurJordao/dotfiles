@@ -3,8 +3,10 @@ window:
   #
   # Specified in number of columns/lines, not pixels. If both are zero this
   # setting is ignored.
-  startup_mode: SimpleFullscreen
-  decorations: buttonless
+  dimensions:
+    columns: 133
+    lines: 40
+  decorations: transparent
 font:
   size: 18.0
   normal:
