@@ -1,0 +1,8 @@
+# /Users/arthurjordao/.config/tmuxinator/tastediary.yml
+
+name: website
+root: ~/dev/tastydiary/
+
+windows:
+  - editor: nvim .
+  - server: mix phx.server
