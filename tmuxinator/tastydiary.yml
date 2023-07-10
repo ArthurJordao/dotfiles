@@ -1,6 +1,6 @@
-# /Users/arthurjordao/.config/tmuxinator/tastediary.yml
+# /Users/arthurjordao/.config/tmuxinator/tastydiary.yml
 
-name: website
+name: tastydiary
 root: ~/dev/tastydiary/
 
 windows:
