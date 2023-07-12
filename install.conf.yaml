@@ -11,8 +11,8 @@
     ~/.profile:
     ~/.zprofile:
     ~/Brewfile:
-    ~/.config/nvim/lua/user: astrovim-config
     ~/.config/alacritty: alacritty
+    ~/.config/nvim: nvim
     ~/.config/tmux: tmux
     ~/.config/tmuxinator: tmuxinator
 - shell:
