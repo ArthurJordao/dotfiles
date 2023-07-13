@@ -5,3 +5,7 @@ local set = vim.keymap.set
 
 set("n", "k", "kzz")
 set("n", "j", "jzz")
+set("n", "<leader>cs", function()
+  require("telescope.builtin").lsp_document_symbols()
+end, { desc = "Open document symbols" })
+set("n", "<leader>h", ":noh<CR>", { desc = "Clear highlights" })
