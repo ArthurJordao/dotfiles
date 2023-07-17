@@ -1,8 +1,8 @@
 #!/bin/sh
 
-alias exall="exa -l --icons"
-alias exal="exa -la --icons"
-alias exa="exa --icons"
+alias exall="exa -l --icons --git"
+alias exal="exa -la --icons --git"
+alias exa="exa --icons --git"
 alias zsh-update-plugins="find "$ZDOTDIR/plugins" -type d -exec test -e '{}/.git' ';' -print0 | xargs -I {} -0 git -C {} pull -q"
 alias cp="cp -i"
 alias mv='mv -i'
