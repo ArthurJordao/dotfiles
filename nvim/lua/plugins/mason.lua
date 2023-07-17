@@ -4,6 +4,7 @@ return {
     ensure_installed = {
       "stylua",
       "elm-language-server",
+      "typescript-language-server",
     },
   },
 }
