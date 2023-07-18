@@ -5,6 +5,7 @@ return {
       "stylua",
       "elm-language-server",
       "typescript-language-server",
+      "sorbet",
     },
   },
 }
