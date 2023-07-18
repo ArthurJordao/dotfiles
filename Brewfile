@@ -27,6 +27,7 @@ brew 'chafa'
 brew 'exiftool'
 brew 'lesspipe'
 brew 'gnu-sed'
+brew 'pass'
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'
