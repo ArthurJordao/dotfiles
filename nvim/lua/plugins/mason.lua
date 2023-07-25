@@ -6,6 +6,7 @@ return {
       "elm-language-server",
       "typescript-language-server",
       "sorbet",
+      "elixir-ls",
     },
   },
 }

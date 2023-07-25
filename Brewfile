@@ -1,5 +1,6 @@
 tap 'homebrew/cask'
 tap 'homebrew/cask-fonts'
+tap 'homebrew/cask-versions'
 
 brew 'bat'
 brew 'exa'
@@ -38,3 +39,4 @@ cask 'steam'
 cask 'homebrew/cask-versions/whatsapp-beta'
 cask 'obsidian'
 cask 'raycast'
+cask 'firefox-developer-edition'

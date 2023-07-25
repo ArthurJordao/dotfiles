@@ -5,6 +5,8 @@ return {
       "elm",
       "haskell",
       "javascript",
+      "heex",
+      "elixir",
       "json",
       "lua",
       "markdown",
