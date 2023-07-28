@@ -29,6 +29,7 @@ brew 'exiftool'
 brew 'lesspipe'
 brew 'gnu-sed'
 brew 'pass'
+brew 'pass-otp'
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'
