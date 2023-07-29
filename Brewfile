@@ -30,6 +30,8 @@ brew 'lesspipe'
 brew 'gnu-sed'
 brew 'pass'
 brew 'pass-otp'
+brew 'hugo'
+brew 'imagemagick'
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'
