@@ -1,0 +1,10 @@
+name: "isabeletenca"
+root: ~/dev/isabeletenca.com/
+
+windows:
+  - editor: nvim .
+  - server:
+      layout: main-vertical
+      panes:
+        - hugo server
+        -
