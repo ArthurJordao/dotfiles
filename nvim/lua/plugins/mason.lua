@@ -2,6 +2,7 @@ return {
   "williamboman/mason.nvim",
   opts = {
     ensure_installed = {
+      "clojure-lsp",
       "stylua",
       "elm-language-server",
       "typescript-language-server",
