@@ -32,6 +32,8 @@ brew 'pass'
 brew 'pass-otp'
 brew 'hugo'
 brew 'imagemagick'
+brew 'jless'
+brew 'bitwarden-cli'
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'
