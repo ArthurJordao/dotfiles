@@ -1,0 +1,8 @@
+# /Users/arthurjordao/.config/tmuxinator/ruby-learns.yml
+
+name: ruby-learns
+root: ~/dev/ruby-learns/
+
+windows:
+  - editor: nvim .
+  - server: rails s
