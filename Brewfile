@@ -34,6 +34,7 @@ brew 'hugo'
 brew 'imagemagick'
 brew 'jless'
 brew 'bitwarden-cli'
+brew 'watchman'
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'

@@ -30,3 +30,6 @@ autoload -Uz colors && colors
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
 compinit
+
+# Avoid bouncing icon mac for alacritty
+printf "\e[?1042l"
