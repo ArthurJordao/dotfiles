@@ -17,5 +17,10 @@
     ~/.config/tmuxinator: tmuxinator
 - shell:
     - osascript -e "tell application \"System Events\" to tell every desktop to set picture to \"~/Pictures/wallpaper.png\" as POSIX file"
-    - brew bundle --file ~/Brewfile
+    -
+      command: brew bundle --file ~/Brewfile
+      stdout: true
+    -
+      command: brew bundle --file ~/Brewfile cleanup
+      stdout: true
     - if [ $0 != "-zsh" ]; then chsh -s /bin/zsh; fi
