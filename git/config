@@ -8,7 +8,7 @@
 	email = arthurbernardijordao@gmail.com
 	signingkey = 3AF402314526D39D45CBACA8D62340DADE749208
 [core]
-	excludesFile = ~/.gitignore
+	excludesFile = ~/.config/git/ignore
 [pull]
 	rebase = false
 [push]
@@ -20,4 +20,4 @@
 [url "ssh://git@github.com/"]
 	insteadOf = https://github.com/
 [includeIf "gitdir:~/dev/noredink/"]
-  path = ~/.work-gitconfig
+  path = ~/.config/git/work-config
