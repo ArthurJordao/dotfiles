@@ -8,6 +8,7 @@ return {
       "typescript-language-server",
       "sorbet",
       "elixir-ls",
+      "bash-language-server",
     },
   },
 }

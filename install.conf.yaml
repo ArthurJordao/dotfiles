@@ -7,6 +7,8 @@
     ~/.config/zsh: zsh
     ~/.gitignore:
     ~/.gitconfig:
+    ~/.work-gitignore:
+    ~/.work-gitconfig:
     ~/Pictures/wallpaper.png: wallpaper.png
     ~/.profile:
     ~/.zprofile:
@@ -15,8 +17,12 @@
     ~/.config/nvim: nvim
     ~/.config/tmux: tmux
     ~/.config/tmuxinator: tmuxinator
+    ~/.local/bin: bin
 - shell:
     - osascript -e "tell application \"System Events\" to tell every desktop to set picture to \"~/Pictures/wallpaper.png\" as POSIX file"
+    -
+      command: brew bundle --file ~/Brewfile
+      stdout: true
     -
       command: brew bundle --file ~/Brewfile cleanup
       stdout: true

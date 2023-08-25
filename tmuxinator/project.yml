@@ -1,10 +1,12 @@
-name: "isabeletenca"
-root: ~/dev/isabeletenca.com/
+# ~/.tmuxinator/project.yml
+
+name: project
+root: <%= @settings["workspace"] %>
 
 windows:
   - editor: nvim .
   - server:
       layout: main-vertical
       panes:
-        - hugo server
+        -
         -
