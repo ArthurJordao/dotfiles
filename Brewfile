@@ -33,6 +33,7 @@ brew 'imagemagick'
 brew 'jless'
 brew 'bitwarden-cli'
 brew 'watchman'
+brew 'ffmpeg'
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'
