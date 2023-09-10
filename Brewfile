@@ -34,6 +34,7 @@ brew 'jless'
 brew 'bitwarden-cli'
 brew 'watchman'
 brew 'ffmpeg'
+brew 'go'
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'

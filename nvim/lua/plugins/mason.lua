@@ -5,6 +5,7 @@ return {
       "clojure-lsp",
       "stylua",
       "elm-language-server",
+      "gopls",
       "typescript-language-server",
       "sorbet",
       "elixir-ls",
