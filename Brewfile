@@ -35,6 +35,8 @@ brew 'bitwarden-cli'
 brew 'watchman'
 brew 'ffmpeg'
 brew 'go'
+brew 'gleam'
+brew 'erlang'
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'

@@ -5,6 +5,7 @@ return {
       "bash",
       "clojure",
       "elm",
+      "gleam",
       "go",
       "haskell",
       "javascript",

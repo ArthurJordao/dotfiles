@@ -4,7 +4,7 @@
 
 export GPG_TTY=$(tty)
 
-export PATH=/opt/homebrew/bin:$HOME/bin:/usr/local/bin:$HOME/.local/bin:$PATH:$HOME/.emacs.d/bin:$HOME/.ghcup/bin
+export PATH=/opt/homebrew/bin:$HOME/bin:/usr/local/bin:$HOME/.local/bin:$PATH:$HOME/.ghcup/bin:$HOME/.cache/rebar3/bin
 
 export FZF_PREVIEW_ADVANCED=true
 
