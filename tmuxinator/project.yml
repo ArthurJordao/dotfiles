@@ -1,4 +1,4 @@
-# ~/.tmuxinator/project.yml
+# ~/.config/tmuxinator/project.yml
 
 name: project
 root: <%= @settings["workspace"] %>
