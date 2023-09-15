@@ -4,7 +4,10 @@
 
 export GPG_TTY=$(tty)
 
-export PATH=/opt/homebrew/bin:$HOME/bin:/usr/local/bin:$HOME/.local/bin:$PATH:$HOME/.ghcup/bin:$HOME/.cache/rebar3/bin
+export GOPATH=$HOME/go
+export GOROOT="$(brew --prefix golang)/libexec"
+
+export PATH=/opt/homebrew/bin:$HOME/bin:/usr/local/bin:$HOME/.local/bin:$PATH:$HOME/.ghcup/bin:$HOME/.cache/rebar3/bin:${GOPATH}/bin:${GOROOT}/bin
 
 export FZF_PREVIEW_ADVANCED=true
 
