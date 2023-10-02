@@ -37,6 +37,7 @@ brew 'ffmpeg'
 brew 'go'
 brew 'gleam'
 brew 'erlang'
+brew 'awscli'
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'
