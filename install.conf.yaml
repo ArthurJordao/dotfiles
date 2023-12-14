@@ -16,6 +16,7 @@
     ~/.local/bin: bin
     ~/.config/git: git
     ~/.config/doom: doom
+    ~/.config/hammerspoon: hammerspoon
 - shell:
     - osascript -e "tell application \"System Events\" to tell every desktop to set picture to \"~/Pictures/wallpaper.png\" as POSIX file"
     -
