@@ -40,7 +40,10 @@ brew 'gleam'
 brew 'erlang'
 brew 'awscli'
 brew 'ghcup'
-brew 'emacs-plus'
+brew 'emacs-plus', args: ["with-native-comp"]
+brew 'grep'
+brew 'markdown'
+brew 'shellcheck'
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'
