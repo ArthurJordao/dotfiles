@@ -7,8 +7,7 @@
 (setq user-full-name "Arthur Jordao"
       user-mail-address "arthurbernardijordao@gmail.com"
       doom-font (font-spec :family "FiraCode Nerd Font" :size 16)
-      projectile-project-search-path "~/dev"
-        )
+      projectile-project-search-path '("~/dev/personal" "~/dev/noredink"))
 
 ;; Doom exposes five (optional) variables for controlling fonts in Doom:
 ;;
