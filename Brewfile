@@ -44,6 +44,7 @@ brew 'emacs-plus', args: ["with-native-comp"]
 brew 'grep'
 brew 'markdown'
 brew 'shellcheck'
+brew 'zellij'
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'
