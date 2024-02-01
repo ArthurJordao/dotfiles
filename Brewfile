@@ -46,6 +46,8 @@ brew 'grep'
 brew 'markdown'
 brew 'shellcheck'
 brew 'zellij'
+brew 'nushell'
+brew 'fish'
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'
