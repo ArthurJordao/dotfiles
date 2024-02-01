@@ -1,6 +1,7 @@
 tap 'homebrew/cask-fonts'
 tap 'homebrew/cask-versions'
 tap 'd12frosted/emacs-plus'
+tap 'qmk/qmk'
 
 brew 'bat'
 brew 'exa'
@@ -63,3 +64,5 @@ cask 'bitwarden'
 cask 'slack'
 cask 'vial'
 cask 'hammerspoon'
+cask 'qmk-toolbox'
+brew "qmk/qmk/qmk"
