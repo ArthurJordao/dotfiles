@@ -3,6 +3,4 @@
 -- Add any additional keymaps here
 local set = vim.keymap.set
 
-set("n", "k", "kzz")
-set("n", "j", "jzz")
 set("n", "<leader>h", ":noh<CR>", { desc = "Clear highlights", silent = true })
