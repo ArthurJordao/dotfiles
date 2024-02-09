@@ -28,8 +28,5 @@
       command: brew bundle --file ~/Brewfile cleanup
       stdout: true
     - brew upgrade --cask --greedy
-    - if test ! -d "$HOME/.config/emacs"
-        git clone --depth 1 https://github.com/doomemacs/doomemacs ~/.config/emacs
-        ~/.config/emacs/bin/doom install
-      end
+    - installdoom
     - chsh -s $(which fish)
