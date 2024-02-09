@@ -4,10 +4,7 @@
       relink: true
 - clean: ["~", ".config"]
 - link:
-    ~/.config/zsh: zsh
     ~/Pictures/wallpaper.png: wallpaper.png
-    ~/.profile:
-    ~/.zprofile:
     ~/Brewfile:
     ~/.config/alacritty: alacritty
     ~/.config/nvim: nvim
