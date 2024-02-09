@@ -17,6 +17,7 @@
     ~/.config/git: git
     ~/.config/doom: doom
     ~/.config/hammerspoon: hammerspoon
+    ~/.config/fish: fish
 - shell:
     - osascript -e "tell application \"System Events\" to tell every desktop to set picture to \"~/Pictures/wallpaper.png\" as POSIX file"
     -
@@ -27,4 +28,4 @@
       stdout: true
     - brew upgrade --cask --greedy
     - if [ ! -d "~/.config/emacs"] ; then git clone --depth 1 https://github.com/doomemacs/doomemacs ~/.config/emacs;~/.config/emacs/bin/doom install; fi
-    - if [ $0 != "-zsh" ]; then chsh -s /bin/zsh; fi
+    - if [ $0 != "-fish" ]; then chsh -s $(which fish); fi
