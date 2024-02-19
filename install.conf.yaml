@@ -16,6 +16,7 @@
     ~/.config/hammerspoon: hammerspoon
     ~/.config/fish: fish
     ~/.config/zellij: zellij
+    ~/.config/bat: bat
 - shell:
     - osascript -e "tell application \"System Events\" to tell every desktop to set picture to \"~/Pictures/wallpaper.png\" as POSIX file"
     -
