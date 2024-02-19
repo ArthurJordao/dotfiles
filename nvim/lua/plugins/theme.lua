@@ -13,7 +13,20 @@ return {
   {
     "LazyVim/LazyVim",
     opts = {
-      colorscheme = "rose-pine",
+      colorscheme = "catppuccin",
     },
+  },
+  {
+    "folke/tokyonight.nvim",
+    lazy = true,
+    opts = { style = "day" },
+  },
+  {
+    "catppuccin/nvim",
+    name = "catppuccin",
+    priority = 1000,
+    opts = {
+      flavour = "latte"
+    }
   },
 }
