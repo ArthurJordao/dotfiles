@@ -12,7 +12,4 @@ fish_add_path "$HOME/.config/emacs/bin"
 fish_add_path "$HOME/.cargo/bin:$PATH"
 direnv hook fish | source
 fish_config theme choose "Rosé Pine Dawn"
-fzf_configure_bindings --processes=\cb
-fzf_configure_bindings --directory=\cf
-fzf_configure_bindings --git_log=\ct
-fzf_configure_bindings --git_status=\cs
+fzf_configure_bindings --processes=\cb --directory=\cf --git_log=\ct --git_status=\cs

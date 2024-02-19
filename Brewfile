@@ -51,6 +51,7 @@ brew 'nushell'
 brew 'fish'
 brew 'unisonweb/unison/unison-language'
 brew 'gcc'
+brew "qmk/qmk/qmk"
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'
@@ -70,4 +71,3 @@ cask 'slack'
 cask 'vial'
 cask 'hammerspoon'
 cask 'qmk-toolbox'
-brew "qmk/qmk/qmk"
