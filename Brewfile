@@ -52,6 +52,7 @@ brew 'fish'
 brew 'unisonweb/unison/unison-language'
 brew 'gcc'
 brew "qmk/qmk/qmk"
+brew 'vivid'
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'
