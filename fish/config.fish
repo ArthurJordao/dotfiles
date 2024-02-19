@@ -11,5 +11,5 @@ fish_add_path "$GOROOT/bin"
 fish_add_path "$HOME/.config/emacs/bin"
 fish_add_path "$HOME/.cargo/bin:$PATH"
 direnv hook fish | source
-fish_config theme choose "Rosé Pine Dawn"
+fish_config theme choose "Catppuccin Latte"
 fzf_configure_bindings --processes=\cb --directory=\cf --git_log=\ct --git_status=\cs
