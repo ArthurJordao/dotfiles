@@ -26,5 +26,5 @@
       command: brew bundle --file ~/Brewfile cleanup
       stdout: true
     - brew upgrade --cask --greedy
-    - installdoom
+    - installdotfiles
     - chsh -s $(which fish)
