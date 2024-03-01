@@ -21,3 +21,4 @@ set -Ux FZF_DEFAULT_OPTS "\
 --color=marker:#dc8a78,fg+:#4c4f69,prompt:#8839ef,hl+:#d20f39"
 bind \e\[1\;2D backward-word
 bind \e\[1\;2C forward-word
+source "$HOME/.config/fish/secrets.fish"
