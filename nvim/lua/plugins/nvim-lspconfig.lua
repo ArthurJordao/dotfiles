@@ -1,9 +1,11 @@
 return {
   "neovim/nvim-lspconfig",
   opts = {
-
     servers = {
       hls = {
+        mason = false,
+      },
+      gleam = {
         mason = false,
       },
       emmet_language_server = {
