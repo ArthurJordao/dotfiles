@@ -15,15 +15,15 @@
     ~/.config/doom: doom
     ~/.config/hammerspoon: hammerspoon
     ~/.config/fish: fish
-    ~/.config/zellij: zellij
     ~/.config/bat: bat
+    ~/.config/rio: rio
 - shell:
     - osascript -e "tell application \"System Events\" to tell every desktop to set picture to \"~/Pictures/wallpaper.png\" as POSIX file"
     -
       command: brew bundle --file ~/Brewfile
       stdout: true
     -
-      command: brew bundle --file ~/Brewfile cleanup
+      command: brew bundle --file ~/Brewfile cleanup --force
       stdout: true
     - brew upgrade --cask --greedy
     - installdotfiles
