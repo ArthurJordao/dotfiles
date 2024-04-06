@@ -4,6 +4,7 @@ set -x GOROOT "$(/opt/homebrew/bin/brew --prefix golang)/libexec"
 set -x EDITOR nvim
 set -x BAT_THEME "Catppuccin-latte"
 set -x LS_COLORS "$(vivid generate catppuccin-latte)"
+set -x COLORTERM truecolor
 fish_add_path "/opt/homebrew/bin"
 fish_add_path "$HOME/.local/bin"
 fish_add_path "$HOME/.ghcup/bin"
