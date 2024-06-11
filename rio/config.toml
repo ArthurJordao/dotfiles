@@ -7,7 +7,7 @@ width = 1000
 height = 700
 
 [fonts]
-size = 20
+size = 18
 family = "FiraCode Nerd Font"
 
 [shell]
