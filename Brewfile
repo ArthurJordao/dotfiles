@@ -49,6 +49,7 @@ brew 'unisonweb/unison/unison-language'
 brew 'gcc'
 brew "qmk/qmk/qmk"
 brew 'vivid'
+brew 'zig'
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'

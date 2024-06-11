@@ -28,7 +28,7 @@ return {
       unison = {
         mason = false,
         setup = {
-          on_attach = function(client, bufnr)
+          on_attach = function(_, bufnr)
             -- Always show the signcolumn, otherwise it would shift the text each time
             -- diagnostics appear/become resolved
             vim.o.signcolumn = "yes"

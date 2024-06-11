@@ -10,6 +10,7 @@ return {
       "sorbet",
       "elixir-ls",
       "bash-language-server",
+      "zls",
     },
   },
 }
