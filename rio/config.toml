@@ -2,6 +2,9 @@ cursor = '▇'
 blinking-cursor = false
 theme = "catppuccin-latte"
 
+[navigation]
+mode = "NativeTab"
+
 [window]
 width = 1000
 height = 700

@@ -5,7 +5,7 @@
     "lazyvim.plugins.extras.coding.mini-surround",
     "lazyvim.plugins.extras.coding.yanky",
     "lazyvim.plugins.extras.editor.mini-files",
-    "lazyvim.plugins.extras.lang.haskell",
+    "lazyvim.plugins.extras.test.core",
     "lazyvim.plugins.extras.vscode"
   ],
   "news": {
