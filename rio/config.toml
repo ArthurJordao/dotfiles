@@ -3,7 +3,8 @@ blinking-cursor = false
 theme = "catppuccin-latte"
 
 [navigation]
-mode = "NativeTab"
+mode = "Plain"
+
 
 [window]
 width = 1000
@@ -16,3 +17,7 @@ family = "FiraCode Nerd Font"
 [shell]
 args = ["new-session", "-A", "-D", "-s", "main"]
 program = "/opt/homebrew/bin/tmux"
+
+[keyboard]
+use-kitty-keyboard-protocol = false
+disable-ctlseqs-alt = false
