@@ -3,7 +3,7 @@ blinking-cursor = false
 theme = "catppuccin-latte"
 
 [navigation]
-mode = "Plain"
+mode = "NativeTab"
 
 
 [window]

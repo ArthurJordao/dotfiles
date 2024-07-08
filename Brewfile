@@ -50,6 +50,7 @@ brew 'gcc'
 brew "qmk/qmk/qmk"
 brew 'vivid'
 brew 'zig'
+brew 'yazi'
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'
