@@ -1,20 +1,9 @@
-local wezterm = require("wezterm")
-
-local config = wezterm.config_builder()
-
--- Pull in the wezterm API
 local os = require("os")
 local wezterm = require("wezterm")
 local session_manager = require("wezterm-session-manager/session-manager")
 local act = wezterm.action
 local mux = wezterm.mux
 
--- --------------------------------------------------------------------
--- FUNCTIONS AND EVENT BINDINGS
--- --------------------------------------------------------------------
-
--- Session Manager event bindings
--- See https://github.com/danielcopper/wezterm-session-manager
 wezterm.on("save_session", function(window)
 	session_manager.save_state(window)
 end)
@@ -25,18 +14,7 @@ wezterm.on("restore_session", function(window)
 	session_manager.restore_state(window)
 end)
 
--- --------------------------------------------------------------------
--- CONFIGURATION
--- --------------------------------------------------------------------
-
--- This table will hold the configuration.
-local config = {}
-
--- In newer versions of wezterm, use the config_builder which will
--- help provide clearer error messages
-if wezterm.config_builder then
-	config = wezterm.config_builder()
-end
+local config = wezterm.config_builder()
 
 config.color_scheme = "Catppuccin Latte"
 config.font = wezterm.font("FiraCode Nerd Font")
@@ -104,12 +82,6 @@ config.keys = {
 		action = act.ActivateCopyMode,
 	},
 
-	-- ----------------------------------------------------------------
-	-- TABS
-	--
-	-- Where possible, I'm using the same combinations as I would in tmux
-	-- ----------------------------------------------------------------
-
 	-- Show tab navigator; similar to listing panes in tmux
 	{
 		key = "w",
@@ -152,14 +124,6 @@ config.keys = {
 		mods = "LEADER|SHIFT",
 		action = act.CloseCurrentTab({ confirm = true }),
 	},
-
-	-- ----------------------------------------------------------------
-	-- PANES
-	--
-	-- These are great and get me most of the way to replacing tmux
-	-- entirely, particularly as you can use "wezterm ssh" to ssh to another
-	-- server, and still retain Wezterm as your terminal there.
-	-- ----------------------------------------------------------------
 
 	-- -- Vertical split
 	{
@@ -237,11 +201,6 @@ config.keys = {
 		action = act.ActivatePaneDirection("Next"),
 	},
 
-	-- ----------------------------------------------------------------
-	-- Workspaces
-	--
-	-- These are roughly equivalent to tmux sessions.
-	-- ----------------------------------------------------------------
 
 	-- Attach to muxer
 	{

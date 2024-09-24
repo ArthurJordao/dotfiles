@@ -1,4 +1,4 @@
 hs.hotkey.bind({"cmd", "shift"}, "E", function()
-    hs.application.launchOrFocus("Rio")
+    hs.application.launchOrFocus("Alacritty")
 end)
 
