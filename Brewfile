@@ -1,6 +1,5 @@
 tap 'homebrew/cask-fonts'
 tap 'homebrew/cask-versions'
-tap 'd12frosted/emacs-plus'
 tap 'qmk/qmk'
 tap 'unisonweb/unison'
 
@@ -40,7 +39,6 @@ brew 'gleam'
 brew 'erlang'
 brew 'awscli'
 brew 'ghcup'
-brew 'emacs-plus', args: ["with-native-comp"]
 brew 'grep'
 brew 'markdown'
 brew 'shellcheck'
@@ -51,6 +49,7 @@ brew "qmk/qmk/qmk"
 brew 'vivid'
 brew 'zig'
 brew 'yazi'
+brew 'openjdk'
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'
@@ -72,3 +71,4 @@ cask 'hammerspoon'
 cask 'qmk-toolbox'
 cask 'gimp'
 cask'rio'
+cask "wezterm"
