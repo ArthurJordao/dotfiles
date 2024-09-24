@@ -17,6 +17,7 @@
     ~/.config/fish: fish
     ~/.config/bat: bat
     ~/.config/rio: rio
+    ~/.config/wezterm: wezterm
 - shell:
     - osascript -e "tell application \"System Events\" to tell every desktop to set picture to \"~/Pictures/wallpaper.png\" as POSIX file"
     -
