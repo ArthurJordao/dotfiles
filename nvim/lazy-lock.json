@@ -44,7 +44,7 @@
   "nvim-notify": { "branch": "master", "commit": "fbef5d32be8466dd76544a257d3f3dce20082a07" },
   "nvim-paredit": { "branch": "master", "commit": "dd851b3a17e393b6837c26ee14fc96db9ffdef82" },
   "nvim-snippets": { "branch": "main", "commit": "56b4052f71220144689caaa2e5b66222ba5661eb" },
-  "nvim-treesitter": { "branch": "master", "commit": "621f5901f0b3e762cc4c5ed0f9246cf1495193ad" },
+  "nvim-treesitter": { "branch": "master", "commit": "6511cd984ab4b21e28f83af488f38dc89c3b0586" },
   "nvim-treesitter-textobjects": { "branch": "master", "commit": "bf8d2ad35d1d1a687eae6c065c3d524f7ab61b23" },
   "nvim-ts-autotag": { "branch": "main", "commit": "e239a560f338be31337e7abc3ee42515daf23f5e" },
   "openingh.nvim": { "branch": "main", "commit": "613c18967d42202f3e2a9ac788caf62a402e7c1a" },
@@ -57,7 +57,7 @@
   "tokyonight.nvim": { "branch": "main", "commit": "817bb6ffff1b9ce72cdd45d9fcfa8c9cd1ad3839" },
   "trouble.nvim": { "branch": "main", "commit": "6efc446226679fda0547c0fd6a7892fd5f5b15d8" },
   "ts-comments.nvim": { "branch": "main", "commit": "98d7d4dec0af1312d38e288f800bbf6ff562b6ab" },
-  "unison": { "branch": "trunk", "commit": "fd269ab51038c520a83d1079fd62d7a9fc857699" },
+  "unison": { "branch": "trunk", "commit": "3a211890b24cbc0bce4623a0f1bf0e5063848fa0" },
   "venv-selector.nvim": { "branch": "regexp", "commit": "e82594274bf7b54387f9a2abe65f74909ac66e97" },
   "which-key.nvim": { "branch": "main", "commit": "fb070344402cfc662299d9914f5546d840a22126" },
   "yanky.nvim": { "branch": "main", "commit": "73215b77d22ebb179cef98e7e1235825431d10e4" }

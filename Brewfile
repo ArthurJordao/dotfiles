@@ -69,5 +69,6 @@ cask 'vial'
 cask 'hammerspoon'
 cask 'qmk-toolbox'
 cask 'gimp'
-cask'rio'
+cask 'rio'
 cask "wezterm"
+cask 'obs'
