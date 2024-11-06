@@ -49,6 +49,7 @@ brew 'vivid'
 brew 'zig'
 brew 'yazi'
 brew 'openjdk'
+brew 'zellij'
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'
