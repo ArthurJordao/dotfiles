@@ -1,0 +1,9 @@
+layout {
+  tab name="editor" {
+    pane command="nvim"
+  }
+  tab name="workspace" {
+    pane;
+    pane;
+  }
+}
