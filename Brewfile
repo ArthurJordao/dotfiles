@@ -51,6 +51,7 @@ brew 'yazi'
 brew 'openjdk'
 brew 'zellij'
 brew 'clojure'
+brew 'nushell'
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'
