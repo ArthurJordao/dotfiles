@@ -50,6 +50,7 @@ brew 'zig'
 brew 'yazi'
 brew 'openjdk'
 brew 'zellij'
+brew 'clojure'
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'
@@ -73,3 +74,4 @@ cask 'gimp'
 cask 'rio'
 cask "wezterm"
 cask 'obs'
+cask 'nikitabobko/tap/aerospace'
