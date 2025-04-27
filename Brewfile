@@ -3,7 +3,6 @@ tap 'qmk/qmk'
 tap 'unisonweb/unison'
 
 brew 'bat'
-brew 'exa'
 brew 'gh'
 brew 'fzf'
 brew 'git'

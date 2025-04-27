@@ -18,4 +18,10 @@ return {
       LazyVim.mini.pairs(opts)
     end,
   },
+  {
+    "zbirenbaum/copilot.lua",
+    opts = {
+      copilot_node_command = '/opt/homebrew/bin/node'
+    },
+  },
 }
