@@ -52,6 +52,7 @@ brew 'zellij'
 brew 'clojure'
 brew 'nushell'
 brew 'just'
+brew 'zk'
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'
