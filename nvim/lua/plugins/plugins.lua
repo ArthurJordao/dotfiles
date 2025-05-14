@@ -71,7 +71,7 @@ return {
               vim.keymap.set("v", "<leader>zl", ":ZkInsertLinkAtSelection<cr>", { desc = "Insert link at selection" })
               vim.keymap.set(
                 "v",
-                "ze",
+                "<leader>ze",
                 ":ZkNewFromContentSelection {title = vim.fn.input('Title: '), dir = vim.fn.input('Dir: ')}<cr>",
                 { desc = "New note from content" }
               )
