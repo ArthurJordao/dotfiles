@@ -22,6 +22,7 @@
     ~/.config/nushell: nushell
     ~/.config/lazygit: lazygit
     ~/.config/aerospace: aerospace
+    ~/.config/zk: zk
 - shell:
     - osascript -e "tell application \"System Events\" to tell every desktop to set picture to \"~/Pictures/wallpaper.png\" as POSIX file"
     -
