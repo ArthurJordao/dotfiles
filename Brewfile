@@ -53,6 +53,7 @@ brew 'clojure'
 brew 'nushell'
 brew 'just'
 brew 'zk'
+brew 'pipx'
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'
