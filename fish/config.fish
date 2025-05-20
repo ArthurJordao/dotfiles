@@ -22,3 +22,4 @@ set -Ux FZF_DEFAULT_OPTS "\
 bind \e\[1\;2D backward-word
 bind \e\[1\;2C forward-word
 source "$HOME/.config/fish/secrets.fish"
+/Users/arthurjordao/.local/bin/mise activate fish | source
