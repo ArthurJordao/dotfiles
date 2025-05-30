@@ -25,8 +25,7 @@ return {
     },
   },
   {
-    "JulianNymark/zk-nvim",
-    branch = "add-some-guards",
+    "zk-org/zk-nvim",
     dependencies = {
       "folke/which-key.nvim",
     },
