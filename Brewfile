@@ -78,4 +78,3 @@ cask 'rio'
 cask "wezterm"
 cask 'obs'
 cask 'nikitabobko/tap/aerospace'
-cask 'qutebrowser'

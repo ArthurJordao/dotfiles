@@ -23,7 +23,6 @@
     ~/.config/lazygit: lazygit
     ~/.config/aerospace: aerospace
     ~/.config/zk: zk
-    ~/.config/qutebrowser: qutebrowser
 - shell:
     - osascript -e "tell application \"System Events\" to tell every desktop to set picture to \"~/Pictures/wallpaper.png\" as POSIX file"
     -
