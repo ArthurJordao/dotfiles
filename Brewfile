@@ -54,6 +54,7 @@ brew 'nushell'
 brew 'just'
 brew 'zk'
 brew 'pipx'
+brew 'noborus/tap/trdsql'
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'
@@ -78,3 +79,4 @@ cask 'rio'
 cask "wezterm"
 cask 'obs'
 cask 'nikitabobko/tap/aerospace'
+cask 'claude'
