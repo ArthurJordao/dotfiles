@@ -55,6 +55,7 @@ brew 'just'
 brew 'zk'
 brew 'pipx'
 brew 'noborus/tap/trdsql'
+brew 'aider'
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'
