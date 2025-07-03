@@ -1,1 +1,5 @@
 secrets.fish
+fish_variables
+completions/
+functions/
+conf.d/
