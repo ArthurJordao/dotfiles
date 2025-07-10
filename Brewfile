@@ -1,6 +1,7 @@
 tap 'homebrew/cask-fonts'
 tap 'qmk/qmk'
 tap 'unisonweb/unison'
+tap 'nikitabobko/tap'
 
 brew 'bat'
 brew 'gh'
