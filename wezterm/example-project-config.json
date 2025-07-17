@@ -1,0 +1,24 @@
+{
+  "workspace": "meu-projeto-web",
+  "root": ".",
+  "windows": [
+    {
+      "name": "editor",
+      "command": "nvim ."
+    },
+    {
+      "name": "server",
+      "layout": "main-vertical",
+      "panes": [
+        { "command": "npm run dev" },
+        { "command": "npm run test:watch" }
+      ]
+    },
+    {
+      "name": "database",
+      "panes": [
+        { "command": "docker-compose up" }
+      ]
+    }
+  ]
+}

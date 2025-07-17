@@ -1,6 +1,7 @@
 local os = require("os")
 local wezterm = require("wezterm")
 local session_manager = require("wezterm-session-manager/session-manager")
+local project_manager = require("project-manager")
 local act = wezterm.action
 local mux = wezterm.mux
 
@@ -17,12 +18,12 @@ end)
 local config = wezterm.config_builder()
 
 config.color_scheme = "Catppuccin Latte"
-config.font = wezterm.font("FiraCode Nerd Font")
+config.font = wezterm.font("FiraCode Nerd Font", { weight = "Regular" })
 config.adjust_window_size_when_changing_font_size = false
 config.automatically_reload_config = true
 config.enable_scroll_bar = true
 config.enable_wayland = true
-config.font_size = 12.0
+config.font_size = 14.0
 config.hide_tab_bar_if_only_one_tab = true
 config.leader = { key = "j", mods = "CTRL", timeout_milliseconds = 2000 }
 config.mouse_bindings = {
@@ -35,7 +36,9 @@ config.mouse_bindings = {
 }
 config.pane_focus_follows_mouse = true
 config.scrollback_lines = 5000
-config.use_dead_keys = false
+config.use_ime = true
+config.send_composed_key_when_left_alt_is_pressed = true
+config.send_composed_key_when_right_alt_is_pressed = true
 config.warn_about_missing_glyphs = false
 config.window_decorations = "TITLE | RESIZE"
 config.window_padding = {
@@ -145,26 +148,26 @@ config.keys = {
 			size = { Percent = 50 },
 		}),
 	},
-	-- ALT + (h,j,k,l) to move between panes
+	-- ALT + arrow keys to move between panes
 	{
-		key = "h",
+		key = "LeftArrow",
 		mods = "ALT",
-		action = act({ EmitEvent = "move-left" }),
+		action = act.ActivatePaneDirection("Left"),
 	},
 	{
-		key = "j",
+		key = "DownArrow",
 		mods = "ALT",
-		action = act({ EmitEvent = "move-down" }),
+		action = act.ActivatePaneDirection("Down"),
 	},
 	{
-		key = "k",
+		key = "UpArrow",
 		mods = "ALT",
-		action = act({ EmitEvent = "move-up" }),
+		action = act.ActivatePaneDirection("Up"),
 	},
 	{
-		key = "l",
+		key = "RightArrow",
 		mods = "ALT",
-		action = act({ EmitEvent = "move-right" }),
+		action = act.ActivatePaneDirection("Right"),
 	},
 	-- Close/kill active pane
 	{
@@ -221,6 +224,12 @@ config.keys = {
 		key = "s",
 		mods = "LEADER",
 		action = act.ShowLauncherArgs({ flags = "WORKSPACES" }),
+	},
+	-- Project switcher (equivalent to tmux-sessionizer with Ctrl+J f)
+	{
+		key = "f",
+		mods = "LEADER",
+		action = project_manager.workspace_switcher(),
 	},
 	-- Rename current session; analagous to command in tmux
 	{
