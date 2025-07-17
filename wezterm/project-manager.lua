@@ -4,28 +4,8 @@ local act = wezterm.action
 
 local M = {}
 
--- Project layout configurations (similar to tmuxinator)
-M.project_layouts = {
-	-- Example project with custom layout
-	-- ["nome-do-projeto"] = {
-	--   workspace = "nome-do-projeto",
-	--   root = "~/dev/personal/nome-do-projeto",
-	--   windows = {
-	--     {
-	--       name = "editor",
-	--       command = "nvim .",
-	--     },
-	--     {
-	--       name = "server",
-	--       layout = "main-vertical",
-	--       panes = {
-	--         { command = "npm run dev" },
-	--         { command = "npm run test:watch" },
-	--       }
-	--     }
-	--   }
-	-- }
-}
+-- Project layouts are read from .wezterm.json files in each project directory
+-- No centralized configuration needed
 
 -- Default template (equivalent to your tmuxinator/project.yml)
 M.default_layout = {
@@ -71,7 +51,7 @@ end
 
 -- Function to create workspace based on layout
 function M.setup_project_workspace(project_name, project_path)
-	local layout = M.project_layouts[project_name] or M.read_project_config(project_path) or M.default_layout
+	local layout = M.read_project_config(project_path) or M.default_layout
 
 	-- Use project name as workspace if not specified
 	local workspace = layout.workspace or project_name
@@ -93,7 +73,11 @@ function M.setup_project_workspace(project_name, project_path)
 
 		-- Execute initial command if specified
 		if first_window_config.command then
-			first_pane:send_text(first_window_config.command .. "\n")
+			if first_window_config.send_keys then
+				first_pane:send_text(first_window_config.command)
+			else
+				first_pane:send_text(first_window_config.command .. "\n")
+			end
 		end
 
 		-- The first window (editor) should NOT have panes normally
@@ -110,7 +94,11 @@ function M.setup_project_workspace(project_name, project_path)
 				if j == 1 then
 					-- First pane already exists, just execute command
 					if pane_config.command and pane_config.command ~= "" then
-						first_pane:send_text(pane_config.command .. "\n")
+						if pane_config.send_keys then
+							first_pane:send_text(pane_config.command)
+						else
+							first_pane:send_text(pane_config.command .. "\n")
+						end
 					end
 				else
 					-- Create new panes
@@ -127,7 +115,11 @@ function M.setup_project_workspace(project_name, project_path)
 					})
 
 					if pane_config.command and pane_config.command ~= "" then
-						new_pane:send_text(pane_config.command .. "\n")
+						if pane_config.send_keys then
+							new_pane:send_text(pane_config.command)
+						else
+							new_pane:send_text(pane_config.command .. "\n")
+						end
 					end
 				end
 			end
@@ -151,7 +143,11 @@ function M.setup_project_workspace(project_name, project_path)
 
 		-- Execute initial command if specified
 		if window_config.command then
-			pane:send_text(window_config.command .. "\n")
+			if window_config.send_keys then
+				pane:send_text(window_config.command)
+			else
+				pane:send_text(window_config.command .. "\n")
+			end
 		end
 
 		-- Create additional panes if specified
@@ -171,7 +167,11 @@ function M.setup_project_workspace(project_name, project_path)
 					-- First pane already exists, just execute command
 					wezterm.log_info("First pane, executing command: '" .. (pane_config.command or "empty") .. "'")
 					if pane_config.command and pane_config.command ~= "" then
-						pane:send_text(pane_config.command .. "\n")
+						if pane_config.send_keys then
+							pane:send_text(pane_config.command)
+						else
+							pane:send_text(pane_config.command .. "\n")
+						end
 					end
 				else
 					-- Create new panes
@@ -188,7 +188,11 @@ function M.setup_project_workspace(project_name, project_path)
 					})
 
 					if pane_config.command and pane_config.command ~= "" then
-						new_pane:send_text(pane_config.command .. "\n")
+						if pane_config.send_keys then
+							new_pane:send_text(pane_config.command)
+						else
+							new_pane:send_text(pane_config.command .. "\n")
+						end
 					end
 				end
 			end

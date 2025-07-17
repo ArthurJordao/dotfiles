@@ -10,8 +10,8 @@
       "name": "server",
       "layout": "main-vertical",
       "panes": [
-        { "command": "npm run dev" },
-        { "command": "npm run test:watch" }
+        { "command": "npm run dev", "send_keys": true },
+        { "command": "npm run test:watch", "send_keys": true }
       ]
     },
     {
