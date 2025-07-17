@@ -193,6 +193,10 @@ if.app-id = 'org.alacritty'
 run = ['layout tiling', 'move-node-to-workspace 1']
 
 [[on-window-detected]]
+if.app-id = 'com.github.wez.wezterm'
+run = ['layout tiling', 'move-node-to-workspace 1']
+
+[[on-window-detected]]
 if.app-id = 'company.thebrowser.Browser'
 run = ['layout tiling', 'move-node-to-workspace 2']
 
