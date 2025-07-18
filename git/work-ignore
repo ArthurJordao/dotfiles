@@ -3,3 +3,4 @@
 **/.claude/settings.local.json
 .aider*
 CLAUDE.md
+.wezterm.json
