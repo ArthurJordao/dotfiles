@@ -7,6 +7,41 @@ local M = {}
 -- Project layouts are read from .wezterm.json files in each project directory
 -- No centralized configuration needed
 
+-- Helper function to calculate pane split direction and size
+function M.calculate_pane_split(layout, pane_index, total_panes)
+	if layout == "tiled" then
+		-- Tiled layout: limit to 4 panes maximum to avoid sizing issues
+		if total_panes > 4 then
+			wezterm.log_warn(
+				"Tiled layout limited to 4 panes, you have " .. total_panes .. ". Consider using multiple tabs."
+			)
+			total_panes = 4
+		end
+
+		-- Create a 2x2 grid for tiled layout
+		if pane_index == 2 then
+			-- Split right to create 2 columns
+			return "Right", 0.5
+		elseif pane_index == 3 then
+			-- Split the left pane down to create top-left and bottom-left
+			return "Bottom", 0.5
+		elseif pane_index == 4 then
+			-- Split the right pane down to create top-right and bottom-right
+			return "Bottom", 0.5
+		end
+	elseif layout == "main-horizontal" then
+		-- Horizontal splits (all panes stacked vertically)
+		local remaining_panes = total_panes - pane_index + 1
+		local size = math.max(0.15, 1.0 / remaining_panes) -- Minimum 15% size
+		return "Bottom", size
+	else
+		-- Default: main-vertical (all panes side by side)
+		local remaining_panes = total_panes - pane_index + 1
+		local size = math.max(0.15, 1.0 / remaining_panes) -- Minimum 15% size
+		return "Right", size
+	end
+end
+
 -- Default template (equivalent to your tmuxinator/project.yml)
 M.default_layout = {
 	windows = {
@@ -90,27 +125,41 @@ function M.setup_project_workspace(project_name, project_path)
 					.. #first_window_config.panes
 					.. " panes"
 			)
+
+			-- Calculate dynamic size and direction based on layout
+			local total_panes = #first_window_config.panes
+			local panes = { first_pane } -- Track all panes
+
 			for j, pane_config in ipairs(first_window_config.panes) do
 				if j == 1 then
 					-- First pane already exists, just execute command
 					if pane_config.command and pane_config.command ~= "" then
 						if pane_config.send_keys then
-							first_pane:send_text(pane_config.command)
+							panes[1]:send_text(pane_config.command)
 						else
-							first_pane:send_text(pane_config.command .. "\n")
+							panes[1]:send_text(pane_config.command .. "\n")
 						end
 					end
 				else
-					-- Create new panes
-					local direction = "Right"
-					if first_window_config.layout == "main-horizontal" then
-						direction = "Bottom"
+					-- Create new panes with dynamic sizing and layout
+					local direction, size = M.calculate_pane_split(first_window_config.layout, j, total_panes)
+
+					-- Choose which pane to split from for tiled layout
+					local split_from_pane = panes[1] -- Default to first pane
+					if first_window_config.layout == "tiled" then
+						if j == 2 then
+							split_from_pane = panes[1] -- Split from pane 1 to create pane 2
+						elseif j == 3 then
+							split_from_pane = panes[1] -- Split from pane 1 to create pane 3
+						elseif j == 4 then
+							split_from_pane = panes[2] -- Split from pane 2 to create pane 4
+						end
 					end
 
-					wezterm.log_info("Creating pane " .. j .. " with direction: " .. direction)
-					local new_pane = first_pane:split({
+					wezterm.log_info("Creating pane " .. j .. " with direction: " .. direction .. " and size: " .. size)
+					local new_pane = split_from_pane:split({
 						direction = direction,
-						size = 0.5,
+						size = size,
 						cwd = root,
 					})
 
@@ -121,6 +170,9 @@ function M.setup_project_workspace(project_name, project_path)
 							new_pane:send_text(pane_config.command .. "\n")
 						end
 					end
+
+					-- Track the new pane
+					table.insert(panes, new_pane)
 				end
 			end
 		end
@@ -161,6 +213,11 @@ function M.setup_project_workspace(project_name, project_path)
 					.. #window_config.panes
 					.. " panes defined"
 			)
+
+			-- Calculate dynamic size and direction based on layout
+			local total_panes = #window_config.panes
+			local panes = { pane } -- Track all panes
+
 			for j, pane_config in ipairs(window_config.panes) do
 				wezterm.log_info("Processing pane " .. j .. " of " .. #window_config.panes)
 				if j == 1 then
@@ -168,22 +225,40 @@ function M.setup_project_workspace(project_name, project_path)
 					wezterm.log_info("First pane, executing command: '" .. (pane_config.command or "empty") .. "'")
 					if pane_config.command and pane_config.command ~= "" then
 						if pane_config.send_keys then
-							pane:send_text(pane_config.command)
+							panes[1]:send_text(pane_config.command)
 						else
-							pane:send_text(pane_config.command .. "\n")
+							panes[1]:send_text(pane_config.command .. "\n")
 						end
 					end
 				else
-					-- Create new panes
-					local direction = "Right"
-					if window_config.layout == "main-horizontal" then
-						direction = "Bottom"
+					-- Create new panes with dynamic sizing and layout
+					local direction, size = M.calculate_pane_split(window_config.layout, j, total_panes)
+
+					-- Choose which pane to split from for tiled layout
+					local split_from_pane = panes[1] -- Default to first pane
+					if window_config.layout == "tiled" then
+						if j == 2 then
+							split_from_pane = panes[1] -- Split from pane 1 to create pane 2
+						elseif j == 3 then
+							split_from_pane = panes[1] -- Split from pane 1 to create pane 3
+						elseif j == 4 then
+							split_from_pane = panes[2] -- Split from pane 2 to create pane 4
+						end
 					end
 
-					wezterm.log_info("Creating pane " .. j .. " in tab " .. i .. " with direction: " .. direction)
-					local new_pane = pane:split({
+					wezterm.log_info(
+						"Creating pane "
+							.. j
+							.. " in tab "
+							.. i
+							.. " with direction: "
+							.. direction
+							.. " and size: "
+							.. size
+					)
+					local new_pane = split_from_pane:split({
 						direction = direction,
-						size = 0.5,
+						size = size,
 						cwd = root,
 					})
 
@@ -194,6 +269,9 @@ function M.setup_project_workspace(project_name, project_path)
 							new_pane:send_text(pane_config.command .. "\n")
 						end
 					end
+
+					-- Track the new pane
+					table.insert(panes, new_pane)
 				end
 			end
 		else
