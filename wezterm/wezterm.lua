@@ -265,11 +265,11 @@ config.keys = {
 		action = act.DetachDomain({ DomainName = "unix" }),
 	},
 
-	-- Show list of workspaces
+	-- Show list of workspaces with fuzzy finding
 	{
 		key = "s",
 		mods = "LEADER",
-		action = act.ShowLauncherArgs({ flags = "WORKSPACES" }),
+		action = act.ShowLauncherArgs({ flags = "FUZZY|WORKSPACES" }),
 	},
 	-- Project switcher (equivalent to tmux-sessionizer with Ctrl+J f)
 	{
