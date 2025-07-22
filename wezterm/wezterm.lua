@@ -34,7 +34,7 @@ config.mouse_bindings = {
 		action = act.OpenLinkAtMouseCursor,
 	},
 }
-config.pane_focus_follows_mouse = true
+config.pane_focus_follows_mouse = false
 config.scrollback_lines = 5000
 config.use_ime = true
 config.send_composed_key_when_left_alt_is_pressed = true
