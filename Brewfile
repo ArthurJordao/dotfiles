@@ -58,6 +58,7 @@ brew 'pipx'
 brew 'noborus/tap/trdsql'
 brew 'aider'
 brew 'sst/tap/opencode'
+brew 'gemini-cli'
 
 cask 'font-fira-code-nerd-font'
 cask 'alacritty'
