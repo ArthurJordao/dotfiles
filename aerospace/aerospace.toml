@@ -201,7 +201,7 @@ if.app-id = 'company.thebrowser.Browser'
 run = ['layout tiling', 'move-node-to-workspace 2']
 
 [[on-window-detected]]
-if.add-id = 'us.zoom.xos'
+if.app-id = 'us.zoom.xos'
 run = ['layout tiling', 'move-node-to-workspace 3']
 
 [[on-window-detected]]
