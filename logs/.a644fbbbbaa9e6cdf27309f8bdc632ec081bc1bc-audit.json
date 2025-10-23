@@ -1,0 +1,20 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/Users/arthurjordao/dev/personal/dotfiles/logs/.a644fbbbbaa9e6cdf27309f8bdc632ec081bc1bc-audit.json",
+    "files": [
+        {
+            "date": 1758136710590,
+            "name": "/Users/arthurjordao/dev/personal/dotfiles/logs/mcp-puppeteer-2025-09-17.log",
+            "hash": "3a7d7e4cdd306df83d5721b242afb062c2cf9e72f45baaa3020a6c7029760c02"
+        },
+        {
+            "date": 1759173909665,
+            "name": "/Users/arthurjordao/dev/personal/dotfiles/logs/mcp-puppeteer-2025-09-29.log",
+            "hash": "36c45bdfbc6c092281e5b1a4b20194bde2d98ec29ef65c6c0de6bf011b19369a"
+        }
+    ],
+    "hashType": "sha256"
+}
