@@ -14,6 +14,7 @@
     ~/.config/git: git
     ~/.config/doom: doom
     ~/.config/hammerspoon: hammerspoon
+    ~/.config/helix: helix
     ~/.config/fish: fish
     ~/.config/bat: bat
     ~/.config/rio: rio
