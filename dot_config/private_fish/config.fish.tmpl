@@ -1,4 +1,6 @@
+{{ if eq .chezmoi.os "darwin" -}}
 fish_add_path "/opt/homebrew/bin"
+{{ end -}}
 fish_add_path "$HOME/.local/bin"
 fish_add_path "$HOME/.local/scripts"
 fish_add_path "$HOME/.ghcup/bin"
@@ -7,18 +9,22 @@ fish_add_path "$HOME/.bun/bin"
 
 set -x GPG_TTY $(tty)
 set -x GOPATH "$HOME/go"
+{{ if eq .chezmoi.os "darwin" -}}
 set -x GOROOT "$(/opt/homebrew/bin/brew --prefix golang)/libexec"
+{{ else -}}
+command -q go && set -x GOROOT (go env GOROOT)
+{{ end -}}
 fish_add_path "$GOPATH/bin"
-fish_add_path "$GOROOT/bin"
+test -n "$GOROOT" && fish_add_path "$GOROOT/bin"
 
 set -x EDITOR nvim
 set -x BAT_THEME "Catppuccin-latte"
-set -x LS_COLORS "$(vivid generate catppuccin-latte)"
+command -q vivid && set -x LS_COLORS "$(vivid generate catppuccin-latte)"
 set -x COLORTERM truecolor
 
-direnv hook fish | source
+command -q direnv && direnv hook fish | source
 fish_config theme choose "Catppuccin Latte"
-fzf_configure_bindings --processes=\cb --directory=\cf --git_log=\ct --git_status=\cs
+command -q fzf_configure_bindings && fzf_configure_bindings --processes=\cb --directory=\cf --git_log=\ct --git_status=\cs
 set -Ux FZF_DEFAULT_OPTS "\
 --color=bg+:#ccd0da,bg:#eff1f5,spinner:#dc8a78,hl:#d20f39 \
 --color=fg:#4c4f69,header:#d20f39,info:#8839ef,pointer:#dc8a78 \
