@@ -1,0 +1,11 @@
+README.md
+LICENSE.md
+.DS_Store
+.aider*
+.claude/
+.envrc
+logs/
+flavours/
+bin/
+.config/fish/fish_variables
+.config/tmux/plugins/**
