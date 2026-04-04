@@ -1,5 +1,6 @@
 fish_add_path "/opt/homebrew/bin"
 fish_add_path "$HOME/.local/bin"
+fish_add_path "$HOME/.local/scripts"
 fish_add_path "$HOME/.ghcup/bin"
 fish_add_path "$HOME/.cache/rebar3/bin"
 fish_add_path "$HOME/.bun/bin"
