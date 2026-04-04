@@ -1,0 +1,22 @@
+immich.arthurjordao.dev {
+    reverse_proxy localhost:2283
+
+    tls {
+        dns cloudflare {env.CF_API_TOKEN}
+    }
+    log {
+        output file /var/log/caddy/immich-access.log
+        format json
+    }
+}
+
+dns.arthurjordao.dev {
+    reverse_proxy https://localhost:8053 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+    }
+    tls {
+        dns cloudflare {env.CF_API_TOKEN}
+    }
+}

@@ -1,0 +1,16 @@
+[Unit]
+Description=Minecraft Server (%i)
+After=network.target
+Conflicts=minecraft@vanilla.service minecraft@atm10.service
+
+[Service]
+Type=forking
+WorkingDirectory=%h/minecraft/%i
+ExecStart=/usr/bin/tmux new-session -d -s minecraft-%i ./startserver.sh
+ExecStop=/usr/bin/tmux send-keys -t minecraft-%i 'stop' C-m
+ExecStop=/bin/sleep 10
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

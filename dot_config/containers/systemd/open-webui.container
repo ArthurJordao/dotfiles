@@ -1,0 +1,16 @@
+[Unit]
+Description=Open WebUI
+After=network-online.target
+
+[Container]
+Image=ghcr.io/open-webui/open-webui:main
+Network=host
+Volume=open-webui:/app/backend/data
+Environment=OLLAMA_BASE_URL=http://localhost:11434
+Environment=PORT=3000
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

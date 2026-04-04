@@ -1,0 +1,20 @@
+[Unit]
+Description=Immich Valkey (Redis)
+Requires=immich-pod.service
+After=immich-pod.service
+
+[Container]
+Image=docker.io/valkey/valkey:8-bookworm
+Pod=immich.pod
+AutoUpdate=registry
+
+HealthCmd=redis-cli ping || exit 1
+HealthInterval=30s
+
+Volume=immich-valkey-data:/data
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

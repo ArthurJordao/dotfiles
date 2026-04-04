@@ -1,0 +1,9 @@
+{{ if eq .hostname "mars" -}}
+#!/bin/bash
+set -euo pipefail
+
+systemctl --user daemon-reload
+systemctl --user enable --now cloudflare-ddns.service
+systemctl --user enable --now cloudflare-ddns.timer
+systemctl --user enable --now podman-auto-update.timer
+{{ end }}

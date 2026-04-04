@@ -1,0 +1,20 @@
+[Unit]
+Description=Immich PostgreSQL
+Requires=immich-pod.service
+After=immich-pod.service
+
+[Container]
+Image=ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0
+Pod=immich.pod
+AutoUpdate=registry
+
+EnvironmentFile=%h/.config/containers/systemd/immich/immich.env
+
+Volume=immich-db-data:/var/lib/postgresql/data
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

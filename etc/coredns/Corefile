@@ -1,0 +1,92 @@
+(local_hosts) {
+    hosts {
+        192.168.15.23 immich.arthurjordao.dev
+        192.168.15.23 mars.arthurjordao.dev
+        192.168.15.23 minecraft.arthurjordao.dev
+        192.168.15.23 dns.arthurjordao.dev
+        fallthrough
+    }
+}
+
+(tailscale_hosts) {
+    hosts {
+        100.127.50.55 immich.arthurjordao.dev
+        100.127.50.55 mars.arthurjordao.dev
+        100.127.50.55 minecraft.arthurjordao.dev
+        100.127.50.55 dns.arthurjordao.dev
+        fallthrough
+    }
+}
+
+.:53 {
+    view local {
+        expr incidr(client_ip(), '192.168.15.0/24') || incidr(client_ip(), '127.0.0.1/32')
+    }
+    import local_hosts
+    forward . tls://1.1.1.1 tls://1.0.0.1 {
+        tls_servername cloudflare-dns.com
+    }
+    cache
+    log
+    errors
+}
+
+.:53 {
+    view tailscale {
+        expr incidr(client_ip(), '100.64.0.0/10')
+    }
+    import tailscale_hosts
+    forward . tls://1.1.1.1 tls://1.0.0.1 {
+        tls_servername cloudflare-dns.com
+    }
+    cache
+    log
+    errors
+}
+
+.:53 {
+    forward . tls://1.1.1.1 tls://1.0.0.1 {
+        tls_servername cloudflare-dns.com
+    }
+    cache
+    log
+    errors
+}
+
+https://.:8053 {
+    tls /etc/coredns/cert.pem /etc/coredns/key.pem
+    proxyproto
+    view local {
+        expr incidr(client_ip(), '192.168.15.0/24') || incidr(client_ip(), '127.0.0.1/32') || incidr(client_ip(), '::1/128')
+    }
+    import local_hosts
+    forward . tls://1.1.1.1 tls://1.0.0.1 {
+        tls_servername cloudflare-dns.com
+    }
+    cache
+    errors
+}
+
+https://.:8053 {
+    tls /etc/coredns/cert.pem /etc/coredns/key.pem
+    proxyproto
+    view tailscale {
+        expr incidr(client_ip(), '100.64.0.0/10')
+    }
+    import tailscale_hosts
+    forward . tls://1.1.1.1 tls://1.0.0.1 {
+        tls_servername cloudflare-dns.com
+    }
+    cache
+    errors
+}
+
+https://.:8053 {
+    tls /etc/coredns/cert.pem /etc/coredns/key.pem
+    proxyproto
+    forward . tls://1.1.1.1 tls://1.0.0.1 {
+        tls_servername cloudflare-dns.com
+    }
+    cache
+    errors
+}

@@ -1,0 +1,20 @@
+[Unit]
+Description=TeamSpeak 3 Server
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=docker.io/teamspeak:latest
+Environment=TS3SERVER_LICENSE=accept
+PublishPort=9987:9987/udp
+PublishPort=10011:10011
+PublishPort=30033:30033
+Volume=/home/turisa/teamspeak3/data:/var/ts3server:Z
+AutoUpdate=registry
+
+[Service]
+Restart=always
+TimeoutStopSec=70
+
+[Install]
+WantedBy=default.target

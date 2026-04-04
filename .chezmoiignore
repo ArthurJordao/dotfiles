@@ -7,5 +7,17 @@ LICENSE.md
 logs/
 flavours/
 bin/
+etc/
 .config/fish/fish_variables
 .config/tmux/plugins/**
+
+{{ if ne .chezmoi.hostname "mars" }}
+.config/containers/**
+.config/systemd/**
+{{ end }}
+
+{{ if ne .chezmoi.hostname "Arthurs-MacBook-Pro" }}
+.config/aerospace/**
+.config/hammerspoon/**
+.config/wezterm/**
+{{ end }}

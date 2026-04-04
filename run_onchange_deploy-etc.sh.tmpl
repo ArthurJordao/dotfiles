@@ -1,0 +1,21 @@
+{{ if eq .hostname "mars" -}}
+#!/bin/bash
+set -euo pipefail
+# Caddyfile: {{ include "etc/caddy/Caddyfile" | sha256sum }}
+# caddy.env: {{ include "etc/caddy/caddy.env.tmpl" | sha256sum }}
+# Corefile: {{ include "etc/coredns/Corefile" | sha256sum }}
+
+echo "Deploying /etc/ configs..."
+
+sudo install -m 644 -o root -g root "{{ .chezmoi.sourceDir }}/etc/caddy/Caddyfile" /etc/caddy/Caddyfile
+
+# Render caddy.env template and deploy
+chezmoi execute-template < "{{ .chezmoi.sourceDir }}/etc/caddy/caddy.env.tmpl" | sudo tee /etc/caddy/caddy.env > /dev/null
+sudo chmod 600 /etc/caddy/caddy.env
+
+sudo install -m 644 -o root -g root "{{ .chezmoi.sourceDir }}/etc/coredns/Corefile" /etc/coredns/Corefile
+
+echo "Reloading services..."
+sudo systemctl reload caddy || true
+sudo systemctl restart coredns || true
+{{ end }}

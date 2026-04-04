@@ -1,0 +1,20 @@
+[Unit]
+Description=Immich Machine Learning
+Requires=immich-pod.service
+After=immich-pod.service
+
+[Container]
+Image=ghcr.io/immich-app/immich-machine-learning:release-cuda
+Pod=immich.pod
+AutoUpdate=registry
+Environment=MACHINE_LEARNING_DEVICE_IDS=0
+AddDevice=nvidia.com/gpu=all
+
+Volume=immich-ml-cache:/cache
+
+[Service]
+Restart=always
+TimeoutStartSec=600
+
+[Install]
+WantedBy=default.target

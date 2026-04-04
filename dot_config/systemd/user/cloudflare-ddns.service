@@ -1,0 +1,11 @@
+[Unit]
+Description=Update DDNS on Cloudflare
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/turisa/cloudflare-ddns
+ExecStart=/home/turisa/cloudflare-ddns/start-sync.sh
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,24 @@
+[Unit]
+Description=Immich Server
+Requires=immich-pod.service immich-db.service immich-valkey.service
+After=immich-pod.service immich-db.service immich-valkey.service
+
+[Container]
+Image=ghcr.io/immich-app/immich-server:release
+Pod=immich.pod
+AutoUpdate=registry
+AddDevice=nvidia.com/gpu=all
+Environment=NVIDIA_VISIBLE_DEVICES=all
+Environment=NVIDIA_DRIVER_CAPABILITIES=video,compute,utility
+
+EnvironmentFile=%h/.config/containers/systemd/immich/immich.env
+Volume=%h/immich/library:/usr/src/app/upload
+Volume=/etc/localtime:/etc/localtime:ro
+Volume=/mnt/x9pro:/mnt/ssd:ro
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target
