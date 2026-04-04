@@ -21,5 +21,4 @@ etc/
 {{ if ne .chezmoi.hostname "Arthurs-MacBook-Pro" }}
 .config/aerospace/**
 .config/hammerspoon/**
-.config/wezterm/**
 {{ end }}
