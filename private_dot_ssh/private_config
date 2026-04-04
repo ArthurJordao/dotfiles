@@ -1,0 +1,6 @@
+Host *
+IdentityFile ~/.ssh/id_rsa
+
+Host mars.arthurjordao.dev minecraft.arthurjordao.dev 192.168.15.23
+    User turisa
+    IdentityFile ~/.ssh/id_ed25519

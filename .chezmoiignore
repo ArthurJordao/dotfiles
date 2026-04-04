@@ -10,6 +10,8 @@ bin/
 etc/
 .config/fish/fish_variables
 .config/tmux/plugins/**
+.ssh/known_hosts*
+.ssh/agent/
 
 {{ if ne .chezmoi.hostname "mars" }}
 .config/containers/**

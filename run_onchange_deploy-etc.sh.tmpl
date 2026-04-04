@@ -1,4 +1,4 @@
-{{ if eq .hostname "mars" -}}
+{{ if eq .chezmoi.hostname "mars" -}}
 #!/bin/bash
 set -euo pipefail
 # Caddyfile: {{ include "etc/caddy/Caddyfile" | sha256sum }}
