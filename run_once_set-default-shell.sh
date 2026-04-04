@@ -1,0 +1,5 @@
+#!/bin/bash
+set -euo pipefail
+if [ "$SHELL" != "$(which fish)" ]; then
+    chsh -s "$(which fish)"
+fi

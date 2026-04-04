@@ -1,0 +1,16 @@
+# Apply dotfiles
+apply:
+    chezmoi apply
+
+# Update Homebrew packages and casks
+upgrade:
+    brew bundle --file ~/Brewfile
+    brew bundle cleanup --file ~/Brewfile --force
+    brew upgrade --cask --greedy
+
+# Update tmux plugins
+tpm-update:
+    ~/.tmux/plugins/tpm/bin/update_plugins all
+
+# Full update: apply dotfiles + upgrade packages
+update: apply upgrade
