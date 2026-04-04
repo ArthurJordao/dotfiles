@@ -2,33 +2,39 @@
 
 Personal dotfiles managed with [chezmoi](https://www.chezmoi.io/).
 
-## Setup
+## Bootstrap (new machine)
 
 ```bash
-# Install chezmoi and apply dotfiles
-chezmoi init --apply arthurjordao
+# 1. Clone the repo
+git clone https://github.com/arthurjordao/dotfiles ~/dev/personal/dotfiles
+
+# 2. Install chezmoi
+brew install chezmoi   # macOS
+pacman -S chezmoi      # Arch/CachyOS
+
+# 3. Unlock Bitwarden
+bw login
+export BW_SESSION="$(bw unlock --raw)"
+
+# 4. Init chezmoi (sets sourceDir in config)
+chezmoi init --source ~/dev/personal/dotfiles
+
+# 5. Deploy files first (SSH keys need to land before git externals can clone)
+chezmoi apply --exclude=externals,scripts --force
+
+# 6. Full apply (externals + scripts now work with SSH keys in place)
+chezmoi apply --force
 ```
 
 ## Secrets
 
-Secrets are managed via Bitwarden. Create a secure note named `dotfiles-secrets` with custom fields for each API key before applying.
-
-```bash
-bw login
-```
+Secrets are managed via Bitwarden. Secure notes: `dotfiles-secrets`, `mars-secrets`, `ssh-ed25519`, `ssh-rsa`, `gpg-key`.
 
 ## Day-to-day
 
 ```bash
-# Apply dotfiles after editing
-just apply
-
-# Upgrade Homebrew packages and casks
-just upgrade
-
-# Update tmux plugins
-just tpm-update
-
-# Full update
-just update
+just apply       # Apply dotfiles
+just upgrade     # Upgrade Homebrew packages and casks
+just tpm-update  # Update tmux plugins
+just update      # Full update
 ```
