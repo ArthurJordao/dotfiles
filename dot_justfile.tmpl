@@ -2,16 +2,17 @@
 apply:
     chezmoi apply
 
+{{ if eq .chezmoi.os "darwin" -}}
 # Update system packages
 upgrade:
-{{ if eq .chezmoi.os "darwin" -}}
     brew bundle --file ~/Brewfile
     brew bundle cleanup --file ~/Brewfile --force
     brew upgrade --cask --greedy
 {{ else -}}
+# Update system packages
+upgrade:
     paru -Syu
 {{ end }}
-
 # Update tmux plugins
 tpm-update:
     ~/.tmux/plugins/tpm/bin/update_plugins all
