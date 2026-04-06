@@ -19,6 +19,8 @@ etc/
 {{ end }}
 
 {{ if ne .chezmoi.hostname "Arthurs-MacBook-Pro" }}
+Brewfile
+Pictures/**
 .config/aerospace/**
 .config/hammerspoon/**
 {{ end }}
