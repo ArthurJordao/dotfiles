@@ -8,6 +8,7 @@ logs/
 flavours/
 bin/
 etc/
+packages.txt
 .config/fish/fish_variables
 .config/tmux/plugins/**
 .ssh/known_hosts*

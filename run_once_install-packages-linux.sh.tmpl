@@ -1,0 +1,5 @@
+{{ if eq .chezmoi.os "linux" -}}
+#!/bin/bash
+set -euo pipefail
+paru -S --needed - < "{{ .chezmoi.sourceDir }}/packages.txt"
+{{ end -}}
