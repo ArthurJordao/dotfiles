@@ -10,6 +10,7 @@ firefox
 git
 go
 jdk21-openjdk
+just
 neovim
 podman
 python-pipx
