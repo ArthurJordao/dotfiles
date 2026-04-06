@@ -15,13 +15,18 @@ packages.txt
 .ssh/agent/
 
 {{ if ne .chezmoi.hostname "mars" }}
+.config/containers
 .config/containers/**
+.config/systemd
 .config/systemd/**
 {{ end }}
 
 {{ if ne .chezmoi.hostname "Arthurs-MacBook-Pro" }}
 Brewfile
+Pictures
 Pictures/**
+.config/aerospace
 .config/aerospace/**
+.config/hammerspoon
 .config/hammerspoon/**
 {{ end }}
