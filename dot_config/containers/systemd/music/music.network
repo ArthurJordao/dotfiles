@@ -1,0 +1,7 @@
+[Unit]
+Description=Music network (slskd <-> SoulSync)
+
+[Network]
+
+[Install]
+WantedBy=default.target

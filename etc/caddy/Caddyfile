@@ -44,3 +44,15 @@ slskd.arthurjordao.dev {
         format json
     }
 }
+
+soulsync.arthurjordao.dev {
+    reverse_proxy localhost:8008
+
+    tls {
+        dns cloudflare {env.CF_API_TOKEN}
+    }
+    log {
+        output file /var/log/caddy/soulsync-access.log
+        format json
+    }
+}

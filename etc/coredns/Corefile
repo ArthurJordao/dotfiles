@@ -6,6 +6,7 @@
         192.168.15.23 dns.arthurjordao.dev
         192.168.15.23 music.arthurjordao.dev
         192.168.15.23 slskd.arthurjordao.dev
+        192.168.15.23 soulsync.arthurjordao.dev
         fallthrough
     }
 }
@@ -18,6 +19,7 @@
         100.127.50.55 dns.arthurjordao.dev
         100.127.50.55 music.arthurjordao.dev
         100.127.50.55 slskd.arthurjordao.dev
+        100.127.50.55 soulsync.arthurjordao.dev
         fallthrough
     }
 }

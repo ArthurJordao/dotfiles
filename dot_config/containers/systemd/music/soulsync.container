@@ -1,0 +1,25 @@
+[Unit]
+Description=SoulSync Music Discovery
+Wants=network-online.target
+After=network-online.target slskd.service
+
+[Container]
+Image=docker.io/boulderbadgedad/soulsync:latest
+AutoUpdate=registry
+Network=music.network
+PublishPort=8008:8008
+
+Environment=TZ=America/Sao_Paulo
+
+Volume=soulsync-config:/app/config
+Volume=soulsync-data:/app/data
+Volume=soulsync-logs:/app/logs
+Volume=/mnt/x9pro/downloads:/app/downloads
+Volume=/mnt/x9pro/music:/app/Transfer
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target
