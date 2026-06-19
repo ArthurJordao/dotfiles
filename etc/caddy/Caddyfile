@@ -20,3 +20,27 @@ dns.arthurjordao.dev {
         dns cloudflare {env.CF_API_TOKEN}
     }
 }
+
+music.arthurjordao.dev {
+    reverse_proxy localhost:4533
+
+    tls {
+        dns cloudflare {env.CF_API_TOKEN}
+    }
+    log {
+        output file /var/log/caddy/music-access.log
+        format json
+    }
+}
+
+slskd.arthurjordao.dev {
+    reverse_proxy localhost:5030
+
+    tls {
+        dns cloudflare {env.CF_API_TOKEN}
+    }
+    log {
+        output file /var/log/caddy/slskd-access.log
+        format json
+    }
+}
