@@ -19,6 +19,8 @@ packages.txt
 .config/containers/**
 .config/systemd
 .config/systemd/**
+.local/scripts/gaming-mode
+.local/scripts/minecraft
 {{ end }}
 
 {{ if ne .chezmoi.hostname "Arthurs-MacBook-Pro" }}
