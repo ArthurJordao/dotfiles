@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+# minecraft — manage the templated Minecraft server units (minecraft@<name>),
+# keeping the boot (enabled) server in sync with what's running so the right
+# server comes back after a reboot.
+#
+#   minecraft use <name>   make <name> the active + boot server (others off)
+#   minecraft status       show boot (enabled?) / running (active?) per server
+#   minecraft stop         stop the running server (stays enabled for next boot)
+#   minecraft list         list available servers (~/minecraft/*)
+#   minecraft attach       attach to the running server's tmux console
+#
+# Servers are discovered from ~/minecraft/*/ (each holds startserver.sh), so a
+# new server needs no edit here. The enabled symlink is the source of truth for
+# what boots — `use` keeps it matched to your choice.
+set -euo pipefail
+
+MC_DIR="$HOME/minecraft"
+
+uctl() { systemctl --user "$@"; }
+
+# Print available instance names (basenames of dirs under ~/minecraft).
+instances() {
+    local d
+    for d in "$MC_DIR"/*/; do
+        [ -d "$d" ] || continue
+        basename "$d"
+    done
+}
+
+# Echo the currently-running instance, if any.
+running_instance() {
+    local inst
+    for inst in $(instances); do
+        if uctl is-active --quiet "minecraft@$inst.service"; then
+            echo "$inst"
+            return 0
+        fi
+    done
+}
+
+cmd_use() {
+    local name="${1:-}"
+    if [ -z "$name" ]; then
+        echo "Usage: minecraft use <name>" >&2
+        exit 1
+    fi
+    if [ ! -d "$MC_DIR/$name" ]; then
+        echo "No server '$name' in $MC_DIR. Available:" >&2
+        instances | sed 's/^/  /' >&2
+        exit 1
+    fi
+
+    local inst
+    for inst in $(instances); do
+        [ "$inst" = "$name" ] && continue
+        uctl disable --now "minecraft@$inst.service" 2>/dev/null || true
+    done
+
+    echo "Switching to '$name' (enabling for boot + starting)..."
+    uctl enable --now "minecraft@$name.service"
+    echo "Done. '$name' is now active and will return on reboot."
+}
+
+cmd_status() {
+    local inst en ac
+    printf '%-16s %-10s %s\n' "SERVER" "BOOT" "RUNNING"
+    for inst in $(instances); do
+        en="$(uctl is-enabled "minecraft@$inst.service" 2>/dev/null || true)"
+        ac="$(uctl is-active  "minecraft@$inst.service" 2>/dev/null || true)"
+        [ -n "$en" ] || en="unknown"
+        [ -n "$ac" ] || ac="inactive"
+        printf '%-16s %-10s %s\n' "$inst" "$en" "$ac"
+    done
+}
+
+cmd_stop() {
+    local inst
+    inst="$(running_instance)"
+    if [ -z "$inst" ]; then
+        echo "No Minecraft server is running."
+        exit 0
+    fi
+    echo "Stopping '$inst' (stays enabled, returns on next boot)..."
+    uctl stop "minecraft@$inst.service"
+    echo "Done."
+}
+
+cmd_list() {
+    instances
+}
+
+cmd_attach() {
+    local inst
+    inst="$(running_instance)"
+    if [ -z "$inst" ]; then
+        echo "No Minecraft server is running to attach to." >&2
+        exit 1
+    fi
+    exec tmux attach -t "minecraft-$inst"
+}
+
+case "${1:-}" in
+    use)    shift; cmd_use "$@" ;;
+    status) cmd_status ;;
+    stop)   cmd_stop ;;
+    list)   cmd_list ;;
+    attach) cmd_attach ;;
+    *)      echo "Usage: minecraft {use <name>|status|stop|list|attach}" >&2; exit 1 ;;
+esac
