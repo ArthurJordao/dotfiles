@@ -8,9 +8,6 @@ Image=docker.io/boulderbadgedad/soulsync:latest
 AutoUpdate=registry
 Network=music.network
 PublishPort=8008:8008
-# Spotify OAuth callback listener. Bound to localhost so it's only reachable
-# on-host or via an SSH tunnel during the one-time Spotify authentication.
-PublishPort=127.0.0.1:8888:8888
 
 # Run as uid 0, which maps to the host user (turisa) under rootless podman,
 # matching slskd/navidrome so all three write the shared library as the same
