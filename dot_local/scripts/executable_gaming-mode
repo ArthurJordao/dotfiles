@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+# gaming-mode — free up CPU/GPU/RAM for gaming on mars by stopping the
+# self-hosted stack, then restore exactly what was running.
+#
+#   gaming-mode on      stop running services (remembers which were up)
+#   gaming-mode off     start back the services that were stopped
+#   gaming-mode status  show whether gaming mode is on
+#
+# All services are rootless user units, so no sudo. systemctl computes the
+# stop/start order from each unit's After=/Requires=, so the list order below
+# is only for readability.
+set -euo pipefail
+
+# Candidate units, in dependency (start) order.
+CANDIDATES=(
+    immich-pod.service
+    immich-db.service
+    immich-valkey.service
+    immich-ml.service
+    immich-server.service
+    navidrome.service
+    slskd.service
+    soulsync.service
+    open-webui.service
+    teamspeak3.service
+    # Minecraft is a template with mutually-exclusive instances; whichever is
+    # running gets recorded and restored.
+    minecraft@vanilla.service
+    minecraft@atm10.service
+)
+
+STATE="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/gaming-mode.units"
+
+uctl() { systemctl --user "$@"; }
+
+cmd_on() {
+    if [[ -f "$STATE" ]]; then
+        echo "Gaming mode is already ON. Stopped units:"
+        sed 's/^/  /' "$STATE"
+        echo "Run 'gaming-mode off' to restore."
+        exit 0
+    fi
+
+    local active=()
+    local u
+    for u in "${CANDIDATES[@]}"; do
+        if uctl is-active --quiet "$u"; then
+            active+=("$u")
+        fi
+    done
+
+    printf '%s\n' "${active[@]}" > "$STATE"
+
+    if [[ ${#active[@]} -eq 0 ]]; then
+        echo "Gaming mode ON — nothing was running."
+        exit 0
+    fi
+
+    echo "Gaming mode ON — stopping:"
+    printf '  %s\n' "${active[@]}"
+    uctl stop "${active[@]}"
+    echo "Done. Run 'gaming-mode off' when you're finished."
+}
+
+cmd_off() {
+    if [[ ! -f "$STATE" ]]; then
+        echo "Gaming mode is not on (no saved state). Nothing to restore."
+        exit 0
+    fi
+
+    local units=()
+    mapfile -t units < "$STATE"
+
+    if [[ ${#units[@]} -eq 0 ]]; then
+        echo "Gaming mode OFF — nothing had been stopped."
+    else
+        echo "Gaming mode OFF — starting:"
+        printf '  %s\n' "${units[@]}"
+        uctl start "${units[@]}"
+        echo "Done."
+    fi
+    rm -f "$STATE"
+}
+
+cmd_status() {
+    if [[ -f "$STATE" ]]; then
+        echo "Gaming mode: ON. Stopped units:"
+        sed 's/^/  /' "$STATE"
+    else
+        echo "Gaming mode: OFF."
+    fi
+}
+
+case "${1:-}" in
+    on)     cmd_on ;;
+    off)    cmd_off ;;
+    status) cmd_status ;;
+    *)      echo "Usage: gaming-mode {on|off|status}" >&2; exit 1 ;;
+esac
