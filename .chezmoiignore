@@ -14,6 +14,11 @@ packages.txt
 .ssh/known_hosts*
 .ssh/agent/
 
+# nvim config is a live symlink into the repo (dot_config/symlink_nvim.tmpl);
+# ignore the holding dir's home target (~/nvim) so chezmoi doesn't also copy it.
+/nvim
+/nvim/**
+
 {{ if ne .chezmoi.hostname "mars" }}
 .config/containers
 .config/containers/**
