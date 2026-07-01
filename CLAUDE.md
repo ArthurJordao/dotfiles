@@ -31,8 +31,8 @@ uid/gid 0 (see the music stack). Fixed facts:
 
 - Deploys to `~/.config/containers/systemd/`, where podman's systemd generator turns each
   `.container` / `.pod` / `.network` file into a rootless **user** unit.
-- Layout: root level for standalone services (`kavita.container`, `open-webui.container`,
-  `teamspeak3.container`); subdirs for service groups that share a network/pod
+- Layout: root level for standalone services (`calibre-web-automated.container`,
+  `open-webui.container`, `teamspeak3.container`); subdirs for service groups that share a network/pod
   (`music/` = slskd + navidrome + soulsync on `music.network`; `immich/` = a pod of
   server/db/valkey/ml plus the top-level `immich.pod`).
 - Secrets go in a sibling `<service>.env.tmpl` referenced via `EnvironmentFile=`. **Do not

@@ -21,7 +21,7 @@ CANDIDATES=(
     navidrome.service
     slskd.service
     soulsync.service
-    kavita.service
+    calibre-web-automated.service
     open-webui.service
     teamspeak3.service
     # Minecraft is a template with mutually-exclusive instances; whichever is

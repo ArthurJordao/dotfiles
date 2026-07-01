@@ -1,0 +1,27 @@
+[Unit]
+Description=Calibre-Web-Automated ebook library
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=ghcr.io/crocodilestick/calibre-web-automated:latest
+AutoUpdate=registry
+PublishPort=8083:8083
+
+# Run as uid/gid 0, which maps to the host user (turisa) under rootless
+# podman, so CWA can write the Calibre library and ingest dirs on /mnt/x9pro.
+Environment=PUID=0
+Environment=PGID=0
+Environment=UMASK=022
+Environment=TZ=America/Sao_Paulo
+
+Volume=cwa-config:/config
+Volume=/mnt/x9pro/books:/calibre-library
+Volume=/mnt/x9pro/book-ingest:/cwa-book-ingest
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target
