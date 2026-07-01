@@ -8,6 +8,7 @@
         192.168.15.23 slskd.arthurjordao.dev
         192.168.15.23 soulsync.arthurjordao.dev
         192.168.15.23 books.arthurjordao.dev
+        192.168.15.23 shelfmark.arthurjordao.dev
         fallthrough
     }
 }
@@ -22,6 +23,7 @@
         100.127.50.55 slskd.arthurjordao.dev
         100.127.50.55 soulsync.arthurjordao.dev
         100.127.50.55 books.arthurjordao.dev
+        100.127.50.55 shelfmark.arthurjordao.dev
         fallthrough
     }
 }

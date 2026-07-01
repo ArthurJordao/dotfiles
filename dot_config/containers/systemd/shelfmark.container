@@ -1,0 +1,29 @@
+[Unit]
+Description=Shelfmark book search/downloader (feeds the CWA ingest folder)
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=ghcr.io/calibrain/shelfmark:latest
+AutoUpdate=registry
+PublishPort=8084:8084
+
+# Run as uid/gid 0, which maps to the host user (turisa) under rootless podman,
+# so downloads land in the shared ingest dir owned by turisa (same as CWA, which
+# then imports them into the library).
+Environment=PUID=0
+Environment=PGID=0
+Environment=UMASK=022
+Environment=TZ=America/Sao_Paulo
+
+Volume=shelfmark-config:/config
+# /books is Shelfmark's download target; point it at the SAME host dir that CWA
+# watches (/cwa-book-ingest) so finished downloads are auto-imported.
+Volume=/mnt/x9pro/book-ingest:/books
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

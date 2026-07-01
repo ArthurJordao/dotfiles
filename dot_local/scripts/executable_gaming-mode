@@ -22,6 +22,7 @@ CANDIDATES=(
     slskd.service
     soulsync.service
     calibre-web-automated.service
+    shelfmark.service
     open-webui.service
     teamspeak3.service
     # Minecraft is a template with mutually-exclusive instances; whichever is
