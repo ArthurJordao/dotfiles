@@ -56,3 +56,15 @@ soulsync.arthurjordao.dev {
         format json
     }
 }
+
+kavita.arthurjordao.dev {
+    reverse_proxy localhost:5000
+
+    tls {
+        dns cloudflare {env.CF_API_TOKEN}
+    }
+    log {
+        output file /var/log/caddy/kavita-access.log
+        format json
+    }
+}
