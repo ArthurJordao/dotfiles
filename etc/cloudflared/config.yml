@@ -1,5 +1,5 @@
-tunnel: 7bf6848c-5605-4c02-bd6e-bea2b4bbea8f
-credentials-file: //home/turisa/.cloudflared/7bf6848c-5605-4c02-bd6e-bea2b4bbea8f.json
+tunnel: e5653e06-8ef3-4810-a2dc-3d730d73e949
+credentials-file: /home/turisa/.cloudflared/e5653e06-8ef3-4810-a2dc-3d730d73e949.json
 
 # Public ingress via Cloudflare Tunnel. cloudflared dials out to Cloudflare (no
 # open ports), and Cloudflare routes each public hostname to a local service.
