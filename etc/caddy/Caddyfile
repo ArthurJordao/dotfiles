@@ -70,7 +70,9 @@ books.arthurjordao.dev {
 }
 
 shelfmark.arthurjordao.dev {
-    reverse_proxy localhost:8084
+    # 127.0.0.1, not localhost: the rootless container only binds IPv4, and
+    # localhost resolves to ::1 first, which 502s.
+    reverse_proxy 127.0.0.1:8084
 
     tls {
         dns cloudflare {env.CF_API_TOKEN}
