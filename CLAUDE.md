@@ -71,6 +71,10 @@ from the public internet, add it to the **Cloudflare Tunnel** instead of opening
   its edge). Internal CoreDNS entries still win for LAN/Tailscale clients (split-horizon).
 - Cloudflare's proxy caps requests at ~100 MB — fine for typical app traffic, a limit for large
   file downloads.
+- **This tunnel is locally-managed — never edit it in the Cloudflare dashboard.** Adding a
+  Public Hostname / config there attaches a *remote* config, which cloudflared then obeys while
+  silently ignoring `config.yml` (there's no supported way to detach it — you'd have to recreate
+  the tunnel, as was done to reach this state). Manage routes only via the file.
 
 ## Deploy flow
 
@@ -102,7 +106,11 @@ because they're generated (see above).
 2. Caddy block in `etc/caddy/Caddyfile` → `localhost:<port>`.
 3. `<svc>.arthurjordao.dev` in **both** host blocks of `etc/coredns/Corefile`.
 4. Add `<svc>.service` to `CANDIDATES` in `dot_local/scripts/executable_gaming-mode`.
-5. On mars: `chezmoi apply` (deploys /etc + reloads caddy/coredns), then
+5. **(Optional — public internet access)** Add an `ingress:` rule to `etc/cloudflared/config.yml`
+   (`hostname:` + `service: http://localhost:<port>`) above the `http_status:404` catch-all, then
+   on mars run `cloudflared tunnel route dns <tunnel-id> <svc>.arthurjordao.dev` once to create
+   the CNAME. Do NOT use the dashboard (see the exposure section above).
+6. On mars: `chezmoi apply` (deploys /etc, reloads caddy/coredns, restarts cloudflared), then
    `systemctl --user daemon-reload && systemctl --user start <svc>.service`.
 
 # Working in this repo
