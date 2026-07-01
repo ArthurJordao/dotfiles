@@ -10,4 +10,6 @@ credentials-file: /home/turisa/.cloudflared/e5653e06-8ef3-4810-a2dc-3d730d73e949
 ingress:
   - hostname: immich.arthurjordao.dev
     service: http://localhost:2283
+  - hostname: books.arthurjordao.dev
+    service: http://localhost:8083
   - service: http_status:404
