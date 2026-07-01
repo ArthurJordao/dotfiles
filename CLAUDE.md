@@ -54,6 +54,24 @@ uid/gid 0 (see the music stack). Fixed facts:
   `(tailscale_hosts)` block (`100.127.50.55`). LAN clients and Tailscale clients each resolve
   to the right IP; everything else forwards to Cloudflare over DoT.
 
+## Public exposure (optional) — Cloudflare Tunnel
+
+Most services are internal-only (the above three concerns cover LAN/Tailscale). To reach one
+from the public internet, add it to the **Cloudflare Tunnel** instead of opening router ports.
+
+- `cloudflared` runs as a **system** unit (`/etc/systemd/system/cloudflared.service`) using a
+  named tunnel; its config is tracked at `etc/cloudflared/config.yml` and deployed to
+  `/etc/cloudflared/config.yml` by `run_onchange_deploy-etc.sh.tmpl`. The tunnel's credentials
+  `.json` lives only on mars (never in the repo).
+- To expose a service: add an `ingress:` rule (`hostname:` + `service: http://localhost:<port>`)
+  **above** the `http_status:404` catch-all, then create the public proxied CNAME once with
+  `cloudflared tunnel route dns <tunnel-id> <hostname>`. `chezmoi apply` redeploys the config
+  and restarts cloudflared.
+- Tunnel routes go direct to `localhost:<port>`, bypassing Caddy (Cloudflare terminates TLS at
+  its edge). Internal CoreDNS entries still win for LAN/Tailscale clients (split-horizon).
+- Cloudflare's proxy caps requests at ~100 MB — fine for typical app traffic, a limit for large
+  file downloads.
+
 ## Deploy flow
 
 `etc/` is in `.chezmoiignore` (never copied to `$HOME`); instead

@@ -1,0 +1,15 @@
+tunnel: 7bf6848c-5605-4c02-bd6e-bea2b4bbea8f
+credentials-file: //home/turisa/.cloudflared/7bf6848c-5605-4c02-bd6e-bea2b4bbea8f.json
+
+# Public ingress via Cloudflare Tunnel. cloudflared dials out to Cloudflare (no
+# open ports), and Cloudflare routes each public hostname to a local service.
+# The public DNS CNAME for each hostname is created once with:
+#   cloudflared tunnel route dns <tunnel-id> <hostname>
+# Internal LAN/Tailscale access still resolves via CoreDNS (split-horizon), so
+# these routes only affect traffic coming from outside the network.
+ingress:
+  - hostname: immich.arthurjordao.dev
+    service: http://localhost:2283
+  - hostname: kavita.arthurjordao.dev
+    service: http://localhost:5000
+  - service: http_status:404
