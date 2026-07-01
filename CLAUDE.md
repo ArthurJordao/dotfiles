@@ -44,9 +44,14 @@ uid/gid 0 (see the music stack). Fixed facts:
 
 **2. Reverse proxy (Caddy)** — `etc/caddy/Caddyfile`
 
-- One block per service: `<svc>.arthurjordao.dev { reverse_proxy localhost:<port> ... }` with
+- One block per service: `<svc>.arthurjordao.dev { reverse_proxy 127.0.0.1:<port> ... }` with
   TLS via the Cloudflare DNS challenge (`dns cloudflare {env.CF_API_TOKEN}`) and a JSON access
   log. `CF_API_TOKEN` comes from `etc/caddy/caddy.env.tmpl`.
+- **Always `127.0.0.1`, never `localhost`.** `localhost` resolves to `::1` (IPv6) first, and
+  rootless containers on the default network use **pasta**, which forwards IPv4 only — the IPv6
+  connection is accepted then dropped, and Caddy returns a **502** without falling back. Only
+  the music stack dodged this (custom `music.network` → netavark/rootlessport, dual-stack), so
+  the bug surfaces on any standalone (pasta) container reached through Caddy.
 
 **3. DNS (CoreDNS, split-horizon)** — `etc/coredns/Corefile`
 

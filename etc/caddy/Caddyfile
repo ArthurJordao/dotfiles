@@ -1,5 +1,11 @@
+# Reverse-proxy upstreams use 127.0.0.1, never localhost. localhost resolves to
+# ::1 (IPv6) first, and rootless podman containers on the default network use
+# pasta, which only forwards IPv4 — an IPv6 connection is accepted then dropped,
+# which Caddy surfaces as a 502 (it won't fall back once the socket connects).
+# 127.0.0.1 is unambiguous and works regardless of the container's net backend.
+
 immich.arthurjordao.dev {
-    reverse_proxy localhost:2283
+    reverse_proxy 127.0.0.1:2283
 
     tls {
         dns cloudflare {env.CF_API_TOKEN}
@@ -11,7 +17,7 @@ immich.arthurjordao.dev {
 }
 
 dns.arthurjordao.dev {
-    reverse_proxy https://localhost:8053 {
+    reverse_proxy https://127.0.0.1:8053 {
         transport http {
             tls_insecure_skip_verify
         }
@@ -22,7 +28,7 @@ dns.arthurjordao.dev {
 }
 
 music.arthurjordao.dev {
-    reverse_proxy localhost:4533
+    reverse_proxy 127.0.0.1:4533
 
     tls {
         dns cloudflare {env.CF_API_TOKEN}
@@ -34,7 +40,7 @@ music.arthurjordao.dev {
 }
 
 slskd.arthurjordao.dev {
-    reverse_proxy localhost:5030
+    reverse_proxy 127.0.0.1:5030
 
     tls {
         dns cloudflare {env.CF_API_TOKEN}
@@ -46,7 +52,7 @@ slskd.arthurjordao.dev {
 }
 
 soulsync.arthurjordao.dev {
-    reverse_proxy localhost:8008
+    reverse_proxy 127.0.0.1:8008
 
     tls {
         dns cloudflare {env.CF_API_TOKEN}
@@ -58,7 +64,7 @@ soulsync.arthurjordao.dev {
 }
 
 books.arthurjordao.dev {
-    reverse_proxy localhost:8083
+    reverse_proxy 127.0.0.1:8083
 
     tls {
         dns cloudflare {env.CF_API_TOKEN}
@@ -70,8 +76,6 @@ books.arthurjordao.dev {
 }
 
 shelfmark.arthurjordao.dev {
-    # 127.0.0.1, not localhost: the rootless container only binds IPv4, and
-    # localhost resolves to ::1 first, which 502s.
     reverse_proxy 127.0.0.1:8084
 
     tls {
