@@ -27,6 +27,27 @@ config.font_size = 14.0
 config.hide_tab_bar_if_only_one_tab = true
 config.leader = { key = "j", mods = "CTRL", timeout_milliseconds = 2000 }
 config.mouse_bindings = {
+	-- Selecting text no longer auto-copies (which clobbered the clipboard).
+	-- The text still highlights; copy on purpose with Cmd+C / Ctrl+Shift+C.
+	-- Nop is used instead of PrimarySelection because macOS has no primary
+	-- selection buffer, so that destination falls back to the clipboard.
+	{
+		event = { Up = { streak = 1, button = "Left" } },
+		mods = "NONE",
+		action = act.Nop,
+	},
+	{
+		-- double-click (word)
+		event = { Up = { streak = 2, button = "Left" } },
+		mods = "NONE",
+		action = act.Nop,
+	},
+	{
+		-- triple-click (line)
+		event = { Up = { streak = 3, button = "Left" } },
+		mods = "NONE",
+		action = act.Nop,
+	},
 	-- Open URLs with Ctrl+Click
 	{
 		event = { Up = { streak = 1, button = "Left" } },
