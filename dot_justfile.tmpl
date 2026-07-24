@@ -6,8 +6,8 @@ apply:
 # Update system packages
 upgrade:
     brew bundle --file ~/Brewfile
-    brew bundle cleanup --file ~/Brewfile --force
     brew upgrade --cask --greedy
+    brew bundle cleanup --file ~/Brewfile --force
 {{ else -}}
 # Update system packages
 upgrade:
