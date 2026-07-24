@@ -1,11 +1,11 @@
 tap "homebrew/cask-fonts"
-tap "nikitabobko/tap"
-tap "noborus/tap"
-tap "osx-cross/arm"
-tap "osx-cross/avr"
-tap "qmk/qmk"
-tap "sst/tap"
-tap "unisonweb/unison"
+tap "nikitabobko/tap", trusted: true
+tap "noborus/tap", trusted: true
+tap "osx-cross/arm", trusted: true
+tap "osx-cross/avr", trusted: true
+tap "qmk/qmk", trusted: true
+tap "sst/tap", trusted: true
+tap "unisonweb/unison", trusted: true
 brew "glib"
 brew "xz"
 brew "gcc"
@@ -102,13 +102,12 @@ brew "noborus/tap/trdsql"
 brew "qmk/qmk/qmk"
 brew "sst/tap/opencode"
 brew "unisonweb/unison/unison-language"
-brew "nikhil1raghav/tap/kindle-send"
+brew "nikhil1raghav/tap/kindle-send", trusted: true
 cask "1password"
 cask "aerospace"
 cask "alacritty"
 cask "anki"
 cask "bitwarden"
-cask "chromium"
 cask "claude"
 cask "firefox"
 cask "font-fira-code-nerd-font"
