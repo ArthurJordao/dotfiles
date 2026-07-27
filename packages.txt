@@ -1,6 +1,4 @@
 alacritty
-bitwarden
-bitwarden-cli
 chezmoi
 cloudflared
 cockpit
