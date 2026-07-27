@@ -1,6 +1,8 @@
 README.md
 LICENSE.md
 CLAUDE.md
+docs/
+docs/**
 .DS_Store
 .aider*
 .claude/

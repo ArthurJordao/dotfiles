@@ -12,9 +12,11 @@ git clone https://github.com/arthurjordao/dotfiles ~/dev/personal/dotfiles
 brew install chezmoi   # macOS
 pacman -S chezmoi      # Arch/CachyOS
 
-# 3. Unlock Bitwarden
-bw login
-export BW_SESSION="$(bw unlock --raw)"
+# 3. Sign in to 1Password CLI
+#    Laptop: just enable the desktop-app CLI integration (Settings → Developer).
+#    mars (or any headless box): add the account once, then sign in.
+op account add   # first time only: sign-in address, email, Secret Key, password
+op signin
 
 # 4. Init chezmoi (sets sourceDir in config)
 chezmoi init --source ~/dev/personal/dotfiles
@@ -28,7 +30,9 @@ chezmoi apply --force
 
 ## Secrets
 
-Secrets are managed via Bitwarden. Secure notes: `dotfiles-secrets`, `mars-secrets`, `ssh-ed25519`, `ssh-rsa`, `gpg-key`.
+Secrets are managed via 1Password (vault `dotfiles`, read with `op` at apply-time).
+Items: `dotfiles-secrets`, `mars-secrets`, `ssh-ed25519`, `ssh-rsa` (Secure Notes) and
+`gpg-key` (Document).
 
 ## Day-to-day
 

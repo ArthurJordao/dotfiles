@@ -19,3 +19,5 @@ ripgrep
 tailscale
 tmux
 xcaddy-bin
+1password
+1password-cli

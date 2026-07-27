@@ -22,8 +22,8 @@ uid/gid 0 (see the music stack). Fixed facts:
 - Host user: `turisa` · LAN IP `192.168.15.23` · Tailscale IP `100.127.50.55`
 - Base domain: `arthurjordao.dev`; every service is exposed as `<service>.arthurjordao.dev`
 - Bulk media/storage SSD mounted at `/mnt/x9pro`
-- Secrets: Bitwarden secure note `mars-secrets`, pulled at apply-time via
-  `bitwardenFields "item" "mars-secrets"` in `.tmpl` files
+- Secrets: 1Password item `mars-secrets` (vault `dotfiles`), pulled at apply-time via
+  `onepasswordRead "op://dotfiles/mars-secrets/<FIELD>"` in `.tmpl` files
 
 ## Three concerns per service
 
@@ -107,7 +107,7 @@ because they're generated (see above).
 # Adding a new service (checklist)
 
 1. `dot_config/containers/systemd/<svc>.container` (+ `<svc>.env.tmpl` if it needs secrets;
-   add the keys to the `mars-secrets` Bitwarden note).
+   add the keys to the `mars-secrets` 1Password item in vault `dotfiles`).
 2. Caddy block in `etc/caddy/Caddyfile` → `localhost:<port>`.
 3. `<svc>.arthurjordao.dev` in **both** host blocks of `etc/coredns/Corefile`.
 4. Add `<svc>.service` to `CANDIDATES` in `dot_local/scripts/executable_gaming-mode`.
