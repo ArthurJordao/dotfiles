@@ -29,6 +29,7 @@ packages.txt
 .config/systemd/**
 .local/scripts/gaming-mode
 .local/scripts/minecraft
+.local/scripts/minecraft-backup
 {{ end }}
 
 {{ if ne .chezmoi.hostname "Arthurs-MacBook-Pro" }}

@@ -1,0 +1,6 @@
+[Unit]
+Description=Backup the Minecraft vanilla world to /mnt/x9pro
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/scripts/minecraft-backup

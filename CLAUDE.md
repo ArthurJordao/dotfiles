@@ -96,10 +96,14 @@ because they're generated (see above).
 ## Other mars pieces
 
 - `dot_config/systemd/user/` — hand-written units: `cloudflare-ddns` (service+timer keeps the
-  public A record current) and `minecraft@.service` (template; instances like
-  `minecraft@vanilla`, `minecraft@atm10` are mutually exclusive).
+  public A record current), `minecraft@.service` (template; instances like
+  `minecraft@vanilla`, `minecraft@atm10` are mutually exclusive), and `minecraft-backup`
+  (service+timer; daily world backup).
 - `dot_local/scripts/executable_minecraft` — helper to keep the boot server in sync with the
   running one.
+- `dot_local/scripts/executable_minecraft-backup` — daily tarball of the `vanilla` world tree to
+  `/mnt/x9pro/minecraft-backups`, keeping the newest 3. Pauses+flushes saves via the server's
+  tmux console when it's running so the snapshot is consistent. Run by `minecraft-backup.timer`.
 - `dot_local/scripts/executable_gaming-mode` — `gaming-mode {on|off|status}` stops the whole
   self-hosted stack to free CPU/GPU/RAM for gaming, then restores exactly what was running.
   **Its `CANDIDATES` list must include every resource-heavy service** — add new services here.

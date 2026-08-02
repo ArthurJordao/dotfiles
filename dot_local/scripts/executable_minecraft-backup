@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# minecraft-backup — daily tarball of the vanilla world tree, stored on the
+# bulk SSD (/mnt/x9pro) so a root-disk (nvme0n1) failure doesn't take the
+# backups with it. Keeps only the newest KEEP daily tarballs.
+#
+# If the server is running, saves are paused and flushed through its tmux
+# console first, so the snapshot is consistent (and re-enabled no matter what,
+# via the EXIT trap). Run by minecraft-backup.timer; safe to run by hand too.
+set -euo pipefail
+
+INSTANCE="vanilla"
+SRC_DIR="$HOME/minecraft/$INSTANCE"
+DEST_DIR="/mnt/x9pro/minecraft-backups"
+KEEP=3
+WORLDS=(world world_nether world_the_end)
+SESSION="minecraft-$INSTANCE"
+
+mkdir -p "$DEST_DIR"
+archive="$DEST_DIR/${INSTANCE}-$(date +%F).tar.gz"
+
+mc_console() { tmux send-keys -t "$SESSION" "$1" C-m 2>/dev/null || true; }
+
+running=0
+if systemctl --user is-active --quiet "minecraft@$INSTANCE.service"; then
+    running=1
+fi
+
+# Guarantee saves are turned back on even if tar fails midway.
+restore_saves() { [ "$running" -eq 1 ] && mc_console "save-on"; return 0; }
+trap restore_saves EXIT
+
+# Pause world writes and flush pending chunks for a consistent snapshot.
+if [ "$running" -eq 1 ]; then
+    mc_console "save-off"
+    mc_console "save-all flush"
+    sleep 5
+fi
+
+# Write to a .part name then rename, so a half-written tarball never looks final.
+tar -C "$SRC_DIR" -czf "$archive.part" "${WORLDS[@]}"
+mv -f "$archive.part" "$archive"
+
+# Retention: keep the newest KEEP tarballs, delete the rest.
+mapfile -t backups < <(ls -1t "$DEST_DIR/${INSTANCE}-"*.tar.gz 2>/dev/null || true)
+if [ "${#backups[@]}" -gt "$KEEP" ]; then
+    for old in "${backups[@]:$KEEP}"; do
+        rm -f "$old"
+    done
+fi
+
+echo "minecraft-backup: wrote $archive ($(du -h "$archive" | cut -f1)); kept newest $KEEP in $DEST_DIR"
