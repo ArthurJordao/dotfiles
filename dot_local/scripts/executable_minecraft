@@ -5,7 +5,8 @@
 #
 #   minecraft use <name>   make <name> the active + boot server (others off)
 #   minecraft status       show boot (enabled?) / running (active?) per server
-#   minecraft stop         stop the running server (stays enabled for next boot)
+#   minecraft stop         stop the running server AND keep it off across reboots
+#                          (disables boot; bring it back with `minecraft use`)
 #   minecraft list         list available servers (~/minecraft/*)
 #   minecraft attach       attach to the running server's tmux console
 #
@@ -32,6 +33,18 @@ running_instance() {
     local inst
     for inst in $(instances); do
         if uctl is-active --quiet "minecraft@$inst.service"; then
+            echo "$inst"
+            return 0
+        fi
+    done
+}
+
+# Echo the boot-enabled instance, if any (may differ from running when a
+# server has crashed or was stopped outside this CLI).
+enabled_instance() {
+    local inst
+    for inst in $(instances); do
+        if uctl is-enabled --quiet "minecraft@$inst.service" 2>/dev/null; then
             echo "$inst"
             return 0
         fi
@@ -76,13 +89,14 @@ cmd_status() {
 cmd_stop() {
     local inst
     inst="$(running_instance)"
+    [ -n "$inst" ] || inst="$(enabled_instance)"
     if [ -z "$inst" ]; then
-        echo "No Minecraft server is running."
+        echo "No Minecraft server is running or enabled."
         exit 0
     fi
-    echo "Stopping '$inst' (stays enabled, returns on next boot)..."
-    uctl stop "minecraft@$inst.service"
-    echo "Done."
+    echo "Stopping '$inst' and disabling boot..."
+    uctl disable --now "minecraft@$inst.service"
+    echo "Done. '$inst' stays off across reboots; bring it back with 'minecraft use $inst'."
 }
 
 cmd_list() {
