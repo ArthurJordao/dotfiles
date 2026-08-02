@@ -1,7 +1,7 @@
 [Unit]
 Description=Minecraft Server (%i)
 After=network.target
-Conflicts=minecraft@vanilla.service minecraft@atm10.service
+Conflicts=minecraft@vanilla.service minecraft@atm10-tts.service
 
 [Service]
 Type=forking
