@@ -99,7 +99,7 @@ brew "zig"
 brew "zk"
 brew "noborus/tap/trdsql"
 brew "qmk/qmk/qmk"
-brew "sst/tap/opencode"
+brew "sst/tap/opencode", trusted: true
 brew "unisonweb/unison/unison-language"
 brew "nikhil1raghav/tap/kindle-send", trusted: true
 cask "1password"
