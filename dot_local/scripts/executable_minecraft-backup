@@ -1,18 +1,21 @@
 #!/usr/bin/env bash
-# minecraft-backup — daily tarball of the vanilla world tree, stored on the
-# bulk SSD (/mnt/x9pro) so a root-disk (nvme0n1) failure doesn't take the
-# backups with it. Keeps only the newest KEEP daily tarballs.
+# minecraft-backup — daily tarball of the vanilla world, stored on the bulk SSD
+# (/mnt/x9pro) so a root-disk (nvme0n1) failure doesn't take the backups with it.
+# Keeps only the newest KEEP daily tarballs.
 #
-# If the server is running, saves are paused and flushed through its tmux
-# console first, so the snapshot is consistent (and re-enabled no matter what,
-# via the EXIT trap). Run by minecraft-backup.timer; safe to run by hand too.
+# On MC 26.2 every dimension lives inside world/ (world/dimensions/minecraft/...);
+# older Paper split them into world_nether / world_the_end. We back up whichever
+# world* dirs exist, so either layout works.
+#
+# If the server is running, saves are paused and flushed through its tmux console
+# first for a consistent snapshot, and re-enabled via the EXIT trap (which also
+# removes any half-written tarball). Run by minecraft-backup.timer; safe by hand.
 set -euo pipefail
 
 INSTANCE="vanilla"
 SRC_DIR="$HOME/minecraft/$INSTANCE"
 DEST_DIR="/mnt/x9pro/minecraft-backups"
 KEEP=3
-WORLDS=(world world_nether world_the_end)
 SESSION="minecraft-$INSTANCE"
 
 mkdir -p "$DEST_DIR"
@@ -25,9 +28,23 @@ if systemctl --user is-active --quiet "minecraft@$INSTANCE.service"; then
     running=1
 fi
 
-# Guarantee saves are turned back on even if tar fails midway.
-restore_saves() { [ "$running" -eq 1 ] && mc_console "save-on"; return 0; }
-trap restore_saves EXIT
+# On any exit: re-enable saves and drop a half-written tarball if tar failed.
+cleanup() {
+    [ "$running" -eq 1 ] && mc_console "save-on"
+    rm -f "$archive.part"
+    return 0
+}
+trap cleanup EXIT
+
+# Collect the world dir(s) that exist (handles 26.2 unified + old split layouts).
+worlds=()
+for name in world world_nether world_the_end; do
+    [ -d "$SRC_DIR/$name" ] && worlds+=("$name")
+done
+if [ "${#worlds[@]}" -eq 0 ]; then
+    echo "minecraft-backup: no world dirs under $SRC_DIR" >&2
+    exit 1
+fi
 
 # Pause world writes and flush pending chunks for a consistent snapshot.
 if [ "$running" -eq 1 ]; then
@@ -37,7 +54,7 @@ if [ "$running" -eq 1 ]; then
 fi
 
 # Write to a .part name then rename, so a half-written tarball never looks final.
-tar -C "$SRC_DIR" -czf "$archive.part" "${WORLDS[@]}"
+tar -C "$SRC_DIR" -czf "$archive.part" "${worlds[@]}"
 mv -f "$archive.part" "$archive"
 
 # Retention: keep the newest KEEP tarballs, delete the rest.
@@ -48,4 +65,4 @@ if [ "${#backups[@]}" -gt "$KEEP" ]; then
     done
 fi
 
-echo "minecraft-backup: wrote $archive ($(du -h "$archive" | cut -f1)); kept newest $KEEP in $DEST_DIR"
+echo "minecraft-backup: wrote $archive ($(du -h "$archive" | cut -f1)) [dirs: ${worlds[*]}]; kept newest $KEEP"
