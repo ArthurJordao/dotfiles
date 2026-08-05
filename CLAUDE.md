@@ -12,37 +12,26 @@ Hosts share this repo, gated by roles in `.chezmoidata.yaml`:
 
 ## Host gating: three axes
 
-Gating is **role-based, not hostname-based**. `.chezmoidata.yaml` is the only file that names
-hosts; it maps each hostname to `roles` (what the box is for) and `services` (which containers
-live there). Templates ask capability questions, never identity questions.
-
-Pick the axis that is the *actual* reason a file is not universal:
+`.chezmoidata.yaml` is the only file that names hosts. Gate on the axis that is the actual reason
+a file isn't universal:
 
 | Axis | Mechanism | Use for |
 |---|---|---|
-| **OS** | `.chezmoi.os`, `.chezmoi.osRelease` | things that only exist on a platform: aerospace, hammerspoon, Brewfile, `brew` vs `paru` vs `apt` |
+| **OS** | `.chezmoi.os`, `.chezmoi.osRelease` | platform-only things: aerospace, hammerspoon, Brewfile, `brew`/`paru`/`apt` |
 | **Role** | `has "edge" $roles` | purpose: `server`, `podman`, `gui`, `gaming`, `minecraft`, `edge`, `ddns` |
-| **Placement** | `services` list | services with exactly one instance in the fleet (all podman quadlets) |
+| **Placement** | `services` list | podman quadlets — one instance in the fleet |
 
-Do NOT put OS/distro into `roles` — chezmoi already knows, and duplicating it creates a second
-source of truth that silently disagrees after a reinstall.
+Roles compose: `gaming-mode` uses `and (has "server") (has "gaming")`. Never put OS/distro in
+`roles`.
 
-Roles compose: `gaming-mode` is gated on `and (has "server") (has "gaming")`, because it is for
-a box that hosts services *and* games — not for every gaming box.
+`./tools/simulate-host <host> managed` renders any host's output from any machine. It overrides
+identity, not platform — `.chezmoi.os` stays local, so OS-gated branches need the real host.
 
-`tools/simulate-host <hostname>` renders the repo's output as any host, from any machine
-(read-only, throwaway destDir): `./tools/simulate-host mars managed`. It overrides **identity,
-not platform** — `.chezmoi.os` stays that of the machine you run it on, so OS-gated branches
-can only be verified on the real host.
-
-**Three silent footguns:**
-- In `.chezmoiignore`, `dir/**` followed by `!dir/keep` ignores **everything** — negation only
-  re-includes under a single-star `dir/*`. Never "tidy" that `*` into `**`.
-- Container placement is deny-by-default: a new `.container` file that is not listed in a host's
-  `services` deploys nowhere, with no error.
-- Templates run with `missingkey=error`, so `.chezmoi.osRelease.idLike` **errors** on a distro
-  whose `os-release` omits `ID_LIKE` (plain Arch does), and `| default` cannot rescue it — a
-  failed map lookup aborts before the pipe. Use `index .chezmoi.osRelease "idLike"` instead.
+Silent failures worth knowing:
+- `dir/**` then `!dir/keep` in `.chezmoiignore` ignores everything. Negation needs single-star `dir/*`.
+- A `.container` not listed in a host's `services` deploys nowhere, no error.
+- `.chezmoi.osRelease.idLike` errors under `missingkey=error` when `ID_LIKE` is absent (plain Arch),
+  and `| default` can't rescue it. Use `index .chezmoi.osRelease "idLike"`.
 
 # The mars self-hosted stack
 
@@ -120,12 +109,12 @@ from the public internet, add it to the **Cloudflare Tunnel** instead of opening
 re-runs whenever any of those files change (sha256 in the script header). The quadlet files
 under `dot_config/` deploy normally to `~/.config/...`.
 
-**Script order is explicit, via a numeric prefix.** chezmoi runs `run_*` scripts in alphabetical
-order of target name, so the order is stated in the filenames rather than left to chance:
+`run_*` scripts execute in alphabetical target order; the numeric prefix states it explicitly.
+Anything needing a package goes after 10; gaps of 10 leave room to insert.
 
 | | Script | Needs |
 |---|---|---|
-| 10 | `install-packages` | — (installs what the rest need) |
+| 10 | `install-packages` | — |
 | 20 | `install-tpm` | `git` |
 | 30 | `set-default-shell` | `fish` |
 | 40 | `setup-gpg-key` | `gpg`, `op` |
@@ -133,17 +122,13 @@ order of target name, so the order is stated in the filenames rather than left t
 | 60 | `set-wallpaper` | `Pictures/` deployed |
 | 70 | `deploy-etc` | `caddy`, `coredns` (edge role) |
 
-Anything needing a package goes after 10. Keep the gaps so a new script can slot in without
-renumbering. This is why one `chezmoi apply` bootstraps a host completely.
+Pre-installed prerequisites: `chezmoi`, `1password-cli`, `git` (see README bootstrap).
 
-Only three things must be pre-installed, because chezmoi needs them before any script runs:
-`chezmoi`, `1password-cli` (secret `.tmpl`s render before scripts execute), and `git` to clone the
-repo. See the README bootstrap.
+`run_once_50-enable-systemd-units.sh.tmpl` enables only the hand-written units, gated by the role
+that owns each (`ddns`, `podman`, `minecraft`) — quadlet services are generated and can't be enabled.
 
-`run_once_50-enable-systemd-units.sh.tmpl` only enables the hand-written units
-(`cloudflare-ddns`, `podman-auto-update.timer`) — quadlet services are NOT listed there
-because they're generated (see above). Each unit is enabled under the role that owns it
-(`ddns`, `podman`, `minecraft`), so a host gets only what it actually runs.
+Note `run_once_` state is keyed on content hash (renaming is free); `run_onchange_` is keyed on
+name (renaming re-runs it).
 
 ## Packages
 
@@ -153,35 +138,24 @@ so a role with no packages needs no file. The concatenated list is piped to `par
 `apt-get install`, which read **one package name per line** — so no comments and no blank lines in
 those files, or the name becomes an install target.
 
-**Packages install on a host's FIRST apply, and never again automatically.** One hook,
-`run_once_10-install-packages.sh.tmpl`, branches on OS internally (`brew bundle` on darwin, the shared
-body on linux) so a fresh machine bootstraps in one go. After that, adding a package is explicit:
+Packages install on a host's **first** apply only, via `run_once_10-install-packages.sh.tmpl`.
+After that:
 
 ```
 just packages    # install this host's declared packages
 just upgrade     # full system upgrade first, then install declared
 ```
 
-**This is a deliberate design decision, and the subtle part is what's *absent*.** `run_once_` state
-is keyed on the rendered script's hash, and the package names are read at *runtime* from the group
-files — so editing a list leaves the script byte-identical and the hook does **not** re-fire. That
-is intended: `chezmoi apply` should sync dotfiles, not install packages every time a list changes.
-Do **not** "fix" this by embedding per-list `sha256sum` fingerprints in the script header (the
-`run_onchange_70-deploy-etc.sh.tmpl` trick) — that would turn every apply into a package install.
+**Adding a package to a group file does nothing until you run `just packages`** — the names are read
+at runtime, so the script's hash doesn't change and the hook doesn't re-fire. That is intended; do
+not add per-list `sha256sum` fingerprints to make it re-fire.
 
-**Consequence / footgun:** adding a package to `packages/<family>/<group>.txt` does nothing until
-you run `just packages`. The shared body lives in `.chezmoitemplates/install-packages.sh` and is
-included by both the bootstrap hook and `dot_local/scripts/executable_install-packages.tmpl`, so
-the automatic and manual paths can't drift.
+The shared body is `.chezmoitemplates/install-packages.sh`, included by both the hook and
+`dot_local/scripts/executable_install-packages.tmpl`.
 
-`just packages` on Linux runs `~/.local/scripts/install-packages` (os-gated to linux); on macOS it
-runs `brew bundle`. `just upgrade` does `paru -Syu` / `brew upgrade` **before** installing, so the
-package DB is fresh — which also avoids the stale-mirror 404s you get from `paru -S` against a
-months-old database. The install itself is `paru -S`, never `-Syu`, because refreshing the DB
-without a full upgrade causes partial-upgrade breakage.
-
-There is no `brew bundle cleanup` counterpart on Linux: pruning undeclared packages on Arch means
-orphan removal, too blunt to run on a host with live services.
+The install is `paru -S`, never `-Syu` (partial upgrades break Arch). `just upgrade` runs `-Syu`
+first, which also avoids the 404s `paru -S` hits against a stale DB. No `cleanup` counterpart on
+Linux — that would mean orphan removal.
 
 `run_onchange_70-deploy-etc.sh.tmpl` is gated on the **`edge`** role, so moving `edge` between hosts
 in `.chezmoidata.yaml` relocates the whole Caddy/CoreDNS/cloudflared edge.
@@ -194,14 +168,10 @@ in `.chezmoidata.yaml` relocates the whole Caddy/CoreDNS/cloudflared edge.
   (service+timer; daily world backup).
 - `dot_local/scripts/executable_minecraft` — helper to keep the boot server in sync with the
   running one.
-- **JDKs are pinned on purpose.** Each instance's `~/minecraft/<instance>/startserver.sh` (NOT in
-  this repo) invokes an **absolute** JVM path, because instances need different Java versions —
-  vanilla on `/usr/lib/jvm/java-25-openjdk`, the 1.21-era modpack on 21. So
-  `packages/arch/minecraft.txt` must list exactly the versioned packages those paths resolve to;
-  a mismatch produces a server that cannot start. Do **not** switch these to `jdk-openjdk`
-  (Arch's rolling latest) — its directory is renamed on every JDK bump, which silently breaks
-  the hardcoded path during an unrelated `paru -Syu`. Only LTS releases are pinnable (8, 11, 17,
-  21, 25); there is no `jdk26-openjdk`.
+- **JDKs are pinned.** `~/minecraft/<instance>/startserver.sh` (not in this repo) hardcodes an
+  absolute JVM path per instance — vanilla `/usr/lib/jvm/java-25-openjdk`, modpack 21 — so
+  `packages/arch/minecraft.txt` must match. Never use `jdk-openjdk` (rolling): its directory is
+  renamed on each bump and silently breaks the path. Only LTS is pinnable (8, 11, 17, 21, 25).
 - `dot_local/scripts/executable_minecraft-backup` — daily tarball of the `vanilla` world tree to
   `/mnt/x9pro/minecraft-backups`, keeping the newest 3. Pauses+flushes saves via the server's
   tmux console when it's running so the snapshot is consistent. Run by `minecraft-backup.timer`.
@@ -213,9 +183,8 @@ in `.chezmoidata.yaml` relocates the whole Caddy/CoreDNS/cloudflared edge.
 
 1. `dot_config/containers/systemd/<svc>.container` (+ `<svc>.env.tmpl` if it needs secrets;
    add the keys to the `mars-secrets` 1Password item in vault `dotfiles`).
-2. **Add `<svc>` to that host's `services` list in `.chezmoidata.yaml`** — without this the file
-   deploys nowhere and chezmoi reports no error. Verify with
-   `./tools/simulate-host <host> managed | grep <svc>`.
+2. Add `<svc>` to that host's `services` in `.chezmoidata.yaml` — without it nothing deploys and
+   there's no error. Check: `./tools/simulate-host <host> managed | grep <svc>`.
 3. Caddy block in `etc/caddy/Caddyfile` → `127.0.0.1:<port>`.
 4. `<svc>.arthurjordao.dev` in **both** host blocks of `etc/coredns/Corefile`.
 5. Add `<svc>.service` to `CANDIDATES` in `dot_local/scripts/executable_gaming-mode`.
@@ -231,11 +200,7 @@ in `.chezmoidata.yaml` relocates the whole Caddy/CoreDNS/cloudflared edge.
 - The user runs `chezmoi apply` themselves — don't run it for them.
 - `~/.config/nvim` is a **live symlink** into the repo (`dot_config/symlink_nvim.tmpl`); don't
   break it. `/nvim` is ignored so chezmoi doesn't double-copy it.
-- Configs are cross-platform by default; only gate when something is genuinely host-specific,
-  and gate on the axis that is the real reason (see "Host gating: three axes" above).
-- Gate what *costs* something — packages, systemd units, `/etc` writes, 1Password secret reads,
-  `run_once_*` scripts. An unused config file on the wrong host is inert; a conditional for it
-  is churn.
-- **Known drift risk:** `gaming-mode`'s `CANDIDATES` list is still hand-maintained. It could be
-  generated from `.chezmoidata.yaml`, but that needs a service→unit-name mapping (`immich`
-  expands to 5 units). Until then, adding a service means editing both files.
+- Configs are cross-platform by default. Gate only what *costs* something — packages, units,
+  `/etc` writes, secret reads, `run_once_*` scripts. An unused config on the wrong host is inert.
+- Drift risk: `gaming-mode`'s `CANDIDATES` is hand-maintained (generating it needs a
+  service→unit-name map, since `immich` expands to 5 units).
