@@ -128,7 +128,9 @@ because they're generated (see above). Each unit is enabled under the role that 
 Packages live in `packages/<family>/<group>.txt`, where family is `arch` or `debian` (derived
 from `.chezmoi.osRelease`) and group is `common` plus one file per role.
 `run_once_install-packages-linux.sh.tmpl` concatenates the groups matching the host's roles;
-missing group files are skipped, so a role with no packages needs no file.
+missing group files are skipped, so a role with no packages needs no file. The concatenated
+list is piped to `paru -S -` / `apt-get install`, which read **one package name per line** —
+so no comments and no blank lines in those files, or the name becomes an install target.
 
 `run_onchange_deploy-etc.sh.tmpl` is gated on the **`edge`** role, so moving `edge` between hosts
 in `.chezmoidata.yaml` relocates the whole Caddy/CoreDNS/cloudflared edge.
