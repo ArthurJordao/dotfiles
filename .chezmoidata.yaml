@@ -18,6 +18,10 @@ hosts:
       - shelfmark
       - teamspeak3
 
+  mercury:
+    roles: [gui, gaming]
+    services: []
+
   Arthurs-MacBook-Pro:
     roles: [gui]
     services: []
