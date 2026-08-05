@@ -1,3 +1,4 @@
+# Unknown role names are silently inert, never an error. Vocabulary: CLAUDE.md
 hosts:
   mars:
     roles: [server, podman, gui, gaming, minecraft, edge, ddns]
