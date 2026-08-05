@@ -4,36 +4,107 @@ Personal dotfiles managed with [chezmoi](https://www.chezmoi.io/).
 
 ## Bootstrap (new machine)
 
+Everything here uses **SSH**, never HTTPS. The trick that makes that possible is step 3:
+`op` hands you the SSH key *before* the first clone, so there's no chicken-and-egg
+between "need the repo to get the key" and "need the key to clone the repo". With the
+key already on disk, chezmoi's `ssh://` git external works on the very first pass and a
+**single** `chezmoi apply` is enough.
+
+### 0. Add the host to the repo first
+
+`.chezmoidata.yaml` is the only file that names hosts. A host that isn't listed there
+makes every template fail with `map has no entry for key "<hostname>"`. Add a row with
+its `roles` and `services`, and push, **before** bootstrapping:
+
+```yaml
+hosts:
+  <hostname>:
+    roles: [gui, gaming]     # see CLAUDE.md for the role vocabulary
+    services: []
+```
+
+### 1. Set the hostname
+
+Must happen before `chezmoi init` — `.chezmoi.toml.tmpl` bakes `hostname` into the
+generated config at init time, and it has to match the row you just added.
+
 ```bash
-# 1. Clone the repo
-git clone https://github.com/arthurjordao/dotfiles ~/dev/personal/dotfiles
+sudo hostnamectl set-hostname <hostname>   # Linux
+sudo scutil --set HostName <hostname>      # macOS
+```
 
-# 2. Install chezmoi
-brew install chezmoi   # macOS
-pacman -S chezmoi      # Arch/CachyOS
+### 2. Install the four prerequisites
 
-# 3. Sign in to 1Password CLI
-#    Laptop: just enable the desktop-app CLI integration (Settings → Developer).
-#    mars (or any headless box): add the account once, then sign in.
+Only these four; everything else installs itself in step 6.
+
+```bash
+# macOS
+brew install chezmoi 1password-cli git gnupg
+
+# Arch / CachyOS
+sudo pacman -S --needed chezmoi 1password-cli git gnupg
+
+# Debian / Ubuntu — chezmoi and 1password-cli need their own repos, see their docs
+sudo apt install -y git gnupg
+```
+
+`gnupg` matters because `run_once_import-gpg-key.sh` runs *before* the package install
+(scripts execute in alphabetical order of target name, and `import-` sorts before
+`install-`), so it cannot rely on packages being there yet.
+
+### 3. Sign in to 1Password, then fetch the SSH keys
+
+```bash
+# Desktop machines: enabling the desktop-app CLI integration (Settings → Developer)
+# is enough. Headless boxes: add the account once, then sign in.
 op account add   # first time only: sign-in address, email, Secret Key, password
-op signin
+eval "$(op signin)"          # bash/zsh
+# eval (op signin)           # fish
 
-# 4. Init chezmoi (sets sourceDir in config)
+mkdir -p ~/.ssh && chmod 700 ~/.ssh
+op read "op://dotfiles/ssh-ed25519/private" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+op read "op://dotfiles/ssh-rsa/private"     > ~/.ssh/id_rsa     && chmod 600 ~/.ssh/id_rsa
+ssh-keyscan github.com >> ~/.ssh/known_hosts   # skips the interactive host-key prompt
+```
+
+chezmoi rewrites these same files from the same 1Password items later, so this is
+idempotent — you're just doing it early. Verify with:
+
+```bash
+ssh -T git@github.com   # expect: "Hi <user>! You've successfully authenticated"
+```
+
+### 4. Clone over SSH
+
+```bash
+git clone git@github.com:ArthurJordao/dotfiles ~/dev/personal/dotfiles
+```
+
+### 5. Init chezmoi
+
+```bash
 chezmoi init --source ~/dev/personal/dotfiles
 
-# 5. Deploy files first (SSH keys need to land before git externals can clone)
-chezmoi apply --exclude=externals,scripts --force
+# sanity-check before writing anything
+chezmoi data | grep '"hostname"'                              # must match step 1
+chezmoi execute-template '{{ (index .hosts .hostname).roles }}'
+chezmoi diff | head -40
+```
 
-# 6. Full apply (externals + scripts now work with SSH keys in place).
-#    This also installs packages: the run_once_ hooks fire on a host's first
-#    apply. They never re-fire afterwards — later package additions need
-#    `just packages`.
-chezmoi apply --force
+### 6. Apply — once
 
-# 7. If fish didn't become the login shell (it needs fish installed, which only
-#    happened during step 6's package install), re-run:
+```bash
 chezmoi apply --force
 ```
+
+This also installs packages: the `run_once_` hooks fire on a host's **first** apply and
+never again. Later package additions need `just packages` (see CLAUDE.md).
+
+### 7. Re-apply if the login shell didn't change
+
+`run_once_set-default-shell.sh.tmpl` needs `fish` to exist, which only happened during
+step 6's package install. If `$SHELL` is still bash, run `chezmoi apply --force` again,
+then log out and back in.
 
 ## Secrets
 
