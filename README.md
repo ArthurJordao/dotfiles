@@ -33,8 +33,9 @@ sudo scutil --set HostName <hostname>      # macOS
 # macOS
 brew install chezmoi 1password-cli git
 
-# Arch / CachyOS
-sudo pacman -S --needed chezmoi 1password-cli git
+# Arch / CachyOS — paru, not pacman: 1password-cli is AUR-only.
+# CachyOS ships paru; on stock Arch, install chezmoi and git with pacman and bootstrap paru first.
+paru -S --needed chezmoi 1password-cli git
 
 # Debian / Ubuntu — chezmoi and 1password-cli need their own repos, see their docs
 sudo apt install -y git
