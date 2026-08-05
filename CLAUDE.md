@@ -120,6 +120,22 @@ from the public internet, add it to the **Cloudflare Tunnel** instead of opening
 re-runs whenever any of those files change (sha256 in the script header). The quadlet files
 under `dot_config/` deploy normally to `~/.config/...`.
 
+**Script execution order is load-bearing.** chezmoi runs `run_*` scripts in alphabetical order of
+their *target* name (prefix stripped), which currently gives:
+
+```
+deploy-etc · enable-systemd-units · import-gpg-key · install-packages · install-tpm · set-default-shell · set-wallpaper
+```
+
+Two real dependencies ride on that:
+- `install-packages` sorts before `set-default-shell` and `install-tpm`, so `fish` and `git` exist by
+  the time those need them. A single `chezmoi apply` therefore bootstraps a host completely.
+- `import-gpg-key` sorts *before* `install-packages`, so it can **not** assume packages are present —
+  `gnupg` and `1password-cli` have to be pre-installed (documented in README bootstrap).
+
+Renaming a script can silently break this. If you add one that depends on packages, make sure its
+target name sorts after `install-packages`.
+
 `run_once_enable-systemd-units.sh.tmpl` only enables the hand-written units
 (`cloudflare-ddns`, `podman-auto-update.timer`) — quadlet services are NOT listed there
 because they're generated (see above). Each unit is enabled under the role that owns it

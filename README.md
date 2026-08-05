@@ -91,20 +91,18 @@ chezmoi execute-template '{{ (index .hosts .hostname).roles }}'
 chezmoi diff | head -40
 ```
 
-### 6. Apply — once
+### 6. Apply — once, and that's it
 
 ```bash
 chezmoi apply --force
 ```
 
-This also installs packages: the `run_once_` hooks fire on a host's **first** apply and
-never again. Later package additions need `just packages` (see CLAUDE.md).
+This installs packages too: the `run_once_` hooks fire on a host's **first** apply and
+never again (later package additions need `just packages` — see CLAUDE.md).
 
-### 7. Re-apply if the login shell didn't change
-
-`run_once_set-default-shell.sh.tmpl` needs `fish` to exist, which only happened during
-step 6's package install. If `$SHELL` is still bash, run `chezmoi apply --force` again,
-then log out and back in.
+One apply is enough because chezmoi runs scripts in alphabetical order of target name,
+so `install-packages.sh` runs before `set-default-shell.sh` — `fish` is installed by the
+time the login shell is set. Log out and back in for the new shell to take effect.
 
 ## Secrets
 
