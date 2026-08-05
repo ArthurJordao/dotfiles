@@ -6,3 +6,9 @@ Host mars mars.local mars.arthurjordao.dev minecraft.arthurjordao.dev 192.168.15
     IdentityFile ~/.ssh/id_ed25519
     ServerAliveInterval 30
     ServerAliveCountMax 6
+
+Host mercury mercury.local mercury.arthurjordao.dev 192.168.15.28
+    User arthur
+    IdentityFile ~/.ssh/id_ed25519
+    ServerAliveInterval 30
+    ServerAliveCountMax 6
