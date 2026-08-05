@@ -1,4 +1,12 @@
-# Unknown role names are silently inert, never an error. Vocabulary: CLAUDE.md
+# Roles — unknown names are silently inert, never an error:
+#   server     long-lived hosted services
+#   podman     rootless podman quadlets
+#   gui        graphical session
+#   gaming     used for games
+#   minecraft  minecraft@ units + helper scripts
+#   edge       Caddy, CoreDNS, cloudflared, /etc deploy
+#   ddns       cloudflare-ddns service+timer
+
 hosts:
   mars:
     roles: [server, podman, gui, gaming, minecraft, edge, ddns]

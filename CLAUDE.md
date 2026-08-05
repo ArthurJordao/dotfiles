@@ -18,7 +18,7 @@ a file isn't universal:
 | Axis | Mechanism | Use for |
 |---|---|---|
 | **OS** | `.chezmoi.os`, `.chezmoi.osRelease` | platform-only things: aerospace, hammerspoon, Brewfile, `brew`/`paru`/`apt` |
-| **Role** | `has "edge" $roles` | purpose: `server`, `podman`, `gui`, `gaming`, `minecraft`, `edge`, `ddns` |
+| **Role** | `has "edge" $roles` | purpose — vocabulary is listed in `.chezmoidata.yaml` |
 | **Placement** | `services` list | podman quadlets — one instance in the fleet |
 
 Roles compose: `gaming-mode` uses `and (has "server") (has "gaming")`. Never put OS/distro in
