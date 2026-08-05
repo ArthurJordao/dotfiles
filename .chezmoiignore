@@ -63,6 +63,9 @@ Pictures/**
 {{ if not (and (has "server" $roles) (has "gaming" $roles)) }}
 .local/scripts/gaming-mode
 {{ end }}
+{{ if ne .chezmoi.os "linux" }}
+.local/scripts/install-packages
+{{ end }}
 
 # ---------------------------------------------------------------------------
 # Axis 3: placement. Which containers live on THIS host.

@@ -1,0 +1,5 @@
+#!/bin/bash
+# Install this host's declared packages (packages/<family>/<group>.txt selected by
+# role). Run manually via `just packages`; the same body also runs automatically
+# from run_onchange_install-packages-linux.sh.tmpl when a package list changes.
+{{ template "install-packages.sh" . }}

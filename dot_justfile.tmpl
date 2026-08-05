@@ -3,15 +3,26 @@ apply:
     chezmoi apply
 
 {{ if eq .chezmoi.os "darwin" -}}
-# Update system packages
-upgrade:
+# Install this host's declared packages
+packages:
     brew bundle --file ~/Brewfile
+
+# Update system packages: install declared, upgrade everything, prune undeclared
+upgrade: packages
     brew upgrade --cask --greedy
     brew bundle cleanup --file ~/Brewfile --force
 {{ else -}}
-# Update system packages
+# Install this host's declared packages (packages/<family>/<group>.txt by role)
+packages:
+    ~/.local/scripts/install-packages
+
+# Update system packages: full upgrade first (refreshes the DB, so `packages`
+# can't hit stale-mirror 404s), then install declared. No `cleanup` counterpart:
+# removing undeclared packages on Arch means orphan pruning, which is too blunt
+# to run unattended on a host with live services.
 upgrade:
     paru -Syu
+    ~/.local/scripts/install-packages
 {{ end }}
 # Update tmux plugins
 tpm-update:
