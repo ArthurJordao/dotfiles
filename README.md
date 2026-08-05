@@ -4,17 +4,12 @@ Personal dotfiles managed with [chezmoi](https://www.chezmoi.io/).
 
 ## Bootstrap (new machine)
 
-Everything here uses **SSH**, never HTTPS. The trick that makes that possible is step 3:
-`op` hands you the SSH key *before* the first clone, so there's no chicken-and-egg
-between "need the repo to get the key" and "need the key to clone the repo". With the
-key already on disk, chezmoi's `ssh://` git external works on the very first pass and a
-**single** `chezmoi apply` is enough.
+SSH only, no HTTPS. Step 3 fetches the SSH key from 1Password *before* the first clone,
+which is what avoids the chicken-and-egg and keeps this to a single `chezmoi apply`.
 
-### 0. Add the host to the repo first
+### 0. Add the host to `.chezmoidata.yaml` and push
 
-`.chezmoidata.yaml` is the only file that names hosts. A host that isn't listed there
-makes every template fail with `map has no entry for key "<hostname>"`. Add a row with
-its `roles` and `services`, and push, **before** bootstrapping:
+Otherwise every template fails with `map has no entry for key "<hostname>"`.
 
 ```yaml
 hosts:
@@ -25,8 +20,7 @@ hosts:
 
 ### 1. Set the hostname
 
-Must happen before `chezmoi init` — `.chezmoi.toml.tmpl` bakes `hostname` into the
-generated config at init time, and it has to match the row you just added.
+Before `chezmoi init`, which bakes it into the generated config. Must match step 0.
 
 ```bash
 sudo hostnamectl set-hostname <hostname>   # Linux
@@ -34,8 +28,6 @@ sudo scutil --set HostName <hostname>      # macOS
 ```
 
 ### 2. Install the three prerequisites
-
-Only these three; everything else installs itself in step 6.
 
 ```bash
 # macOS
@@ -48,11 +40,7 @@ sudo pacman -S --needed chezmoi 1password-cli git
 sudo apt install -y git
 ```
 
-These three and no more, because they're what's needed *before* chezmoi can run:
-`1password-cli` because the secret templates are rendered before any script executes,
-`git` to clone the repo, and `chezmoi` itself. Everything else — including `gnupg` and
-`fish` — is a declared package installed during step 6, and the scripts that need them
-are ordered to run afterwards (see CLAUDE.md).
+Everything else, `fish` and `gnupg` included, is a declared package installed in step 6.
 
 ### 3. Sign in to 1Password, then fetch the SSH keys
 
@@ -69,8 +57,7 @@ op read "op://dotfiles/ssh-rsa/private"     > ~/.ssh/id_rsa     && chmod 600 ~/.
 ssh-keyscan github.com >> ~/.ssh/known_hosts   # skips the interactive host-key prompt
 ```
 
-chezmoi rewrites these same files from the same 1Password items later, so this is
-idempotent — you're just doing it early. Verify with:
+chezmoi rewrites these from the same items later, so doing it early is harmless.
 
 ```bash
 ssh -T git@github.com   # expect: "Hi <user>! You've successfully authenticated"
@@ -93,18 +80,14 @@ chezmoi execute-template '{{ (index .hosts .hostname).roles }}'
 chezmoi diff | head -40
 ```
 
-### 6. Apply — once, and that's it
+### 6. Apply — once
 
 ```bash
 chezmoi apply --force
 ```
 
-This installs packages too: the `run_once_` hooks fire on a host's **first** apply and
-never again (later package additions need `just packages` — see CLAUDE.md).
-
-One apply is enough because chezmoi runs scripts in alphabetical order of target name,
-so `install-packages.sh` runs before `set-default-shell.sh` — `fish` is installed by the
-time the login shell is set. Log out and back in for the new shell to take effect.
+Packages install here too, via the `run_once_` hooks. They fire on a host's first apply
+only; later additions need `just packages`. Log out and back in for the new login shell.
 
 ## Secrets
 
