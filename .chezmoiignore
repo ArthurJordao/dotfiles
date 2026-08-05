@@ -10,6 +10,7 @@ docs/**
 logs/
 flavours/
 bin/
+tools/
 etc/
 packages.txt
 .config/fish/fish_variables

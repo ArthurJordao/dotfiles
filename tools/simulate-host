@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Render this repo's chezmoi output as if it were running on an arbitrary host.
+#
+#   tools/simulate-host mars                    # list managed files for mars
+#   tools/simulate-host pluto managed           # same, explicit
+#   tools/simulate-host mercury execute-template < some.tmpl
+#
+# Works by overriding the `hostname` config data key, which every host-aware
+# template reads instead of the builtin .chezmoi.hostname (the builtin cannot be
+# overridden per-invocation, config data can).
+#
+# Read-only: destDir is a throwaway temp dir, so nothing in $HOME is touched.
+#
+# LIMITS:
+#  - Overrides identity, never platform. .chezmoi.os / .chezmoi.osRelease stay
+#    those of the machine you run it on, so OS-gated branches can't be checked
+#    this way.
+#  - Subcommands that render every template (diff, apply) try to read 1Password
+#    secrets for *.env.tmpl files. Stick to `managed` unless `op` is unlocked.
+set -euo pipefail
+
+HOST="${1:?usage: simulate-host <hostname> [chezmoi args...]}"
+shift
+
+SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+WORK="$(mktemp -d)"
+trap 'rm -rf "$WORK"' EXIT
+
+mkdir -p "$WORK/home"
+cat > "$WORK/config.toml" <<EOF
+sourceDir = "$SRC"
+destDir = "$WORK/home"
+[data]
+  hostname = "$HOST"
+EOF
+
+if [ "$#" -eq 0 ]; then
+    set -- managed
+fi
+
+chezmoi --config="$WORK/config.toml" --no-tty "$@"
