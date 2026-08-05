@@ -21,17 +21,13 @@ packages/**
 .ssh/known_hosts*
 .ssh/agent/
 
-# nvim config is a live symlink into the repo (dot_config/symlink_nvim.tmpl);
-# ignore the holding dir's home target (~/nvim) so chezmoi doesn't also copy it.
-# No leading slash: newer chezmoi rejects it as an invalid path. Patterns match
-# the full relative target path (not gitignore-style basenames), so plain `nvim`
-# excludes ~/nvim WITHOUT touching ~/.config/nvim — verified on v2.71.1.
+# ~/nvim — the symlink target lives in the repo (dot_config/symlink_nvim.tmpl).
+# No leading slash: newer chezmoi rejects it, and `nvim` doesn't match .config/nvim.
 nvim
 nvim/**
 
-# ---------------------------------------------------------------------------
-# Axis 1: OS. Things that only exist on a given platform.
-# ---------------------------------------------------------------------------
+# Axis 1: OS — things that only exist on a given platform.
+
 {{ if ne .chezmoi.os "darwin" }}
 Brewfile
 Pictures
@@ -42,9 +38,8 @@ Pictures/**
 .config/hammerspoon/**
 {{ end }}
 
-# ---------------------------------------------------------------------------
-# Axis 2: role. Things gated by what the box is FOR.
-# ---------------------------------------------------------------------------
+# Axis 2: role — gated by what the box is FOR.
+
 {{ if not (or (has "ddns" $roles) (has "minecraft" $roles)) }}
 .config/systemd
 .config/systemd/**
@@ -67,13 +62,8 @@ Pictures/**
 .local/scripts/install-packages
 {{ end }}
 
-# ---------------------------------------------------------------------------
 # Axis 3: placement. Which containers live on THIS host.
-#
-# CAUTION: the negation below only works with a single-star ignore.
-# `.config/containers/systemd/**` + `!...` silently ignores everything
-# (verified on chezmoi v2.71.1). Do not "tidy" the * into **.
-# ---------------------------------------------------------------------------
+# The negation needs the single-star `*`; `**` here silently ignores everything.
 {{ if not (has "podman" $roles) }}
 .config/containers
 .config/containers/**

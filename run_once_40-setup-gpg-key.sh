@@ -1,0 +1,17 @@
+#!/bin/bash
+set -euo pipefail
+
+KEY_ID=D62340DADE749208
+
+if gpg --list-secret-keys "$KEY_ID" >/dev/null 2>&1; then
+    echo "GPG key already imported"
+    exit 0
+fi
+
+echo "Importing GPG key from 1Password..."
+tmp="$(mktemp)"
+chmod 600 "$tmp"
+trap 'rm -f "$tmp"' EXIT
+op document get gpg-key --vault dotfiles > "$tmp"
+gpg --import "$tmp"
+echo "GPG key imported successfully"

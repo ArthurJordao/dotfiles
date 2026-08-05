@@ -1,0 +1,8 @@
+{{ if eq .chezmoi.os "darwin" -}}
+#!/bin/bash
+set -euo pipefail
+brew bundle --file "$HOME/Brewfile"
+{{ else if eq .chezmoi.os "linux" -}}
+#!/bin/bash
+{{ template "install-packages.sh" . }}
+{{- end -}}

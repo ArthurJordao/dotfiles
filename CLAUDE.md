@@ -97,7 +97,7 @@ from the public internet, add it to the **Cloudflare Tunnel** instead of opening
 
 - `cloudflared` runs as a **system** unit (`/etc/systemd/system/cloudflared.service`) using a
   named tunnel; its config is tracked at `etc/cloudflared/config.yml` and deployed to
-  `/etc/cloudflared/config.yml` by `run_onchange_deploy-etc.sh.tmpl`. The tunnel's credentials
+  `/etc/cloudflared/config.yml` by `run_onchange_70-deploy-etc.sh.tmpl`. The tunnel's credentials
   `.json` lives only on mars (never in the repo).
 - To expose a service: add an `ingress:` rule (`hostname:` + `service: http://localhost:<port>`)
   **above** the `http_status:404` catch-all, then create the public proxied CNAME once with
@@ -115,28 +115,32 @@ from the public internet, add it to the **Cloudflare Tunnel** instead of opening
 ## Deploy flow
 
 `etc/` is in `.chezmoiignore` (never copied to `$HOME`); instead
-**`run_onchange_deploy-etc.sh.tmpl`** installs the Caddyfile + Corefile into `/etc` with
+**`run_onchange_70-deploy-etc.sh.tmpl`** installs the Caddyfile + Corefile into `/etc` with
 `sudo`, renders `caddy.env` from its template, and reloads caddy / restarts coredns. It
 re-runs whenever any of those files change (sha256 in the script header). The quadlet files
 under `dot_config/` deploy normally to `~/.config/...`.
 
-**Script execution order is load-bearing.** chezmoi runs `run_*` scripts in alphabetical order of
-their *target* name (prefix stripped), which currently gives:
+**Script order is explicit, via a numeric prefix.** chezmoi runs `run_*` scripts in alphabetical
+order of target name, so the order is stated in the filenames rather than left to chance:
 
-```
-deploy-etc · enable-systemd-units · import-gpg-key · install-packages · install-tpm · set-default-shell · set-wallpaper
-```
+| | Script | Needs |
+|---|---|---|
+| 10 | `install-packages` | — (installs what the rest need) |
+| 20 | `install-tpm` | `git` |
+| 30 | `set-default-shell` | `fish` |
+| 40 | `setup-gpg-key` | `gpg`, `op` |
+| 50 | `enable-systemd-units` | units deployed |
+| 60 | `set-wallpaper` | `Pictures/` deployed |
+| 70 | `deploy-etc` | `caddy`, `coredns` (edge role) |
 
-Two real dependencies ride on that:
-- `install-packages` sorts before `set-default-shell` and `install-tpm`, so `fish` and `git` exist by
-  the time those need them. A single `chezmoi apply` therefore bootstraps a host completely.
-- `import-gpg-key` sorts *before* `install-packages`, so it can **not** assume packages are present —
-  `gnupg` and `1password-cli` have to be pre-installed (documented in README bootstrap).
+Anything needing a package goes after 10. Keep the gaps so a new script can slot in without
+renumbering. This is why one `chezmoi apply` bootstraps a host completely.
 
-Renaming a script can silently break this. If you add one that depends on packages, make sure its
-target name sorts after `install-packages`.
+Only three things must be pre-installed, because chezmoi needs them before any script runs:
+`chezmoi`, `1password-cli` (secret `.tmpl`s render before scripts execute), and `git` to clone the
+repo. See the README bootstrap.
 
-`run_once_enable-systemd-units.sh.tmpl` only enables the hand-written units
+`run_once_50-enable-systemd-units.sh.tmpl` only enables the hand-written units
 (`cloudflare-ddns`, `podman-auto-update.timer`) — quadlet services are NOT listed there
 because they're generated (see above). Each unit is enabled under the role that owns it
 (`ddns`, `podman`, `minecraft`), so a host gets only what it actually runs.
@@ -150,7 +154,7 @@ so a role with no packages needs no file. The concatenated list is piped to `par
 those files, or the name becomes an install target.
 
 **Packages install on a host's FIRST apply, and never again automatically.** One hook,
-`run_once_install-packages.sh.tmpl`, branches on OS internally (`brew bundle` on darwin, the shared
+`run_once_10-install-packages.sh.tmpl`, branches on OS internally (`brew bundle` on darwin, the shared
 body on linux) so a fresh machine bootstraps in one go. After that, adding a package is explicit:
 
 ```
@@ -163,7 +167,7 @@ is keyed on the rendered script's hash, and the package names are read at *runti
 files — so editing a list leaves the script byte-identical and the hook does **not** re-fire. That
 is intended: `chezmoi apply` should sync dotfiles, not install packages every time a list changes.
 Do **not** "fix" this by embedding per-list `sha256sum` fingerprints in the script header (the
-`run_onchange_deploy-etc.sh.tmpl` trick) — that would turn every apply into a package install.
+`run_onchange_70-deploy-etc.sh.tmpl` trick) — that would turn every apply into a package install.
 
 **Consequence / footgun:** adding a package to `packages/<family>/<group>.txt` does nothing until
 you run `just packages`. The shared body lives in `.chezmoitemplates/install-packages.sh` and is
@@ -179,7 +183,7 @@ without a full upgrade causes partial-upgrade breakage.
 There is no `brew bundle cleanup` counterpart on Linux: pruning undeclared packages on Arch means
 orphan removal, too blunt to run on a host with live services.
 
-`run_onchange_deploy-etc.sh.tmpl` is gated on the **`edge`** role, so moving `edge` between hosts
+`run_onchange_70-deploy-etc.sh.tmpl` is gated on the **`edge`** role, so moving `edge` between hosts
 in `.chezmoidata.yaml` relocates the whole Caddy/CoreDNS/cloudflared edge.
 
 ## Other mars pieces

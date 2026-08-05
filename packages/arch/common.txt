@@ -2,6 +2,7 @@
 chezmoi
 fish
 git
+gnupg
 go
 just
 mosh

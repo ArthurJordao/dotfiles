@@ -33,24 +33,26 @@ sudo hostnamectl set-hostname <hostname>   # Linux
 sudo scutil --set HostName <hostname>      # macOS
 ```
 
-### 2. Install the four prerequisites
+### 2. Install the three prerequisites
 
-Only these four; everything else installs itself in step 6.
+Only these three; everything else installs itself in step 6.
 
 ```bash
 # macOS
-brew install chezmoi 1password-cli git gnupg
+brew install chezmoi 1password-cli git
 
 # Arch / CachyOS
-sudo pacman -S --needed chezmoi 1password-cli git gnupg
+sudo pacman -S --needed chezmoi 1password-cli git
 
 # Debian / Ubuntu — chezmoi and 1password-cli need their own repos, see their docs
-sudo apt install -y git gnupg
+sudo apt install -y git
 ```
 
-`gnupg` matters because `run_once_import-gpg-key.sh` runs *before* the package install
-(scripts execute in alphabetical order of target name, and `import-` sorts before
-`install-`), so it cannot rely on packages being there yet.
+These three and no more, because they're what's needed *before* chezmoi can run:
+`1password-cli` because the secret templates are rendered before any script executes,
+`git` to clone the repo, and `chezmoi` itself. Everything else — including `gnupg` and
+`fish` — is a declared package installed during step 6, and the scripts that need them
+are ordered to run afterwards (see CLAUDE.md).
 
 ### 3. Sign in to 1Password, then fetch the SSH keys
 
