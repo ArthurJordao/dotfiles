@@ -127,10 +127,17 @@ because they're generated (see above). Each unit is enabled under the role that 
 
 Packages live in `packages/<family>/<group>.txt`, where family is `arch` or `debian` (derived
 from `.chezmoi.osRelease`) and group is `common` plus one file per role.
-`run_once_install-packages-linux.sh.tmpl` concatenates the groups matching the host's roles;
+`run_onchange_install-packages-linux.sh.tmpl` concatenates the groups matching the host's roles;
 missing group files are skipped, so a role with no packages needs no file. The concatenated
 list is piped to `paru -S -` / `apt-get install`, which read **one package name per line** —
 so no comments and no blank lines in those files, or the name becomes an install target.
+
+It is **`run_onchange_`, and its header embeds the sha256 of every selected group file.** That is
+load-bearing, not decoration: the package names are read at *runtime*, so the rendered script would
+be byte-identical after editing a list, the content hash wouldn't change, and **the newly added
+package would never install** — silently. Same trick as `run_onchange_deploy-etc.sh.tmpl`. The hash
+loop is guarded by `stat` because roles with no packages have no group file and `include` errors on a
+missing path.
 
 On Arch the install is `paru -S`, **not** `-Syu`: refreshing the DB without a full upgrade causes
 partial-upgrade breakage, and a full unattended upgrade on every apply is not this script's call

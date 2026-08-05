@@ -18,6 +18,18 @@ set -euo pipefail
 echo "Unsupported distro: id={{ $id }} id_like={{ $like }}" >&2
 exit 1
 {{ else -}}
+{{- /* The package names are read at RUNTIME from the group files, so the rendered
+      script would be byte-identical after editing a list — and a run_onchange_
+      script keyed on its own contents would never re-fire. Hashing each selected
+      group file into the header is what makes "add a package" actually install it.
+      Same trick as run_onchange_deploy-etc.sh.tmpl. Guarded by `stat` because
+      groups with no packages have no file and `include` errors on a missing path. */ -}}
+{{- range $g := (prepend $roles "common") -}}
+{{-   $rel := printf "packages/%s/%s.txt" $family $g -}}
+{{-   if stat (joinPath $.chezmoi.sourceDir $rel) }}
+# {{ $rel }}: {{ include $rel | sha256sum }}
+{{-   end -}}
+{{- end }}
 PKGDIR="{{ .chezmoi.sourceDir }}/packages/{{ $family }}"
 PKG_GROUPS=(common{{ range $roles }} {{ . }}{{ end }})
 
