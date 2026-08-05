@@ -1,10 +1,17 @@
-{{ if eq .chezmoi.hostname "mars" -}}
+{{- $roles := (index .hosts .hostname).roles -}}
+{{ if or (has "ddns" $roles) (has "minecraft" $roles) (has "podman" $roles) -}}
 #!/bin/bash
 set -euo pipefail
 
 systemctl --user daemon-reload
+{{ if has "ddns" $roles -}}
 systemctl --user enable --now cloudflare-ddns.service
 systemctl --user enable --now cloudflare-ddns.timer
+{{ end -}}
+{{ if has "podman" $roles -}}
 systemctl --user enable --now podman-auto-update.timer
+{{ end -}}
+{{ if has "minecraft" $roles -}}
 systemctl --user enable --now minecraft-backup.timer
+{{ end -}}
 {{ end }}
