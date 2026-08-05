@@ -1,2 +1,2 @@
-jdk-openjdk
 jdk21-openjdk
+jdk25-openjdk

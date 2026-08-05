@@ -143,6 +143,14 @@ in `.chezmoidata.yaml` relocates the whole Caddy/CoreDNS/cloudflared edge.
   (service+timer; daily world backup).
 - `dot_local/scripts/executable_minecraft` — helper to keep the boot server in sync with the
   running one.
+- **JDKs are pinned on purpose.** Each instance's `~/minecraft/<instance>/startserver.sh` (NOT in
+  this repo) invokes an **absolute** JVM path, because instances need different Java versions —
+  vanilla on `/usr/lib/jvm/java-25-openjdk`, the 1.21-era modpack on 21. So
+  `packages/arch/minecraft.txt` must list exactly the versioned packages those paths resolve to;
+  a mismatch produces a server that cannot start. Do **not** switch these to `jdk-openjdk`
+  (Arch's rolling latest) — its directory is renamed on every JDK bump, which silently breaks
+  the hardcoded path during an unrelated `paru -Syu`. Only LTS releases are pinnable (8, 11, 17,
+  21, 25); there is no `jdk26-openjdk`.
 - `dot_local/scripts/executable_minecraft-backup` — daily tarball of the `vanilla` world tree to
   `/mnt/x9pro/minecraft-backups`, keeping the newest 3. Pauses+flushes saves via the server's
   tmux console when it's running so the snapshot is consistent. Run by `minecraft-backup.timer`.
