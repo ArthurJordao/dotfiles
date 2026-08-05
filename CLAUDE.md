@@ -9,6 +9,10 @@ Hosts share this repo, gated by roles in `.chezmoidata.yaml`:
   CoreDNS, Minecraft). Also a desktop and gaming box. This is the interesting part and the
   focus of this file.
 - **`Arthurs-MacBook-Pro`** — macOS workstation (Brewfile, aerospace, hammerspoon, etc.).
+- **`mercury`** — Lenovo Legion Go handheld, CachyOS, user `arthur`. Same arch package family as
+  mars, so it shares `packages/arch/*`. Roles `[gui, gaming]`: shared dotfiles and GUI configs, no
+  containers, units, or `/etc` deploy. Runs no hosted services. `gaming` carries no package file —
+  CachyOS ships the gaming stack.
 
 ## Host gating: three axes
 
@@ -204,3 +208,6 @@ in `.chezmoidata.yaml` relocates the whole Caddy/CoreDNS/cloudflared edge.
   `/etc` writes, secret reads, `run_once_*` scripts. An unused config on the wrong host is inert.
 - Drift risk: `gaming-mode`'s `CANDIDATES` is hand-maintained (generating it needs a
   service→unit-name map, since `immich` expands to 5 units).
+- On a fresh Linux host, `run_once_30-set-default-shell.sh.tmpl` needs `fish` present. It's in
+  `packages/arch/common.txt`, but if the shell change is skipped on first apply (packages not
+  installed yet), just run `chezmoi apply` again.
