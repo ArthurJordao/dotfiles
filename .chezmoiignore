@@ -23,8 +23,11 @@ packages/**
 
 # nvim config is a live symlink into the repo (dot_config/symlink_nvim.tmpl);
 # ignore the holding dir's home target (~/nvim) so chezmoi doesn't also copy it.
-/nvim
-/nvim/**
+# No leading slash: newer chezmoi rejects it as an invalid path. Patterns match
+# the full relative target path (not gitignore-style basenames), so plain `nvim`
+# excludes ~/nvim WITHOUT touching ~/.config/nvim — verified on v2.71.1.
+nvim
+nvim/**
 
 # ---------------------------------------------------------------------------
 # Axis 1: OS. Things that only exist on a given platform.
