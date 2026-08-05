@@ -1,0 +1,34 @@
+# The ONLY hostname-aware data in this repo.
+#
+#   roles    — what this box is FOR (purpose). Gates config, units, packages.
+#   services — which containers live HERE (placement). Each entry is a filename
+#              prefix under dot_config/containers/systemd/ and matches both a
+#              bare file (immich.pod) and a directory (immich/).
+#
+# Do NOT put OS or distro in roles — chezmoi already knows via .chezmoi.os and
+# .chezmoi.osRelease.id. Duplicating it creates a second source of truth that
+# can silently disagree with reality after a reinstall.
+#
+# Role vocabulary:
+#   server    — runs long-lived hosted services
+#   podman    — hosts rootless podman quadlets (implies .config/containers)
+#   gui       — has a graphical session
+#   gaming    — used for games
+#   minecraft — runs the minecraft@ template units + helper scripts
+#   edge      — owns the network edge: Caddy, CoreDNS, cloudflared, /etc deploy
+#   ddns      — runs the cloudflare-ddns service+timer
+
+hosts:
+  mars:
+    roles: [server, podman, gui, gaming, minecraft, edge, ddns]
+    services:
+      - calibre-web-automated
+      - immich
+      - music
+      - open-webui
+      - shelfmark
+      - teamspeak3
+
+  Arthurs-MacBook-Pro:
+    roles: [gui]
+    services: []

@@ -1,0 +1,10 @@
+1password-cli
+chezmoi
+git
+go
+just
+neovim
+python-pipx
+ripgrep
+tailscale
+tmux

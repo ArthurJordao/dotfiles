@@ -1,3 +1,5 @@
+{{- $me := index .hosts .hostname -}}
+{{- $roles := $me.roles -}}
 README.md
 LICENSE.md
 CLAUDE.md
@@ -10,8 +12,10 @@ docs/**
 logs/
 flavours/
 bin/
+tools/
 etc/
-packages.txt
+packages/
+packages/**
 .config/fish/fish_variables
 .config/tmux/plugins/**
 .ssh/known_hosts*
@@ -22,17 +26,10 @@ packages.txt
 /nvim
 /nvim/**
 
-{{ if ne .chezmoi.hostname "mars" }}
-.config/containers
-.config/containers/**
-.config/systemd
-.config/systemd/**
-.local/scripts/gaming-mode
-.local/scripts/minecraft
-.local/scripts/minecraft-backup
-{{ end }}
-
-{{ if ne .chezmoi.hostname "Arthurs-MacBook-Pro" }}
+# ---------------------------------------------------------------------------
+# Axis 1: OS. Things that only exist on a given platform.
+# ---------------------------------------------------------------------------
+{{ if ne .chezmoi.os "darwin" }}
 Brewfile
 Pictures
 Pictures/**
@@ -40,4 +37,43 @@ Pictures/**
 .config/aerospace/**
 .config/hammerspoon
 .config/hammerspoon/**
+{{ end }}
+
+# ---------------------------------------------------------------------------
+# Axis 2: role. Things gated by what the box is FOR.
+# ---------------------------------------------------------------------------
+{{ if not (or (has "ddns" $roles) (has "minecraft" $roles)) }}
+.config/systemd
+.config/systemd/**
+{{ end }}
+{{ if not (has "ddns" $roles) }}
+.config/systemd/user/cloudflare-ddns.service
+.config/systemd/user/cloudflare-ddns.timer
+{{ end }}
+{{ if not (has "minecraft" $roles) }}
+.config/systemd/user/minecraft@.service
+.config/systemd/user/minecraft-backup.service
+.config/systemd/user/minecraft-backup.timer
+.local/scripts/minecraft
+.local/scripts/minecraft-backup
+{{ end }}
+{{ if not (and (has "server" $roles) (has "gaming" $roles)) }}
+.local/scripts/gaming-mode
+{{ end }}
+
+# ---------------------------------------------------------------------------
+# Axis 3: placement. Which containers live on THIS host.
+#
+# CAUTION: the negation below only works with a single-star ignore.
+# `.config/containers/systemd/**` + `!...` silently ignores everything
+# (verified on chezmoi v2.71.1). Do not "tidy" the * into **.
+# ---------------------------------------------------------------------------
+{{ if not (has "podman" $roles) }}
+.config/containers
+.config/containers/**
+{{ else }}
+.config/containers/systemd/*
+{{ range $me.services -}}
+!.config/containers/systemd/{{ . }}*
+{{ end -}}
 {{ end }}

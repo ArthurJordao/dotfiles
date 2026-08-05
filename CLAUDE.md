@@ -3,15 +3,46 @@
 Personal dotfiles managed with [chezmoi](https://www.chezmoi.io/). The source dir is this
 repo (checked out at `~/dev/personal/dotfiles`); `chezmoi apply` renders and deploys it.
 
-Two hosts share this repo, gated by `.chezmoi.hostname`:
+Hosts share this repo, gated by roles in `.chezmoidata.yaml`:
 
 - **`mars`** — Arch/CachyOS homelab server. Runs the self-hosted stack (containers, Caddy,
-  CoreDNS, Minecraft). This is the interesting part and the focus of this file.
+  CoreDNS, Minecraft). Also a desktop and gaming box. This is the interesting part and the
+  focus of this file.
 - **`Arthurs-MacBook-Pro`** — macOS workstation (Brewfile, aerospace, hammerspoon, etc.).
 
-Host gating lives in `.chezmoiignore` (`{{ if ne .chezmoi.hostname "mars" }}` blocks) and in
-`{{ if eq .chezmoi.hostname "mars" }}` guards at the top of the `run_*` scripts. Anything
-mars-only is skipped entirely on the laptop and vice-versa.
+## Host gating: three axes
+
+Gating is **role-based, not hostname-based**. `.chezmoidata.yaml` is the only file that names
+hosts; it maps each hostname to `roles` (what the box is for) and `services` (which containers
+live there). Templates ask capability questions, never identity questions.
+
+Pick the axis that is the *actual* reason a file is not universal:
+
+| Axis | Mechanism | Use for |
+|---|---|---|
+| **OS** | `.chezmoi.os`, `.chezmoi.osRelease` | things that only exist on a platform: aerospace, hammerspoon, Brewfile, `brew` vs `paru` vs `apt` |
+| **Role** | `has "edge" $roles` | purpose: `server`, `podman`, `gui`, `gaming`, `minecraft`, `edge`, `ddns` |
+| **Placement** | `services` list | services with exactly one instance in the fleet (all podman quadlets) |
+
+Do NOT put OS/distro into `roles` — chezmoi already knows, and duplicating it creates a second
+source of truth that silently disagrees after a reinstall.
+
+Roles compose: `gaming-mode` is gated on `and (has "server") (has "gaming")`, because it is for
+a box that hosts services *and* games — not for every gaming box.
+
+`tools/simulate-host <hostname>` renders the repo's output as any host, from any machine
+(read-only, throwaway destDir): `./tools/simulate-host mars managed`. It overrides **identity,
+not platform** — `.chezmoi.os` stays that of the machine you run it on, so OS-gated branches
+can only be verified on the real host.
+
+**Three silent footguns:**
+- In `.chezmoiignore`, `dir/**` followed by `!dir/keep` ignores **everything** — negation only
+  re-includes under a single-star `dir/*`. Never "tidy" that `*` into `**`.
+- Container placement is deny-by-default: a new `.container` file that is not listed in a host's
+  `services` deploys nowhere, with no error.
+- Templates run with `missingkey=error`, so `.chezmoi.osRelease.idLike` **errors** on a distro
+  whose `os-release` omits `ID_LIKE` (plain Arch does), and `| default` cannot rescue it — a
+  failed map lookup aborts before the pipe. Use `index .chezmoi.osRelease "idLike"` instead.
 
 # The mars self-hosted stack
 
@@ -91,7 +122,18 @@ under `dot_config/` deploy normally to `~/.config/...`.
 
 `run_once_enable-systemd-units.sh.tmpl` only enables the hand-written units
 (`cloudflare-ddns`, `podman-auto-update.timer`) — quadlet services are NOT listed there
-because they're generated (see above).
+because they're generated (see above). Each unit is enabled under the role that owns it
+(`ddns`, `podman`, `minecraft`), so a host gets only what it actually runs.
+
+Packages live in `packages/<family>/<group>.txt`, where family is `arch` or `debian` (derived
+from `.chezmoi.osRelease`) and group is `common` plus one file per role.
+`run_once_install-packages-linux.sh.tmpl` concatenates the groups matching the host's roles;
+missing group files are skipped, so a role with no packages needs no file. The concatenated
+list is piped to `paru -S -` / `apt-get install`, which read **one package name per line** —
+so no comments and no blank lines in those files, or the name becomes an install target.
+
+`run_onchange_deploy-etc.sh.tmpl` is gated on the **`edge`** role, so moving `edge` between hosts
+in `.chezmoidata.yaml` relocates the whole Caddy/CoreDNS/cloudflared edge.
 
 ## Other mars pieces
 
@@ -112,14 +154,17 @@ because they're generated (see above).
 
 1. `dot_config/containers/systemd/<svc>.container` (+ `<svc>.env.tmpl` if it needs secrets;
    add the keys to the `mars-secrets` 1Password item in vault `dotfiles`).
-2. Caddy block in `etc/caddy/Caddyfile` → `localhost:<port>`.
-3. `<svc>.arthurjordao.dev` in **both** host blocks of `etc/coredns/Corefile`.
-4. Add `<svc>.service` to `CANDIDATES` in `dot_local/scripts/executable_gaming-mode`.
-5. **(Optional — public internet access)** Add an `ingress:` rule to `etc/cloudflared/config.yml`
+2. **Add `<svc>` to that host's `services` list in `.chezmoidata.yaml`** — without this the file
+   deploys nowhere and chezmoi reports no error. Verify with
+   `./tools/simulate-host <host> managed | grep <svc>`.
+3. Caddy block in `etc/caddy/Caddyfile` → `127.0.0.1:<port>`.
+4. `<svc>.arthurjordao.dev` in **both** host blocks of `etc/coredns/Corefile`.
+5. Add `<svc>.service` to `CANDIDATES` in `dot_local/scripts/executable_gaming-mode`.
+6. **(Optional — public internet access)** Add an `ingress:` rule to `etc/cloudflared/config.yml`
    (`hostname:` + `service: http://localhost:<port>`) above the `http_status:404` catch-all, then
    on mars run `cloudflared tunnel route dns <tunnel-id> <svc>.arthurjordao.dev` once to create
    the CNAME. Do NOT use the dashboard (see the exposure section above).
-6. On mars: `chezmoi apply` (deploys /etc, reloads caddy/coredns, restarts cloudflared), then
+7. On mars: `chezmoi apply` (deploys /etc, reloads caddy/coredns, restarts cloudflared), then
    `systemctl --user daemon-reload && systemctl --user start <svc>.service`.
 
 # Working in this repo
@@ -127,5 +172,11 @@ because they're generated (see above).
 - The user runs `chezmoi apply` themselves — don't run it for them.
 - `~/.config/nvim` is a **live symlink** into the repo (`dot_config/symlink_nvim.tmpl`); don't
   break it. `/nvim` is ignored so chezmoi doesn't double-copy it.
-- Configs are cross-platform by default; only gate on hostname/OS when something is genuinely
-  host-specific.
+- Configs are cross-platform by default; only gate when something is genuinely host-specific,
+  and gate on the axis that is the real reason (see "Host gating: three axes" above).
+- Gate what *costs* something — packages, systemd units, `/etc` writes, 1Password secret reads,
+  `run_once_*` scripts. An unused config file on the wrong host is inert; a conditional for it
+  is churn.
+- **Known drift risk:** `gaming-mode`'s `CANDIDATES` list is still hand-maintained. It could be
+  generated from `.chezmoidata.yaml`, but that needs a service→unit-name mapping (`immich`
+  expands to 5 units). Until then, adding a service means editing both files.
