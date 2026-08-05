@@ -1,7 +1,13 @@
-{{- /* Shared body for installing this host's declared packages.
-       Consumed by BOTH run_onchange_install-packages-linux.sh.tmpl (automatic, on
-       change) and dot_local/scripts/executable_install-packages.tmpl (manual, via
-       `just packages`). Keep the logic here so the two can never drift.
+{{- /* Shared body for installing this host's declared packages. Consumed by BOTH
+       run_once_install-packages.sh.tmpl (bootstrap: first apply only) and
+       dot_local/scripts/executable_install-packages.tmpl (manual: `just packages`).
+       Keep the logic here so the two can never drift.
+
+       NOTE: deliberately no per-list sha256 fingerprints in here. Adding them
+       would make the run_once_ hook re-fire whenever a package list changed,
+       turning every `chezmoi apply` into a package install. Bootstrap-once plus
+       explicit `just packages` is the intended behaviour.
+
        Callers supply their own `#!/bin/bash` line. */ -}}
 {{- $roles := (index .hosts .hostname).roles -}}
 {{- /* Use `index`, not dot-lookup: chezmoi runs templates with missingkey=error,
@@ -20,19 +26,6 @@ set -euo pipefail
 echo "Unsupported distro: id={{ $id }} id_like={{ $like }}" >&2
 exit 1
 {{ else -}}
-{{- /* Package names are read at RUNTIME from the group files, so without these
-       fingerprints the rendered script would be byte-identical after editing a
-       list, run_onchange_ would not re-fire, and the new package would silently
-       never install. Guarded by `stat` because roles with no packages have no
-       group file and `include` errors on a missing path. */ -}}
-# package-list fingerprints (make run_onchange_ re-fire when a list changes):
-{{- range $g := (prepend $roles "common") -}}
-{{-   $rel := printf "packages/%s/%s.txt" $family $g -}}
-{{-   if stat (joinPath $.chezmoi.sourceDir $rel) }}
-#   {{ $rel }}: {{ include $rel | sha256sum }}
-{{-   end -}}
-{{- end }}
-
 PKGDIR="{{ .chezmoi.sourceDir }}/packages/{{ $family }}"
 PKG_GROUPS=(common{{ range $roles }} {{ . }}{{ end }})
 
@@ -53,15 +46,13 @@ fi
 echo "Installing $(wc -l < "$LIST") packages for family={{ $family }} groups=${PKG_GROUPS[*]}"
 {{ if eq $family "arch" -}}
 # Deliberately `-S`, not `-Syu`: refreshing the DB without a full upgrade creates
-# partial-upgrade breakage, and doing a full unattended upgrade on every apply is
-# not something this script should decide for a host running live services.
-# `just upgrade` is the place that does -Syu first, then calls this.
+# partial-upgrade breakage. `just upgrade` is the place that does -Syu first.
 if ! paru -S --needed --noconfirm - < "$LIST"; then
     cat >&2 <<'HINT'
 
 Package install failed. If the output showed 404s while downloading, the pacman
 database is stale — it references package versions the mirrors have dropped.
-Fix it with a full upgrade, then retry:
+Fix it with a full upgrade, which also re-runs this:
 
     just upgrade
 

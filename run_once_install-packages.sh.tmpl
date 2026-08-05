@@ -1,5 +1,11 @@
+{{- /* Bootstrap only: run_once_ fires on a host's FIRST apply and not again.
+       Editing a package list / the Brewfile does NOT re-fire it — that is
+       deliberate (see CLAUDE.md); use `just packages` for later additions. */ -}}
 {{ if eq .chezmoi.os "darwin" -}}
 #!/bin/bash
 set -euo pipefail
 brew bundle --file "$HOME/Brewfile"
-{{ end -}}
+{{ else if eq .chezmoi.os "linux" -}}
+#!/bin/bash
+{{ template "install-packages.sh" . }}
+{{- end -}}

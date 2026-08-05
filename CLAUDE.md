@@ -125,25 +125,43 @@ under `dot_config/` deploy normally to `~/.config/...`.
 because they're generated (see above). Each unit is enabled under the role that owns it
 (`ddns`, `podman`, `minecraft`), so a host gets only what it actually runs.
 
-Packages live in `packages/<family>/<group>.txt`, where family is `arch` or `debian` (derived
-from `.chezmoi.osRelease`) and group is `common` plus one file per role.
-`run_onchange_install-packages-linux.sh.tmpl` concatenates the groups matching the host's roles;
-missing group files are skipped, so a role with no packages needs no file. The concatenated
-list is piped to `paru -S -` / `apt-get install`, which read **one package name per line** —
-so no comments and no blank lines in those files, or the name becomes an install target.
+## Packages
 
-It is **`run_onchange_`, and its header embeds the sha256 of every selected group file.** That is
-load-bearing, not decoration: the package names are read at *runtime*, so the rendered script would
-be byte-identical after editing a list, the content hash wouldn't change, and **the newly added
-package would never install** — silently. Same trick as `run_onchange_deploy-etc.sh.tmpl`. The hash
-loop is guarded by `stat` because roles with no packages have no group file and `include` errors on a
-missing path.
+Packages live in `packages/<family>/<group>.txt`, where family is `arch` or `debian` (derived from
+`.chezmoi.osRelease`) and group is `common` plus one file per role. Missing group files are skipped,
+so a role with no packages needs no file. The concatenated list is piped to `paru -S -` /
+`apt-get install`, which read **one package name per line** — so no comments and no blank lines in
+those files, or the name becomes an install target.
 
-On Arch the install is `paru -S`, **not** `-Syu`: refreshing the DB without a full upgrade causes
-partial-upgrade breakage, and a full unattended upgrade on every apply is not this script's call
-to make on a host running live services. The cost is that a stale pacman DB fails with 404s on
-package files the mirrors have dropped; the script catches that and tells you to run `paru -Syu`
-and re-apply. A failed `run_once` script is not recorded as run, so it retries automatically.
+**Packages install on a host's FIRST apply, and never again automatically.** One hook,
+`run_once_install-packages.sh.tmpl`, branches on OS internally (`brew bundle` on darwin, the shared
+body on linux) so a fresh machine bootstraps in one go. After that, adding a package is explicit:
+
+```
+just packages    # install this host's declared packages
+just upgrade     # full system upgrade first, then install declared
+```
+
+**This is a deliberate design decision, and the subtle part is what's *absent*.** `run_once_` state
+is keyed on the rendered script's hash, and the package names are read at *runtime* from the group
+files — so editing a list leaves the script byte-identical and the hook does **not** re-fire. That
+is intended: `chezmoi apply` should sync dotfiles, not install packages every time a list changes.
+Do **not** "fix" this by embedding per-list `sha256sum` fingerprints in the script header (the
+`run_onchange_deploy-etc.sh.tmpl` trick) — that would turn every apply into a package install.
+
+**Consequence / footgun:** adding a package to `packages/<family>/<group>.txt` does nothing until
+you run `just packages`. The shared body lives in `.chezmoitemplates/install-packages.sh` and is
+included by both the bootstrap hook and `dot_local/scripts/executable_install-packages.tmpl`, so
+the automatic and manual paths can't drift.
+
+`just packages` on Linux runs `~/.local/scripts/install-packages` (os-gated to linux); on macOS it
+runs `brew bundle`. `just upgrade` does `paru -Syu` / `brew upgrade` **before** installing, so the
+package DB is fresh — which also avoids the stale-mirror 404s you get from `paru -S` against a
+months-old database. The install itself is `paru -S`, never `-Syu`, because refreshing the DB
+without a full upgrade causes partial-upgrade breakage.
+
+There is no `brew bundle cleanup` counterpart on Linux: pruning undeclared packages on Arch means
+orphan removal, too blunt to run on a host with live services.
 
 `run_onchange_deploy-etc.sh.tmpl` is gated on the **`edge`** role, so moving `edge` between hosts
 in `.chezmoidata.yaml` relocates the whole Caddy/CoreDNS/cloudflared edge.

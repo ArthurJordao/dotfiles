@@ -24,7 +24,14 @@ chezmoi init --source ~/dev/personal/dotfiles
 # 5. Deploy files first (SSH keys need to land before git externals can clone)
 chezmoi apply --exclude=externals,scripts --force
 
-# 6. Full apply (externals + scripts now work with SSH keys in place)
+# 6. Full apply (externals + scripts now work with SSH keys in place).
+#    This also installs packages: the run_once_ hooks fire on a host's first
+#    apply. They never re-fire afterwards — later package additions need
+#    `just packages`.
+chezmoi apply --force
+
+# 7. If fish didn't become the login shell (it needs fish installed, which only
+#    happened during step 6's package install), re-run:
 chezmoi apply --force
 ```
 
@@ -38,7 +45,8 @@ Items: `dotfiles-secrets`, `mars-secrets`, `ssh-ed25519`, `ssh-rsa` (Secure Note
 
 ```bash
 just apply       # Apply dotfiles
-just upgrade     # Upgrade Homebrew packages and casks
+just packages    # Install this host's declared packages
+just upgrade     # Full system upgrade, then install declared packages
 just tpm-update  # Update tmux plugins
 just update      # Full update
 ```
