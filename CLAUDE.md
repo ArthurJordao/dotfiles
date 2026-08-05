@@ -132,6 +132,12 @@ missing group files are skipped, so a role with no packages needs no file. The c
 list is piped to `paru -S -` / `apt-get install`, which read **one package name per line** —
 so no comments and no blank lines in those files, or the name becomes an install target.
 
+On Arch the install is `paru -S`, **not** `-Syu`: refreshing the DB without a full upgrade causes
+partial-upgrade breakage, and a full unattended upgrade on every apply is not this script's call
+to make on a host running live services. The cost is that a stale pacman DB fails with 404s on
+package files the mirrors have dropped; the script catches that and tells you to run `paru -Syu`
+and re-apply. A failed `run_once` script is not recorded as run, so it retries automatically.
+
 `run_onchange_deploy-etc.sh.tmpl` is gated on the **`edge`** role, so moving `edge` between hosts
 in `.chezmoidata.yaml` relocates the whole Caddy/CoreDNS/cloudflared edge.
 

@@ -37,7 +37,22 @@ fi
 
 echo "Installing $(wc -l < "$LIST") packages for family={{ $family }} groups=${PKG_GROUPS[*]}"
 {{ if eq $family "arch" -}}
-paru -S --needed --noconfirm - < "$LIST"
+# Deliberately `-S`, not `-Syu`: refreshing the DB without a full upgrade creates
+# partial-upgrade breakage, and doing a full unattended upgrade on every apply is
+# not something this script should decide for a host running live services.
+if ! paru -S --needed --noconfirm - < "$LIST"; then
+    cat >&2 <<'HINT'
+
+Package install failed. If the output showed 404s while downloading, the pacman
+database is stale — it references package versions the mirrors have dropped.
+Fix it with a full upgrade, then re-apply:
+
+    paru -Syu
+    chezmoi apply
+
+HINT
+    exit 1
+fi
 {{ else -}}
 sudo apt-get update
 xargs -a "$LIST" sudo apt-get install -y
