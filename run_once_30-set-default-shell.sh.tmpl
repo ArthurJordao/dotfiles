@@ -15,7 +15,8 @@ if ! grep -qxF "$FISH" /etc/shells; then
     echo "$FISH" | sudo tee -a /etc/shells > /dev/null
 fi
 
-if [ "$SHELL" != "$FISH" ]; then
+# Resolved, not literal: /bin/fish and /usr/bin/fish are the same binary.
+if [ "$(readlink -f "$SHELL")" != "$(readlink -f "$FISH")" ]; then
     echo "Setting login shell to $FISH"
     chsh -s "$FISH"
 else
