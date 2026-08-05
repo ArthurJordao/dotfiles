@@ -1,6 +1,3 @@
-# Host table — roles (purpose) and services (which quadlets live here).
-# See CLAUDE.md for the role vocabulary and gating rules.
-
 hosts:
   mars:
     roles: [server, podman, gui, gaming, minecraft, edge, ddns]
