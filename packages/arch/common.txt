@@ -3,6 +3,7 @@ chezmoi
 git
 go
 just
+mosh
 neovim
 python-pipx
 ripgrep
