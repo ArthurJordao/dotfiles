@@ -6,6 +6,8 @@
 #   gui        graphical session
 #   gaming     used for games
 #   minecraft  minecraft@ units + helper scripts
+#   sunshine   sunshine game-stream host (package + its user unit)
+#   moonlight  moonlight client, i.e. streams *from* a sunshine host
 #   edge       Caddy, CoreDNS, cloudflared, /etc deploy
 #   ddns       cloudflare-ddns service+timer
 #
@@ -17,7 +19,7 @@ domain: arthurjordao.dev
 
 hosts:
   mars:
-    roles: [server, podman, gui, gaming, minecraft, edge, ddns]
+    roles: [server, podman, gui, gaming, minecraft, sunshine, edge, ddns]
     ip:
       lan: 192.168.15.23
       tailscale: 100.127.50.55
@@ -48,6 +50,8 @@ hosts:
       - teamspeak3
       - minecraft@vanilla
       - minecraft@atm10-tts
+      # sunshine is deliberately absent: `units` is what gaming-mode stops, and
+      # stopping the game-stream host would kill the session being streamed.
 
     endpoints:
       - {name: books, port: 8083, public: true}
@@ -58,9 +62,13 @@ hosts:
       - {name: shelfmark, port: 8084}
       - {name: slskd, port: 5030}
       - {name: soulsync, port: 8008}
+      # Caddy fronts the config UI only (self-signed, hence tls_insecure).
+      # Moonlight itself talks TCP 47984-47990 / UDP 47998-48010 straight to the
+      # host, so the DNS record is the part that matters to a client.
+      - {name: sunshine, port: 47990, scheme: https, tls_insecure: true}
 
   mercury:
-    roles: [gui, gaming]
+    roles: [gui, gaming, moonlight]
     ip:
       lan: 192.168.15.28
       tailscale: 100.121.125.41

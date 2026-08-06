@@ -1,5 +1,5 @@
 {{- $roles := (index .hosts .hostname).roles -}}
-{{ if or (has "ddns" $roles) (has "minecraft" $roles) (has "podman" $roles) -}}
+{{ if or (has "ddns" $roles) (has "minecraft" $roles) (has "podman" $roles) (has "sunshine" $roles) -}}
 #!/bin/bash
 set -euo pipefail
 
@@ -13,5 +13,11 @@ systemctl --user enable --now podman-auto-update.timer
 {{ end -}}
 {{ if has "minecraft" $roles -}}
 systemctl --user enable --now minecraft-backup.timer
+{{ end -}}
+{{ if has "sunshine" $roles -}}
+# Shipped by the sunshine package, not by this repo — so `just packages` has to
+# have run first. If it hasn't, this fails loudly, chezmoi does not record the
+# script as run, and the next apply retries it.
+systemctl --user enable --now sunshine.service
 {{ end -}}
 {{ end }}

@@ -41,6 +41,8 @@
               { "const": "gui", "description": "Graphical session configs." },
               { "const": "gaming", "description": "Used for games. Combined with `server`, also installs gaming-mode." },
               { "const": "minecraft", "description": "minecraft@ units, the backup timer, and the helper scripts." },
+              { "const": "sunshine", "description": "Sunshine game-stream host: installs the package and enables the user unit it ships. Kept out of `units` on purpose so gaming-mode never stops it." },
+              { "const": "moonlight", "description": "Moonlight client — streams from a `sunshine` host. Linux only; on macOS the cask is in the Brewfile, which is not role-gated." },
               { "const": "edge", "description": "Owns Caddy, CoreDNS, cloudflared and the /etc deploy. Move it to relocate the whole edge." },
               { "const": "ddns", "description": "cloudflare-ddns service + timer." }
             ]
