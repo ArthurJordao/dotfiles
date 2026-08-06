@@ -140,7 +140,7 @@ mars:
   quadlets: [calibre-web-automated, immich, music, open-webui, shelfmark, teamspeak3]
   units: [immich-pod, immich-db, immich-valkey, immich-ml, immich-server,
           navidrome, slskd, soulsync, calibre-web-automated, open-webui,
-          shelfmark, teamspeak3, minecraft@vanilla, minecraft@atm10]
+          shelfmark, teamspeak3, minecraft@vanilla, minecraft@atm10-tts]
   endpoints:
     - {name: books, port: 8083, public: true}
     - {name: dns, port: 8053, scheme: https, tls_insecure: true, log: false}
@@ -250,7 +250,7 @@ in `.chezmoidata.yaml` relocates the whole Caddy/CoreDNS/cloudflared edge.
 
 - `dot_config/systemd/user/` — hand-written units: `cloudflare-ddns` (service+timer keeps the
   public A record current), `minecraft@.service` (template; instances like
-  `minecraft@vanilla`, `minecraft@atm10` are mutually exclusive), and `minecraft-backup`
+  `minecraft@vanilla`, `minecraft@atm10-tts` are mutually exclusive), and `minecraft-backup`
   (service+timer; daily world backup).
 - `dot_local/scripts/executable_minecraft` — helper to keep the boot server in sync with the
   running one.

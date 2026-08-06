@@ -44,7 +44,7 @@ hosts:
       - shelfmark
       - teamspeak3
       - minecraft@vanilla
-      - minecraft@atm10
+      - minecraft@atm10-tts
 
     endpoints:
       - {name: books, port: 8083, public: true}
