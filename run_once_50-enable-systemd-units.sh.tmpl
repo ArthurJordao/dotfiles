@@ -18,6 +18,11 @@ systemctl --user enable --now minecraft-backup.timer
 # Shipped by the sunshine package, not by this repo — so `just packages` has to
 # have run first. If it hasn't, this fails loudly, chezmoi does not record the
 # script as run, and the next apply retries it.
-systemctl --user enable --now sunshine.service
+#
+# Must be the real unit name. The unit declares Alias=sunshine.service, but an
+# alias symlink is only created BY enabling, so the short name does not resolve
+# until after this line has run once. It is WantedBy=graphical-session.target,
+# so it comes up with the desktop rather than at boot.
+systemctl --user enable --now app-dev.lizardbyte.app.Sunshine.service
 {{ end -}}
 {{ end }}
