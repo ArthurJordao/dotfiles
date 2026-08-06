@@ -20,8 +20,9 @@ hosts:
       tailscale: 100.x.x.x
 ```
 
-Roles and lists are all optional — omit what the host doesn't need. See
-[Host configuration](#host-configuration) for what each one does.
+`roles` is required — `.chezmoiignore` reads it unguarded, so omitting it fails with
+`map has no entry for key "roles"`. Everything else is optional; omit what the host
+doesn't need. See [Host configuration](#host-configuration) for what each one does.
 
 ### 1. Set the hostname
 
@@ -153,6 +154,21 @@ Only `name` is required. `<name>` is prefixed onto the `domain` key.
 
 Every host with an `ip` also gets `<hostname>.arthurjordao.dev` for free, resolving
 to `ip.lan` for LAN clients and `ip.tailscale` for tailnet clients.
+
+### Editor validation
+
+`chezmoidata.schema.json` describes the shape above, and `.chezmoidata.yaml` opens
+with a `# yaml-language-server: $schema=` modeline pointing at it, so Neovim
+validates as you type and shows each field's meaning on hover. It catches the
+mistakes that otherwise fail *silently*: a misspelled `tls-insecure` currently reads
+as absent and quietly disables the flag, `endpoint:` instead of `endpoints:` yields
+no endpoints at all, and a typo'd role is inert by design.
+
+It validates structure only. It cannot know that a quadlet is missing from `units`,
+that a port is wrong, or that an IP points at the wrong machine.
+
+Adding a field to a template means adding it to the schema too, or valid data starts
+getting rejected.
 
 ### Reviewing a change
 

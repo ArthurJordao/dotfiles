@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ArthurJordao/dotfiles/chezmoidata.schema.json",
+  "title": "chezmoi host data",
+  "description": "Shape of .chezmoidata.yaml. Validates structure only — it cannot catch a quadlet missing from `units`, a wrong port, or a typo'd IP.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["domain", "hosts"],
+  "properties": {
+    "domain": {
+      "type": "string",
+      "description": "Base domain. Every endpoint is served as <name>.<domain>, and every host with an `ip` resolves as <hostname>.<domain>.",
+      "pattern": "^[a-z0-9-]+(\\.[a-z0-9-]+)+$"
+    },
+    "hosts": {
+      "type": "object",
+      "description": "The only place hosts are named. A host absent here fails every template with `map has no entry for key \"<hostname>\"`.",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9-]*$",
+        "description": "Must match the machine's HostName exactly."
+      },
+      "additionalProperties": { "$ref": "#/$defs/host" }
+    }
+  },
+  "$defs": {
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["roles"],
+      "properties": {
+        "roles": {
+          "type": "array",
+          "description": "What the box is for. Required: .chezmoiignore reads it unguarded, so omitting it errors under missingkey=error.",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "oneOf": [
+              { "const": "server", "description": "Long-lived hosted services." },
+              { "const": "podman", "description": "Deploys the rootless podman quadlets listed in `quadlets`." },
+              { "const": "gui", "description": "Graphical session configs." },
+              { "const": "gaming", "description": "Used for games. Combined with `server`, also installs gaming-mode." },
+              { "const": "minecraft", "description": "minecraft@ units, the backup timer, and the helper scripts." },
+              { "const": "edge", "description": "Owns Caddy, CoreDNS, cloudflared and the /etc deploy. Move it to relocate the whole edge." },
+              { "const": "ddns", "description": "cloudflare-ddns service + timer." }
+            ]
+          }
+        },
+        "ip": {
+          "$ref": "#/$defs/ip",
+          "description": "Optional. Present means the host gets <hostname>.<domain> in both DNS views, and its endpoints resolve to these addresses."
+        },
+        "quadlets": {
+          "type": "array",
+          "description": "Podman quadlet filename PREFIXES, matched as <prefix>* — so `immich` picks up immich.pod and the whole immich/ subdir. Only deploys where the host also has the `podman` role.",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$",
+            "not": {
+              "pattern": "\\.(container|pod|network|volume|image|build)$"
+            },
+            "description": "A prefix, not a filename — leave the extension off."
+          }
+        },
+        "units": {
+          "type": "array",
+          "description": "Systemd user units gaming-mode suspends and restores. Name EVERY unit, not just a pod: Requires= propagates stop to dependents but start only to dependencies, so starting immich-pod alone brings up an empty pod.",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9@._-]*$",
+            "not": { "pattern": "\\.service$" },
+            "description": "Without the .service suffix — the template appends it. minecraft@<instance> entries also generate the Conflicts= line in minecraft@.service."
+          }
+        },
+        "endpoints": {
+          "type": "array",
+          "description": "Hostnames to serve and resolve. Generates the Caddy blocks, both CoreDNS views, and the Cloudflare Tunnel ingress rules.",
+          "items": { "$ref": "#/$defs/endpoint" }
+        }
+      }
+    },
+    "ip": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lan", "tailscale"],
+      "properties": {
+        "lan": {
+          "type": "string",
+          "format": "ipv4",
+          "description": "Resolved for LAN clients (the 192.168.15.0/24 CoreDNS view).",
+          "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}$"
+        },
+        "tailscale": {
+          "type": "string",
+          "format": "ipv4",
+          "description": "Resolved for tailnet clients (the 100.64.0.0/10 CoreDNS view).",
+          "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}$"
+        }
+      }
+    },
+    "endpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Label only — <name>.<domain> is the full hostname, so leave the domain off. Need not match the quadlet: calibre-web-automated is served as `books`.",
+          "pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?$"
+        },
+        "port": {
+          "type": "integer",
+          "description": "Upstream port. OMIT for a DNS record with no reverse-proxy block and no tunnel rule — that is how minecraft is reached over its own TCP port.",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "public": {
+          "type": "boolean",
+          "description": "true adds a Cloudflare Tunnel ingress rule, reachable from the public internet. Still needs `cloudflared tunnel route dns` once to create the CNAME.",
+          "default": false
+        },
+        "scheme": {
+          "description": "The UPSTREAM's scheme, not the listener's. Caddy always terminates TLS itself; set https only when the thing behind it also speaks TLS.",
+          "default": "http",
+          "oneOf": [
+            { "const": "http", "description": "Plain HTTP upstream (the default)." },
+            { "const": "https", "description": "Upstream speaks TLS — usually wants tls_insecure too." }
+          ]
+        },
+        "tls_insecure": {
+          "type": "boolean",
+          "description": "Skip verification of the upstream's certificate. Only meaningful with scheme: https, e.g. CoreDNS's self-signed DoH listener.",
+          "default": false
+        },
+        "log": {
+          "type": "boolean",
+          "description": "false disables the JSON access log at /var/log/caddy/<name>-access.log.",
+          "default": true
+        }
+      }
+    }
+  }
+}

@@ -3,6 +3,7 @@
 README.md
 LICENSE.md
 CLAUDE.md
+chezmoidata.schema.json
 docs/
 docs/**
 .DS_Store
