@@ -1,0 +1,25 @@
+#!/bin/bash
+# Sunshine's web UI owns ~/.config/sunshine/sunshine.conf — it rewrites the whole
+# file every time you hit Save. So chezmoi owns exactly ONE line of it and passes
+# everything else through untouched. That is what modify_ is for; a managed file
+# here would silently revert every setting made in the UI.
+#
+# csrf_allowed_origins exists because Caddy fronts the UI on a hostname Sunshine
+# has no way to know about. Its built-in defaults only cover https://localhost,
+# https://127.0.0.1 and https://[::1], so every state-changing request arriving
+# through the reverse proxy is rejected as cross-origin:
+#
+#   CSRF protection blocked request from origin: https://sunshine.<domain>
+#
+# The value is a COMMA-separated list, not a JSON array.
+#
+# Sunshine reads this only at startup — after chezmoi rewrites it, run
+#   systemctl --user restart app-dev.lizardbyte.app.Sunshine.service
+set -euo pipefail
+
+# Current contents arrive on stdin. Drop any existing copy of our line so this is
+# idempotent, and keep the rest. grep exits 1 when it selects nothing, which
+# includes the empty-file case, so it must not trip `set -e`.
+grep -v '^[[:space:]]*csrf_allowed_origins[[:space:]]*=' || true
+
+echo 'csrf_allowed_origins = https://sunshine.{{ .domain }}'

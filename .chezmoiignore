@@ -59,6 +59,10 @@ Pictures/**
 {{ if not (and (has "server" $roles) (has "gaming" $roles)) }}
 .local/scripts/gaming-mode
 {{ end }}
+{{ if not (has "sunshine" $roles) }}
+.config/sunshine
+.config/sunshine/**
+{{ end }}
 {{ if ne .chezmoi.os "linux" }}
 .local/scripts/install-packages
 {{ end }}
