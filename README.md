@@ -159,7 +159,10 @@ is derived from a TLS certificate Syncthing generates on its first run, so it ca
 known in advance — pairing is a **two-phase bootstrap**:
 
 ```sh
-# 1. install syncthing by hand THIS ONCE (see the ordering note below)
+# 1. install syncthing by hand THIS ONCE (see the ordering note below).
+#    Full upgrade first: a bare `paru -S` against a stale package DB 404s on
+#    every mirror, then fails signature verification on the partial download.
+paru -Syu
 paru -S --needed syncthing
 
 # 2. start it; chezmoi writes a config with no folders yet
