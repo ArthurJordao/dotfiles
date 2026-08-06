@@ -3,7 +3,8 @@
 README.md
 LICENSE.md
 CLAUDE.md
-chezmoidata.schema.json
+schemas/
+schemas/**
 docs/
 docs/**
 .DS_Store
@@ -62,6 +63,15 @@ Pictures/**
 {{ if not (has "sunshine" $roles) }}
 .config/sunshine
 .config/sunshine/**
+{{ end }}
+{{ if not (has "emulation" $roles) }}
+Emulation
+Emulation/**
+.var
+.var/**
+.local/state
+.local/state/**
+.local/scripts/emu-sync-check
 {{ end }}
 {{ if ne .chezmoi.os "linux" }}
 .local/scripts/install-packages

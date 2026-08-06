@@ -6,7 +6,7 @@
 Description=Minecraft Server (%i)
 After=network.target
 # Instances are mutually exclusive. Derived from this host's `units` in
-# .chezmoidata.yaml so it can't go stale when one is renamed.
+# .chezmoidata/hosts.yaml so it can't go stale when one is renamed.
 Conflicts={{ join " " $instances }}
 
 [Service]

@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=../schemas/syncthing.schema.json
+#
+# Merged into the same template data as hosts.yaml — chezmoi reads every
+# file in .chezmoidata/ and merges them, so templates just see `.syncthing`.
+#
+# Syncthing folders shared between every host with the `emulation` role.
+#
+# `mode: oneway` + `source:` renders Send Only on the source host and Receive
+# Only everywhere else, so a non-source host structurally cannot push content
+# back. `mode: twoway` renders Send & Receive with file versioning.
+#
+# Paths are home-relative on every host. They must point at REAL storage on
+# both sides: ~/Emulation/saves/ is a farm of absolute symlinks that EmuDeck
+# regenerates per host, so syncing it would replicate broken links and no data.
+syncthing:
+  folders:
+    # Content — mars is authoritative.
+    - {id: emu-roms, path: Emulation/roms, mode: oneway, source: mars}
+    - {id: emu-bios, path: Emulation/bios, mode: oneway, source: mars}
+    - {id: emu-media, path: Emulation/tools/downloaded_media, mode: oneway, source: mars}
+    # Switch support files. Without mods/firmware, synced Switch games misbehave.
+    - {id: emu-switch-mods, path: Emulation/storage/eden/load, mode: oneway, source: mars}
+    - {id: emu-switch-firmware, path: Emulation/storage/eden/nand/system/Contents/registered, mode: oneway, source: mars}
+    - {id: emu-switch-keys, path: .local/share/eden/keys, mode: oneway, source: mars}
+    # Saves — change on both hosts, so two-way with versioning.
+    - {id: emu-save-eden, path: Emulation/storage/eden/nand/user/save, mode: twoway}
+    - {id: emu-save-retroarch, path: Emulation/saves/retroarch/saves, mode: twoway}
+    - {id: emu-state-retroarch, path: Emulation/saves/retroarch/states, mode: twoway}
+    - {id: emu-save-dolphin, path: .var/app/org.DolphinEmu.dolphin-emu/data/dolphin-emu, mode: twoway}
+    - {id: emu-save-melonds, path: Emulation/saves/melonds, mode: twoway}
+    - {id: emu-save-duckstation, path: Emulation/saves/duckstation, mode: twoway}
+    # Favourites, playtime and per-game emulator choice all live here.
+    - {id: emu-gamelists, path: ES-DE/gamelists, mode: twoway}

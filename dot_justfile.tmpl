@@ -34,3 +34,8 @@ upgrade:
 # Update tmux plugins
 tpm-update:
     ~/.tmux/plugins/tpm/bin/update_plugins all
+{{ if has "emulation" (index .hosts .hostname).roles }}
+# Report emulation sync drift: conflicts, versions, stray emulator files
+emu-sync-check:
+    ~/.local/scripts/emu-sync-check
+{{ end }}

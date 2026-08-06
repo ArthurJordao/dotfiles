@@ -3,7 +3,7 @@
 Personal dotfiles managed with [chezmoi](https://www.chezmoi.io/). The source dir is this
 repo (checked out at `~/dev/personal/dotfiles`); `chezmoi apply` renders and deploys it.
 
-Hosts share this repo, gated by roles in `.chezmoidata.yaml`:
+Hosts share this repo, gated by roles in `.chezmoidata/hosts.yaml`:
 
 - **`mars`** — Arch/CachyOS homelab server. Runs the self-hosted stack (containers, Caddy,
   CoreDNS, Minecraft). Also a desktop and gaming box. This is the interesting part and the
@@ -12,19 +12,22 @@ Hosts share this repo, gated by roles in `.chezmoidata.yaml`:
   etc.). Renamed from `Arthurs-MacBook-Pro`. It's Kandji-MDM-enrolled, which can rewrite
   `ComputerName`/`LocalHostName` on check-in — `HostName` is the one chezmoi reads.
 - **`mercury`** — Lenovo Legion Go handheld, CachyOS, user `arthur`. Same arch package family as
-  mars, so it shares `packages/arch/*`. Roles `[gui, gaming]`: shared dotfiles and GUI configs, no
-  containers, units, or `/etc` deploy. Runs no hosted services. `gaming` carries no package file —
-  CachyOS ships the gaming stack.
+  mars, so it shares `packages/arch/*`. Roles `[gui, gaming, moonlight, emulation]`: shared
+  dotfiles and GUI configs, no containers and no `/etc` deploy. Runs no hosted services. `gaming`
+  carries no package file — CachyOS ships the gaming stack. `emulation` makes it the second half of
+  the shared EmuDeck library (see "Emulation library sync").
 
 ## Host gating: three axes
 
-`.chezmoidata.yaml` is the only file that names hosts. Gate on the axis that is the actual reason
-a file isn't universal:
+`.chezmoidata/` is the only place hosts are named — `hosts.yaml` holds the per-host inventory,
+`syncthing.yaml` the shared emulation folders. chezmoi merges every file in that directory into one
+template data namespace, so templates just read `.hosts` / `.domain` / `.syncthing`. Gate on the
+axis that is the actual reason a file isn't universal:
 
 | Axis | Mechanism | Use for |
 |---|---|---|
 | **OS** | `.chezmoi.os`, `.chezmoi.osRelease` | platform-only things: aerospace, hammerspoon, Brewfile, `brew`/`paru`/`apt` |
-| **Role** | `has "edge" $roles` | purpose — vocabulary is listed in `.chezmoidata.yaml` |
+| **Role** | `has "edge" $roles` | purpose — vocabulary is listed in `.chezmoidata/hosts.yaml` |
 | **Placement** | `quadlets` list | podman quadlets — one instance in the fleet |
 
 Roles compose: `gaming-mode` uses `and (has "server") (has "gaming")`. Never put OS/distro in
@@ -41,6 +44,15 @@ Silent failures worth knowing:
 - A Go template comment can't be indented inside its own action: `{{- /* x */ -}}` parses,
   `{{-   /* x */ -}}` is `unexpected "/" in command`. A parse error in **any** `.chezmoitemplates`
   file fails *every* template call, so the reported filename may not be the one you ran.
+- **Never put `exact_` on a directory that holds user content.** chezmoi leaves unmanaged files
+  alone in a normal managed directory (verified: a stray ROM survives an apply), but `exact_`
+  deletes everything in the target not present in source. `exact_Emulation` would wipe the ROM
+  library. `private_` is unrelated — it sets 0700/0600 permissions, and on a flatpak data dir like
+  `.var/app/org.DolphinEmu.dolphin-emu/` that would be a change for no benefit.
+- **Every** file in `.chezmoidata/` is loaded as template data, JSON included — so the JSON Schemas
+  live in `schemas/`, not next to the YAML they describe. Putting `hosts.schema.json` in there
+  merges its `title`, `type`, `$schema` and `properties` keys into the top-level namespace, where
+  they silently shadow real data. Verified, not theoretical.
 
 # The mars self-hosted stack
 
@@ -72,7 +84,7 @@ uid/gid 0 (see the music stack). Fixed facts:
   up: `systemctl --user daemon-reload && systemctl --user start <svc>.service`.
 
 **2 and 3 — reverse proxy and DNS — are GENERATED.** You do not edit them. Declare an
-`endpoints` entry under the service in `.chezmoidata.yaml` and the Caddy block, both DNS
+`endpoints` entry under the service in `.chezmoidata/hosts.yaml` and the Caddy block, both DNS
 records, and (with `public: true`) the tunnel rule all fall out of it. See "The generated
 edge" below.
 
@@ -104,7 +116,7 @@ from the public internet, add it to the **Cloudflare Tunnel** instead of opening
   named tunnel; its config is generated from `etc/cloudflared/config.yml.tmpl` and deployed to
   `/etc/cloudflared/config.yml` by `run_onchange_70-deploy-etc.sh.tmpl`. The tunnel's credentials
   `.json` lives only on mars (never in the repo).
-- To expose a service: set `public: true` on its endpoint in `.chezmoidata.yaml` — that emits the
+- To expose a service: set `public: true` on its endpoint in `.chezmoidata/hosts.yaml` — that emits the
   `ingress:` rule above the `http_status:404` catch-all. Then create the public proxied CNAME once
   with `cloudflared tunnel route dns <tunnel-id> <hostname>`. `chezmoi apply` redeploys the config
   and restarts cloudflared.
@@ -120,7 +132,7 @@ from the public internet, add it to the **Cloudflare Tunnel** instead of opening
 ## The generated edge
 
 The Caddyfile, Corefile and cloudflared config are **templates rendered from
-`.chezmoidata.yaml`**. There is no hand-written copy of any of them; editing `/etc` or trying to
+`.chezmoidata/`**. There is no hand-written copy of any of them; editing `/etc` or trying to
 edit a non-`.tmpl` `etc/caddy/Caddyfile` is editing a file that doesn't exist.
 
 The data model, per host:
@@ -191,7 +203,7 @@ failing template (locked 1Password, say) can't truncate a live config. The quadl
 `dot_config/` deploy normally to `~/.config/...`.
 
 **Its re-run trigger hashes the data, not just the template text.** Hashing
-`include "etc/caddy/Caddyfile.tmpl"` alone would miss a `.chezmoidata.yaml` edit, which changes the
+`include "etc/caddy/Caddyfile.tmpl"` alone would miss a `.chezmoidata/` edit, which changes the
 *output* while the template bytes stay identical — so the header also carries a `# data:` hash of
 `.hosts` + `.domain`. Keep that line if you touch the script.
 
@@ -207,8 +219,17 @@ Anything needing a package goes after 10; gaps of 10 leave room to insert.
 | 50 | `enable-systemd-units` | units deployed |
 | 60 | `set-wallpaper` | `Pictures/` deployed |
 | 70 | `deploy-etc` | `caddy`, `coredns` (edge role) |
+| 80 | `restart-syncthing` | `syncthing` (emulation role) |
 
 Pre-installed prerequisites: `chezmoi`, `1password-cli`, `git` (see README bootstrap).
+
+**Adding a role that needs both a package and a unit is a chicken-and-egg.** The deployed
+`~/.local/scripts/install-packages` bakes the host's roles in at render time
+(`PKG_GROUPS=(common ...)`), so `just packages` cannot see a group for a role the deployed copy
+predates. Re-rendering needs `chezmoi apply`, but that apply runs `50-enable-systemd-units`, which
+fails without the package. Install the package by hand once (`paru -S --needed <pkg>`), then apply.
+Applying first also works — `.local/...` sorts before `50-...`, so the script is re-rendered before
+the failure — but it means a failed apply. Hit by `sunshine`, then by `emulation`.
 
 `run_once_50-enable-systemd-units.sh.tmpl` enables only the hand-written units, gated by the role
 that owns each (`ddns`, `podman`, `minecraft`) — quadlet services are generated and can't be enabled.
@@ -244,7 +265,7 @@ first, which also avoids the 404s `paru -S` hits against a stale DB. No `cleanup
 Linux — that would mean orphan removal.
 
 `run_onchange_70-deploy-etc.sh.tmpl` is gated on the **`edge`** role, so moving `edge` between hosts
-in `.chezmoidata.yaml` relocates the whole Caddy/CoreDNS/cloudflared edge.
+in `.chezmoidata/hosts.yaml` relocates the whole Caddy/CoreDNS/cloudflared edge.
 
 ## Other mars pieces
 
@@ -268,11 +289,92 @@ in `.chezmoidata.yaml` relocates the whole Caddy/CoreDNS/cloudflared edge.
   self-hosted stack to free CPU/GPU/RAM for gaming, then restores exactly what was running.
   **Its `CANDIDATES` list must include every resource-heavy service** — add new services here.
 
+# Emulation library sync (mars ↔ mercury)
+
+Both hosts run **EmuDeck** with ES-DE. Syncthing shares one library between them, declared in
+`.chezmoidata/syncthing.yaml` and rendered the way the edge is — there is no hand-written
+`config.xml`.
+
+Gated on the **`emulation`** role. Content flows one way from mars; saves go both ways.
+
+## Data model
+
+`syncthing.folders` is a **fourth flat list** alongside `quadlets`/`units`/`endpoints`, with the
+same drift property: nothing errors when it disagrees with reality.
+
+```yaml
+- {id: emu-roms,      path: Emulation/roms,           mode: oneway, source: mars}
+- {id: emu-save-eden, path: Emulation/storage/eden/nand/user/save, mode: twoway}
+```
+
+`mode: oneway` renders **Send Only** on `source` and **Receive Only** everywhere else, so a
+non-source host structurally cannot push content back. `mode: twoway` renders Send & Receive with
+simple file versioning (keep 5). Paths are home-relative and rendered as `~/<path>` — Syncthing
+expands the tilde. Deliberately not `.chezmoi.homeDir`: the hosts have different usernames
+(`turisa`/`arthur`), and `simulate-host` overrides identity but not platform, so `homeDir` would
+render the previewing machine's home.
+
+Each host also carries `syncthing_id`, its device ID.
+
+## Two-phase bootstrap
+
+A device ID is derived from a TLS cert Syncthing generates on first run, so it cannot be known in
+advance:
+
+1. `just packages` then `chezmoi apply` — installs syncthing, enables the user unit, and writes a
+   config with **no** folders or devices (an empty `syncthing_id` omits them rather than emitting
+   half a config).
+2. Read the ID off each host, put it in `.chezmoidata/hosts.yaml`, apply again.
+
+Device IDs are public — a hash of the cert public key — so committing them is fine. The certs
+themselves never leave the host.
+
+## Traps specific to this
+
+- **Syncthing 2.x config lives in `~/.local/state/syncthing/`, not `~/.config/syncthing/`.** Write
+  to the wrong one and Syncthing silently generates its own default instead; it looks like the
+  template did not apply. That directory also holds `cert.pem`, `key.pem` and the SQLite database —
+  only `config.xml` is managed.
+- **`~/Emulation/saves/` is a farm of absolute symlinks**, not save data. EmuDeck points each one
+  at wherever that emulator actually stores saves — inside `Emulation/storage/`, a flatpak's
+  `.var/app/...`, `.local/share/...` or `.config/Ryujinx`. Syncing it would replicate 25 broken
+  links (wrong username on the far side) and zero bytes. Every folder path must be **real storage
+  on both hosts**.
+- **`~/Emulation/roms/` is not pure content.** EmuDeck installs emulators inside it — Cemu in
+  `wiiu/`, the Sega Model 2 emulator in `model2/`, launcher scripts in `emulators/`. Those are
+  per-host and are excluded by `Emulation/roms/.stignore`. Write structural rules there, not a list
+  of files you noticed: an early version enumerated `/model2/*.lua` and missed ~150 scripts one
+  directory deeper. `just emu-sync-check` reports what is uncovered.
+- **XML comments cannot contain `--`**, so the config template cannot write flags like
+  a `‑‑flag` in a comment. Syncthing rejects the whole file. (The ID command is the
+  `device-id` subcommand, not a flag, but the trap is general.)
+- **`emu-save-dolphin`'s folder root is Dolphin's whole flatpak data dir**, so its `.stignore`
+  admits only `GC/`, `Wii/` and `StateSaves/`. Each needs *two* lines (`!/GC` and `!/GC/**`):
+  without the second, children fall through to the catch-all and only an empty directory syncs.
+- **`gamelist.xml` is the most conflict-prone file here.** ES-DE rewrites it on exit to update
+  `playcount`/`playtime`/`lastplayed`, so playing on both hosts between syncs conflicts every
+  session. Low stakes, and it is also what carries favourites and the per-game emulator choice.
+- ES-DE gamelists are **not valid XML** — two root elements (`<alternativeEmulator>` then
+  `<gameList>`), which strict parsers reject outright. Extract the `<gameList>` fragment.
+
+## Changing the folder list
+
+`run_onchange_80-restart-syncthing.sh.tmpl` restarts the unit. Its trigger hashes the **data** as
+well as the template, for the same reason `70-deploy-etc` does: editing
+`.chezmoidata/syncthing.yaml` changes what renders while leaving the template byte-identical.
+
+Inspect before applying:
+
+```
+tools/simulate-host mars execute-template < dot_local/state/syncthing/config.xml.tmpl
+tools/simulate-host mercury execute-template < dot_local/state/syncthing/config.xml.tmpl
+```
+
 # Adding a new service (checklist)
 
 1. `dot_config/containers/systemd/<svc>.container` (+ `<svc>.env.tmpl` if it needs secrets;
    add the keys to the `mars-secrets` 1Password item in vault `dotfiles`).
-2. **Walk all three lists** in that host's entry in `.chezmoidata.yaml`. Nothing errors if you
+2. **Walk all three lists** in that host's entry in `.chezmoidata/hosts.yaml`. Nothing errors if you
    miss one — see the drift warning above.
 
    ```yaml
@@ -301,7 +403,7 @@ in `.chezmoidata.yaml` relocates the whole Caddy/CoreDNS/cloudflared edge.
 - Configs are cross-platform by default. Gate only what *costs* something — packages, units,
   `/etc` writes, secret reads, `run_once_*` scripts. An unused config on the wrong host is inert.
 - The whole edge — Caddy, CoreDNS, cloudflared, `gaming-mode` — is generated from
-  `.chezmoidata.yaml`. Nothing about a service is declared in two places any more.
+  `.chezmoidata/`. Nothing about a service is declared in two places any more.
 - Never re-create a static `etc/caddy/Caddyfile`, `etc/coredns/Corefile`,
   `etc/cloudflared/config.yml`, `dot_local/scripts/executable_gaming-mode` or
   `dot_config/systemd/user/minecraft@.service`. The `.tmpl` files are the only source; a static

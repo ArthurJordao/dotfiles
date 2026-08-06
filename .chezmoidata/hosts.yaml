@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=./chezmoidata.schema.json
+# yaml-language-server: $schema=../schemas/hosts.schema.json
 #
 # Roles — unknown names are silently inert, never an error:
 #   server     long-lived hosted services
@@ -8,21 +8,27 @@
 #   minecraft  minecraft@ units + helper scripts
 #   sunshine   sunshine game-stream host (package + its user unit)
 #   moonlight  moonlight client, i.e. streams *from* a sunshine host
+#   emulation  syncthing + the shared EmuDeck library (see `syncthing.folders`)
 #   edge       Caddy, CoreDNS, cloudflared, /etc deploy
 #   ddns       cloudflare-ddns service+timer
 #
 # quadlets/units/endpoints generate the Caddy, CoreDNS, cloudflared and
 # gaming-mode configs. They are independent, and nothing errors when they
 # disagree — a quadlet missing from `units` keeps running through gaming mode.
+# `syncthing.folders` is a fourth such list, with the same property.
 
 domain: arthurjordao.dev
 
 hosts:
   mars:
-    roles: [server, podman, gui, gaming, minecraft, sunshine, edge, ddns]
+    roles: [server, podman, gui, gaming, minecraft, sunshine, emulation, edge, ddns]
     ip:
       lan: 192.168.15.23
       tailscale: 100.127.50.55
+    # Derived from the TLS cert syncthing generates on first run, so it cannot
+    # be known before that host has applied once. Empty = folders/devices are
+    # omitted from config.xml rather than half-rendered.
+    syncthing_id: ""
 
     quadlets:
       - calibre-web-automated
@@ -50,6 +56,10 @@ hosts:
       - teamspeak3
       - minecraft@vanilla
       - minecraft@atm10-tts
+      # Unlike sunshine, syncthing IS safe to stop: idle-cheap, but a
+      # multi-gigabyte transfer mid-session is exactly the contention
+      # gaming-mode exists to prevent, and it resumes cleanly on restart.
+      - syncthing
       # sunshine is deliberately absent: `units` is what gaming-mode stops, and
       # stopping the game-stream host would kill the session being streamed.
 
@@ -68,10 +78,11 @@ hosts:
       - {name: sunshine, port: 47990, scheme: https, tls_insecure: true}
 
   mercury:
-    roles: [gui, gaming, moonlight]
+    roles: [gui, gaming, moonlight, emulation]
     ip:
       lan: 192.168.15.28
       tailscale: 100.121.125.41
+    syncthing_id: ""
     quadlets: []
     units: []
     endpoints: []

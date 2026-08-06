@@ -1,0 +1,82 @@
+{{- $me := index .hosts .hostname -}}
+{{- $myId := index $me "syncthing_id" | default "" -}}
+{{- /* Emulation hosts that have a device ID yet. Before a host's first run it
+       has none, so it is left out rather than emitted as an empty id. */ -}}
+{{- $peers := list -}}
+{{- range $name, $h := .hosts -}}
+{{-   if and (has "emulation" $h.roles) (ne (index $h "syncthing_id" | default "") "") -}}
+{{-     $peers = append $peers $name -}}
+{{-   end -}}
+{{- end -}}
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  GENERATED from .chezmoidata/syncthing.yaml — do not edit here, and do not edit
+  through the Syncthing web UI either: the next `chezmoi apply` reverts it.
+
+  Syncthing 2.x keeps config AND database in ~/.local/state/syncthing, not
+  ~/.config/syncthing. Only config.xml is managed; cert.pem, key.pem and the
+  SQLite database are host state and must be left alone.
+
+  Paths use `~/`, which Syncthing expands itself. Deliberately not
+  .chezmoi.homeDir: the two hosts have different usernames, and simulate-host
+  overrides identity but not platform, so homeDir would render the *local*
+  machine's home when previewing another host.
+{{ if not $myId }}
+  This host has no syncthing_id yet, so folders and devices are omitted rather
+  than half-rendered. Run the `syncthing device-id` subcommand, put the value in
+  .chezmoidata/hosts.yaml, and apply again. It reads the cert directly, so it works
+  whether or not the daemon is running.
+{{ end -}}
+-->
+<configuration version="38">
+{{- if and $myId (gt (len $peers) 1) }}
+{{- range $f := .syncthing.folders }}
+{{- $type := "sendreceive" }}
+{{- if eq $f.mode "oneway" }}
+{{-   if eq $f.source $.hostname }}{{ $type = "sendonly" }}{{ else }}{{ $type = "receiveonly" }}{{ end }}
+{{- end }}
+    <folder id="{{ $f.id }}" label="{{ $f.id }}" path="~/{{ $f.path }}" type="{{ $type }}" rescanIntervalS="3600" fsWatcherEnabled="true" fsWatcherDelayS="10" ignorePerms="false">
+        <filesystemType>basic</filesystemType>
+{{- range $p := $peers }}
+        <device id="{{ (index $.hosts $p).syncthing_id }}" introducedBy=""></device>
+{{- end }}
+{{- if eq $f.mode "twoway" }}
+        <versioning>
+            <type>simple</type>
+            <param key="keep" val="5"></param>
+            <cleanupIntervalS>3600</cleanupIntervalS>
+        </versioning>
+{{- else }}
+        <versioning></versioning>
+{{- end }}
+    </folder>
+{{- end }}
+{{- range $p := $peers }}
+{{- $h := index $.hosts $p }}
+    <device id="{{ $h.syncthing_id }}" name="{{ $p }}" compression="metadata" introducer="false" skipIntroductionRemovals="false">
+{{- if eq $p $.hostname }}
+        <address>dynamic</address>
+{{- else }}
+        {{- /* Tailscale only. Global discovery and relays are off, and LAN
+               peers are still found by local discovery, so this address is
+               what makes sync work away from home. */}}
+        <address>tcp://{{ $h.ip.tailscale }}:22000</address>
+{{- end }}
+        <autoAcceptFolders>false</autoAcceptFolders>
+    </device>
+{{- end }}
+{{- end }}
+    <gui enabled="true" tls="false" debugging="false">
+        <address>127.0.0.1:8384</address>
+        <theme>default</theme>
+    </gui>
+    <options>
+        <listenAddress>default</listenAddress>
+        <globalAnnounceEnabled>false</globalAnnounceEnabled>
+        <localAnnounceEnabled>true</localAnnounceEnabled>
+        <relaysEnabled>false</relaysEnabled>
+        <natEnabled>false</natEnabled>
+        <urAccepted>-1</urAccepted>
+        <crashReportingEnabled>false</crashReportingEnabled>
+    </options>
+</configuration>

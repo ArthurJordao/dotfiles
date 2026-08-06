@@ -7,7 +7,7 @@ Personal dotfiles managed with [chezmoi](https://www.chezmoi.io/).
 SSH only, no HTTPS. Step 3 fetches the SSH key from 1Password *before* the first clone,
 which is what avoids the chicken-and-egg and keeps this to a single `chezmoi apply`.
 
-### 0. Add the host to `.chezmoidata.yaml` and push
+### 0. Add the host to `.chezmoidata/hosts.yaml` and push
 
 Otherwise every template fails with `map has no entry for key "<hostname>"`.
 
@@ -98,8 +98,17 @@ only; later additions need `just packages`. Log out and back in for the new logi
 
 ## Host configuration
 
-`.chezmoidata.yaml` is the only file that names hosts. Everything host-specific is
+`.chezmoidata/` is the only place hosts are named. Everything host-specific is
 gated on what's declared there.
+
+chezmoi reads **every** file in `.chezmoidata/` and merges them into one template
+data namespace, so the split is organisational only — templates just see `.hosts`,
+`.domain` and `.syncthing` regardless of which file each came from.
+
+| File | Holds |
+|---|---|
+| `hosts.yaml` | `domain`, and the per-host inventory: roles, ip, quadlets, units, endpoints |
+| `syncthing.yaml` | `syncthing.folders` — the shared emulation library, not owned by any one host |
 
 ### Roles
 
@@ -129,6 +138,10 @@ these at apply time. There is no hand-written copy of any of them.
 | `units` | `gaming-mode` | systemd user units, **without** `.service` |
 | `endpoints` | Caddy, CoreDNS, cloudflared | hostnames to serve and resolve |
 
+A fourth list, `syncthing.folders`, lives in `.chezmoidata/syncthing.yaml` rather than
+under a host, because it describes a library shared *between* hosts rather than any
+one machine. It has the same property as the three below.
+
 They're independent, and **nothing errors when they disagree** — a quadlet missing
 from `units` keeps running through gaming mode, and a `units` entry with no quadlet
 names a unit that will never exist. They also don't line up one-to-one: `immich` is
@@ -138,6 +151,52 @@ three endpoints; `minecraft@vanilla` is a unit with no quadlet.
 `units` must name *every* unit to restore, not just a pod. `Requires=` propagates
 stop to dependents but start only to dependencies, so stopping `immich-pod` takes
 its containers down while starting it alone brings up an empty pod.
+
+### Adding an emulation host
+
+Hosts with the `emulation` role share one EmuDeck library over Syncthing. A device ID
+is derived from a TLS certificate Syncthing generates on its first run, so it can't be
+known in advance — pairing is a **two-phase bootstrap**:
+
+```sh
+# 1. install syncthing by hand THIS ONCE (see the ordering note below)
+paru -S --needed syncthing
+
+# 2. start it; chezmoi writes a config with no folders yet
+chezmoi apply
+
+# 3. read the ID this host just generated
+syncthing device-id
+```
+
+**Why not `just packages`?** `~/.local/scripts/install-packages` has the host's role
+list baked in at render time (`PKG_GROUPS=(common ...)`), so it cannot see a package
+group for a role the deployed copy predates. Re-rendering it needs `chezmoi apply`,
+but that same apply runs `run_once_50-enable-systemd-units`, which fails if the
+package isn't installed yet. Installing by hand once breaks the cycle. This applies
+to **any** new role that adds a package and a unit together — `sunshine` had it too.
+
+(If you'd rather not install by hand: `chezmoi apply` fails at step 50 but *does*
+re-render `install-packages` first, since `.local/...` sorts before `50-...`. So
+apply → `just packages` → apply also works, just noisily.)
+
+Put that value in the host's `syncthing_id` in `.chezmoidata/hosts.yaml`, push, and
+`chezmoi apply` again on both hosts. The second apply renders the full folder set and
+`run_onchange_80-restart-syncthing` restarts the service.
+
+An empty `syncthing_id` is not an error — it makes the template omit folders and
+devices entirely rather than emit half a config.
+
+Device IDs are public (a hash of the certificate's public key), so committing them is
+fine. The certificates themselves never leave the host.
+
+Seed the first sync **on the LAN** — it is ~17 GB, and local discovery finds the peer
+directly. Away from home it goes over Tailscale, since global discovery and relaying
+are both disabled.
+
+Check for drift at any time with `just emu-sync-check`, which reports sync conflicts,
+`.stversions` growth, and emulator files inside the ROM tree that `.stignore` doesn't
+cover.
 
 ### Endpoint fields
 
@@ -157,8 +216,9 @@ to `ip.lan` for LAN clients and `ip.tailscale` for tailnet clients.
 
 ### Editor validation
 
-`chezmoidata.schema.json` describes the shape above, and `.chezmoidata.yaml` opens
-with a `# yaml-language-server: $schema=` modeline pointing at it, so Neovim
+`schemas/hosts.schema.json` and `schemas/syncthing.schema.json` describe the shapes above, and each
+file in `.chezmoidata/` opens with a `# yaml-language-server: $schema=` modeline
+pointing at its own schema (`../schemas/hosts.schema.json`, `../schemas/syncthing.schema.json`), so Neovim
 validates as you type and shows each field's meaning on hover. It catches the
 mistakes that otherwise fail *silently*: a misspelled `tls-insecure` currently reads
 as absent and quietly disables the flag, `endpoint:` instead of `endpoints:` yields

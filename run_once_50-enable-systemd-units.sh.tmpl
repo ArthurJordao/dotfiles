@@ -1,5 +1,5 @@
 {{- $roles := (index .hosts .hostname).roles -}}
-{{ if or (has "ddns" $roles) (has "minecraft" $roles) (has "podman" $roles) (has "sunshine" $roles) -}}
+{{ if or (has "ddns" $roles) (has "minecraft" $roles) (has "podman" $roles) (has "sunshine" $roles) (has "emulation" $roles) -}}
 #!/bin/bash
 set -euo pipefail
 
@@ -24,5 +24,15 @@ systemctl --user enable --now minecraft-backup.timer
 # until after this line has run once. It is WantedBy=graphical-session.target,
 # so it comes up with the desktop rather than at boot.
 systemctl --user enable --now app-dev.lizardbyte.app.Sunshine.service
+{{ end -}}
+{{ if has "emulation" $roles -}}
+# Also shipped by its package (syncthing), not by this repo, so `just packages`
+# must have run first — same contract as sunshine above.
+#
+# First run generates ~/.local/state/syncthing/{cert.pem,key.pem} and a default
+# config.xml. That cert is what the device ID is derived from, which is why
+# pairing is a two-phase bootstrap: apply once to get an ID, put it in
+# .chezmoidata/hosts.yaml, apply again to render the real config.
+systemctl --user enable --now syncthing.service
 {{ end -}}
 {{ end }}

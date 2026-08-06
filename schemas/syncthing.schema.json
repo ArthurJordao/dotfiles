@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ArthurJordao/dotfiles/schemas/syncthing.schema.json",
+  "title": "syncthing folder data",
+  "description": "Shape of .chezmoidata/syncthing.yaml. Merged into the same template data as hosts.yaml. Validates structure only -- it cannot catch a path that is a symlink on one host, a folder no host sources, or an id that disagrees between hosts.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "syncthing"
+  ],
+  "properties": {
+    "syncthing": {
+      "type": "object",
+      "description": "Syncthing folders shared between every host with the `emulation` role. A fourth flat list alongside quadlets/units/endpoints, with the same drift property: nothing errors when it disagrees with reality.",
+      "additionalProperties": false,
+      "required": [
+        "folders"
+      ],
+      "properties": {
+        "folders": {
+          "type": "array",
+          "description": "One entry per synced folder. Paths must point at REAL storage on every emulation host -- ~/Emulation/saves/ is a farm of absolute symlinks EmuDeck regenerates per host, so syncing it replicates broken links and no data.",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/syncthingFolder"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "syncthingFolder": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "path",
+        "mode"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$",
+          "description": "Syncthing folder ID. Must be identical on every host sharing the folder."
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^[^/~][^\\n]*$",
+          "description": "Home-relative path, no leading / or ~. Rendered as %h/<path>."
+        },
+        "mode": {
+          "type": "string",
+          "oneOf": [
+            {
+              "const": "oneway",
+              "description": "Send Only on `source`, Receive Only elsewhere. Requires `source`."
+            },
+            {
+              "const": "twoway",
+              "description": "Send & Receive everywhere, with simple file versioning (keep 5)."
+            }
+          ]
+        },
+        "source": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "description": "Authoritative host for a oneway folder. Must name a host in `hosts`."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "oneway"
+              }
+            },
+            "required": [
+              "mode"
+            ]
+          },
+          "then": {
+            "required": [
+              "source"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "source"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

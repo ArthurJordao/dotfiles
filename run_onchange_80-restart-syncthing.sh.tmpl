@@ -1,0 +1,19 @@
+{{ if has "emulation" (index .hosts .hostname).roles -}}
+#!/bin/bash
+set -euo pipefail
+# config.xml: {{ include "dot_local/state/syncthing/config.xml.tmpl" | sha256sum }}
+#
+# Also hash the data: editing .chezmoidata/syncthing.yaml changes what the
+# template renders while leaving the template itself byte-identical, so hashing
+# the template alone would silently skip the restart. Same trap as 70-deploy-etc.
+# data:       {{ dict "syncthing" .syncthing "hosts" .hosts | toJson | sha256sum }}
+
+# Syncthing rereads config.xml only on start, so a rendered change needs this.
+# Ordering works out on its own: chezmoi applies targets in lexicographic order,
+# and `.local/state/syncthing/config.xml` sorts before `80-restart-syncthing.sh`
+# ('.' is 0x2E, '8' is 0x38), so the file is always in place before we restart.
+#
+# In-flight transfers survive — syncthing resumes them after the restart.
+echo "Restarting syncthing (config changed)..."
+systemctl --user restart syncthing.service
+{{ end }}

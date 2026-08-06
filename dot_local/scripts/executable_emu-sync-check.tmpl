@@ -1,0 +1,161 @@
+#!/usr/bin/env bash
+# emu-sync-check — report drift in the shared emulation library.
+#
+# GENERATED — the folder list below is `.syncthing.folders` from
+# .chezmoidata/syncthing.yaml. Read-only: this only ever reports.
+#
+# Syncthing is silent about the two things that actually bite:
+#   * sync conflicts, which it writes to disk and never surfaces again
+#   * an emulator installing itself into the ROM tree, which then syncs as
+#     content unless .stignore is updated to match
+set -uo pipefail
+
+RED=$'\033[31m'; YELLOW=$'\033[33m'; GREEN=$'\033[32m'; DIM=$'\033[2m'; OFF=$'\033[0m'
+[ -t 1 ] || { RED=""; YELLOW=""; GREEN=""; DIM=""; OFF=""; }
+
+issues=0
+note() { printf '%s%s%s\n' "$YELLOW" "$1" "$OFF"; issues=$((issues + 1)); }
+bad()  { printf '%s%s%s\n' "$RED"    "$1" "$OFF"; issues=$((issues + 1)); }
+ok()   { printf '%s%s%s\n' "$GREEN"  "$1" "$OFF"; }
+
+FOLDERS=(
+{{- range $f := .syncthing.folders }}
+    "{{ $f.id }}|{{ $f.path }}|{{ $f.mode }}"
+{{- end }}
+)
+
+echo "=== folders ==="
+missing=0
+for entry in "${FOLDERS[@]}"; do
+    IFS='|' read -r id path mode <<< "$entry"
+    if [ -d "$HOME/$path" ]; then
+        printf '  %-22s %-10s %s%s%s\n' "$id" "$mode" "$DIM" "~/$path" "$OFF"
+    else
+        bad "  $id: ~/$path does not exist — syncthing will not create it"
+        missing=$((missing + 1))
+    fi
+done
+[ "$missing" -eq 0 ] && ok "  all ${#FOLDERS[@]} folder paths present"
+
+echo
+echo "=== sync conflicts ==="
+found=0
+for entry in "${FOLDERS[@]}"; do
+    IFS='|' read -r id path mode <<< "$entry"
+    [ -d "$HOME/$path" ] || continue
+    while IFS= read -r f; do
+        bad "  $id: ${f#$HOME/}"
+        found=$((found + 1))
+    done < <(find "$HOME/$path" -name '*.sync-conflict-*' -type f 2>/dev/null)
+done
+[ "$found" -eq 0 ] && ok "  none"
+
+echo
+echo "=== .stversions (recoverable old copies) ==="
+found=0
+for entry in "${FOLDERS[@]}"; do
+    IFS='|' read -r id path mode <<< "$entry"
+    v="$HOME/$path/.stversions"
+    [ -d "$v" ] || continue
+    printf '  %-22s %s (%s files)\n' "$id" "$(du -sh "$v" 2>/dev/null | cut -f1)" "$(find "$v" -type f 2>/dev/null | wc -l | tr -d ' ')"
+    found=$((found + 1))
+done
+[ "$found" -eq 0 ] && ok "  none"
+
+echo
+echo "=== emulator files inside the ROM tree, not covered by .stignore ==="
+# EmuDeck installs emulators into ~/Emulation/roms (Cemu in wiiu/, the Model 2
+# emulator in model2/, launcher scripts in emulators/). Those are per-host and
+# must not cross machines, so each needs a .stignore rule. This flags the ones
+# that have none — install a new Proton-based emulator and it shows up here
+# before it syncs as if it were a game.
+#
+# The matcher below approximates Syncthing's pattern rules (anchoring, `(?i)`,
+# `/*` and `/**` suffixes, unanchored basename globs). Syncthing itself remains
+# authoritative; this is a tripwire, not a reimplementation.
+ROMS="$HOME/Emulation/roms"
+IGN="$ROMS/.stignore"
+
+covered() {
+    local rel="$1" pat ci base
+    while IFS= read -r pat; do
+        pat="${pat%%$'\r'}"
+        case "$pat" in ''|'//'*|'!'*) continue ;; esac
+        ci=0
+        case "$pat" in '(?i)'*) ci=1; pat="${pat#'(?i)'}" ;; esac
+        (( ci )) && shopt -s nocasematch || shopt -u nocasematch
+        local hit=1
+        case "$pat" in
+            /*)
+                local p="${pat#/}"
+                p="${p%/\*\*}"; p="${p%/\*}"
+                # shellcheck disable=SC2053
+                if [[ "$rel" == $p || "$rel" == $p/* ]]; then hit=0; fi
+                ;;
+            */*)
+                # shellcheck disable=SC2053
+                [[ "$rel" == $pat || "$rel" == */$pat ]] && hit=0
+                ;;
+            *)
+                base="${rel##*/}"
+                # shellcheck disable=SC2053
+                [[ "$base" == $pat ]] && hit=0
+                ;;
+        esac
+        shopt -u nocasematch
+        (( hit == 0 )) && return 0
+    done < "$IGN"
+    return 1
+}
+
+if [ ! -d "$ROMS" ]; then
+    bad "  $ROMS missing"
+elif [ ! -f "$IGN" ]; then
+    bad "  $IGN missing — run 'chezmoi apply'"
+else
+    found=0; total=0
+    while IFS= read -r f; do
+        rel="${f#$ROMS/}"
+        total=$((total + 1))
+        covered "$rel" || { note "  $rel"; found=$((found + 1)); }
+    done < <(find "$ROMS" \( -iname '*.exe' -o -iname '*.dll' -o -iname '*.AppImage' \
+                             -o -iname '*.sh' -o -iname '*.lua' -o -iname '*.pat' \) -type f 2>/dev/null | sort)
+    if [ "$found" -eq 0 ]; then
+        ok "  none ($total emulator files, all covered by .stignore)"
+    else
+        printf '%s  ^ %d of %d not covered — add rules to ~/Emulation/roms/.stignore%s\n' "$DIM" "$found" "$total" "$OFF"
+    fi
+fi
+
+echo
+echo "=== syncthing state ==="
+if ! systemctl --user is-active --quiet syncthing.service; then
+    bad "  syncthing.service is not running"
+elif command -v syncthing >/dev/null 2>&1; then
+    # `syncthing cli` reads the local config for its own API key, so this needs
+    # no credentials of ours.
+    if ! syncthing cli show system >/dev/null 2>&1; then
+        note "  syncthing running but its API is not answering yet"
+    else
+        ok "  syncthing.service running"
+        for entry in "${FOLDERS[@]}"; do
+            IFS='|' read -r id path mode <<< "$entry"
+            state=$(syncthing cli show folder --folder "$id" 2>/dev/null | sed -n 's/.*"state": *"\([^"]*\)".*/\1/p' | head -1)
+            [ -z "$state" ] && continue
+            if [ "$state" = "idle" ]; then
+                printf '  %-22s %s\n' "$id" "$state"
+            else
+                note "  $id: $state"
+            fi
+        done
+    fi
+else
+    bad "  syncthing binary not found — run 'just packages'"
+fi
+
+echo
+if [ "$issues" -eq 0 ]; then
+    ok "No issues."
+else
+    printf '%s%d thing(s) worth a look.%s\n' "$YELLOW" "$issues" "$OFF"
+fi
