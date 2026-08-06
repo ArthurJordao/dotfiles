@@ -8,7 +8,9 @@ Hosts share this repo, gated by roles in `.chezmoidata.yaml`:
 - **`mars`** — Arch/CachyOS homelab server. Runs the self-hosted stack (containers, Caddy,
   CoreDNS, Minecraft). Also a desktop and gaming box. This is the interesting part and the
   focus of this file.
-- **`Arthurs-MacBook-Pro`** — macOS workstation (Brewfile, aerospace, hammerspoon, etc.).
+- **`neptune`** — macOS workstation, the NoRedInk work laptop (Brewfile, aerospace, hammerspoon,
+  etc.). Renamed from `Arthurs-MacBook-Pro`. It's Kandji-MDM-enrolled, which can rewrite
+  `ComputerName`/`LocalHostName` on check-in — `HostName` is the one chezmoi reads.
 - **`mercury`** — Lenovo Legion Go handheld, CachyOS, user `arthur`. Same arch package family as
   mars, so it shares `packages/arch/*`. Roles `[gui, gaming]`: shared dotfiles and GUI configs, no
   containers, units, or `/etc` deploy. Runs no hosted services. `gaming` carries no package file —

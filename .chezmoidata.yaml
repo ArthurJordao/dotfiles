@@ -22,6 +22,6 @@ hosts:
     roles: [gui, gaming]
     services: []
 
-  Arthurs-MacBook-Pro:
+  neptune:
     roles: [gui]
     services: []
