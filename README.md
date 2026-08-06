@@ -14,9 +14,14 @@ Otherwise every template fails with `map has no entry for key "<hostname>"`.
 ```yaml
 hosts:
   <hostname>:
-    roles: [gui, gaming]     # see CLAUDE.md for the role vocabulary
-    services: []
+    roles: [gui, gaming]
+    ip:
+      lan: 192.168.15.x
+      tailscale: 100.x.x.x
 ```
+
+Roles and lists are all optional — omit what the host doesn't need. See
+[Host configuration](#host-configuration) for what each one does.
 
 ### 1. Set the hostname
 
@@ -89,6 +94,82 @@ chezmoi apply --force
 
 Packages install here too, via the `run_once_` hooks. They fire on a host's first apply
 only; later additions need `just packages`. Log out and back in for the new login shell.
+
+## Host configuration
+
+`.chezmoidata.yaml` is the only file that names hosts. Everything host-specific is
+gated on what's declared there.
+
+### Roles
+
+What the box is *for*. Unknown names are silently inert, never an error.
+
+| Role | Effect |
+|---|---|
+| `server` | long-lived hosted services |
+| `podman` | deploys the rootless podman quadlets in `quadlets` |
+| `gui` | graphical session configs |
+| `gaming` | used for games; with `server`, also installs `gaming-mode` |
+| `minecraft` | `minecraft@` units, backup timer, helper scripts |
+| `edge` | owns Caddy, CoreDNS, cloudflared and the `/etc` deploy |
+| `ddns` | `cloudflare-ddns` service + timer |
+
+Roles compose, and moving one between hosts relocates what it carries — put `edge`
+on a different host and the whole reverse-proxy/DNS layer moves with it.
+
+### The three lists
+
+Caddy, CoreDNS, the Cloudflare Tunnel and `gaming-mode` are all **generated** from
+these at apply time. There is no hand-written copy of any of them.
+
+| List | Consumer | Contents |
+|---|---|---|
+| `quadlets` | which container files deploy | quadlet filename *prefixes*, matched `<prefix>*` |
+| `units` | `gaming-mode` | systemd user units, **without** `.service` |
+| `endpoints` | Caddy, CoreDNS, cloudflared | hostnames to serve and resolve |
+
+They're independent, and **nothing errors when they disagree** — a quadlet missing
+from `units` keeps running through gaming mode, and a `units` entry with no quadlet
+names a unit that will never exist. They also don't line up one-to-one: `immich` is
+one quadlet, five units and one endpoint; `music` is one quadlet, three units and
+three endpoints; `minecraft@vanilla` is a unit with no quadlet.
+
+`units` must name *every* unit to restore, not just a pod. `Requires=` propagates
+stop to dependents but start only to dependencies, so stopping `immich-pod` takes
+its containers down while starting it alone brings up an empty pod.
+
+### Endpoint fields
+
+Only `name` is required. `<name>` is prefixed onto the `domain` key.
+
+| Field | |
+|---|---|
+| `name` | `<name>.arthurjordao.dev` is the full hostname |
+| `port` | omit for a DNS record with no reverse-proxy block |
+| `public` | `true` adds a Cloudflare Tunnel ingress rule (public internet) |
+| `scheme` | `https` when the upstream itself speaks TLS |
+| `tls_insecure` | `true` skips verification of the upstream's certificate |
+| `log` | `false` disables the JSON access log |
+
+Every host with an `ip` also gets `<hostname>.arthurjordao.dev` for free, resolving
+to `ip.lan` for LAN clients and `ip.tailscale` for tailnet clients.
+
+### Reviewing a change
+
+`etc/` is never copied to `$HOME`; the configs are rendered into `/etc` during
+`apply`. To see what a change produces without applying it — from any machine, for
+any host:
+
+```bash
+tools/simulate-host mars managed                  # files that would deploy
+tools/simulate-host mars execute-template < etc/caddy/Caddyfile.tmpl
+tools/simulate-host mars execute-template < etc/coredns/Corefile.tmpl
+tools/simulate-host mars execute-template < etc/cloudflared/config.yml.tmpl
+tools/simulate-host mars execute-template < dot_local/scripts/executable_gaming-mode.tmpl
+```
+
+It overrides identity, not platform: `.chezmoi.os` stays that of the machine you run
+it on, so OS-gated branches need the real host.
 
 ## Secrets
 

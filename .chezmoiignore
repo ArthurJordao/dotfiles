@@ -69,7 +69,7 @@ Pictures/**
 .config/containers/**
 {{ else }}
 .config/containers/systemd/*
-{{ range $me.quadlets -}}
+{{ range (index $me "quadlets" | default list) -}}
 !.config/containers/systemd/{{ . }}*
 {{ end -}}
 {{ end }}

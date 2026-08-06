@@ -7,8 +7,9 @@
 #   edge       Caddy, CoreDNS, cloudflared, /etc deploy
 #   ddns       cloudflare-ddns service+timer
 #
-# quadlets/units/endpoints generate the edge configs, and nothing errors when
-# they disagree. CLAUDE.md has the contract.
+# quadlets/units/endpoints generate the Caddy, CoreDNS, cloudflared and
+# gaming-mode configs. They are independent, and nothing errors when they
+# disagree — a quadlet missing from `units` keeps running through gaming mode.
 
 domain: arthurjordao.dev
 
