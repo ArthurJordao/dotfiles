@@ -1,0 +1,22 @@
+{{- $instances := list -}}
+{{- range (index (index .hosts .hostname) "units" | default list) -}}
+{{-   if hasPrefix "minecraft@" . }}{{ $instances = append $instances (printf "%s.service" .) }}{{ end -}}
+{{- end -}}
+[Unit]
+Description=Minecraft Server (%i)
+After=network.target
+# Instances are mutually exclusive. Derived from this host's `units` in
+# .chezmoidata.yaml so it can't go stale when one is renamed.
+Conflicts={{ join " " $instances }}
+
+[Service]
+Type=forking
+WorkingDirectory=%h/minecraft/%i
+ExecStart=/usr/bin/tmux new-session -d -s minecraft-%i ./startserver.sh
+ExecStop=/usr/bin/tmux send-keys -t minecraft-%i 'stop' C-m
+ExecStop=/bin/sleep 10
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

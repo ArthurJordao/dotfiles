@@ -249,9 +249,12 @@ in `.chezmoidata.yaml` relocates the whole Caddy/CoreDNS/cloudflared edge.
 ## Other mars pieces
 
 - `dot_config/systemd/user/` — hand-written units: `cloudflare-ddns` (service+timer keeps the
-  public A record current), `minecraft@.service` (template; instances like
-  `minecraft@vanilla`, `minecraft@atm10-tts` are mutually exclusive), and `minecraft-backup`
-  (service+timer; daily world backup).
+  public A record current), `minecraft@.service.tmpl` (unit template; instances are mutually
+  exclusive), and `minecraft-backup` (service+timer; daily world backup).
+- **Minecraft instances are named in exactly one place**: the `minecraft@*` entries in a host's
+  `units`. `gaming-mode`'s `CANDIDATES` and `minecraft@.service`'s `Conflicts=` are both derived
+  from them, the latter by prefix-filtering that list. Renaming an instance is a one-line edit.
+  It used to be two, and `d31cecf` is what happens when you only remember one.
 - `dot_local/scripts/executable_minecraft` — helper to keep the boot server in sync with the
   running one.
 - **JDKs are pinned.** `~/minecraft/<instance>/startserver.sh` (not in this repo) hardcodes an
@@ -300,8 +303,9 @@ in `.chezmoidata.yaml` relocates the whole Caddy/CoreDNS/cloudflared edge.
 - The whole edge — Caddy, CoreDNS, cloudflared, `gaming-mode` — is generated from
   `.chezmoidata.yaml`. Nothing about a service is declared in two places any more.
 - Never re-create a static `etc/caddy/Caddyfile`, `etc/coredns/Corefile`,
-  `etc/cloudflared/config.yml` or `dot_local/scripts/executable_gaming-mode`. The `.tmpl` files
-  are the only source; a static sibling would be silently ignored and drift forever.
+  `etc/cloudflared/config.yml`, `dot_local/scripts/executable_gaming-mode` or
+  `dot_config/systemd/user/minecraft@.service`. The `.tmpl` files are the only source; a static
+  sibling would be silently ignored and drift forever.
 - On a fresh Linux host, `run_once_30-set-default-shell.sh.tmpl` needs `fish` present. It's in
   `packages/arch/common.txt`, but if the shell change is skipped on first apply (packages not
   installed yet), just run `chezmoi apply` again.
