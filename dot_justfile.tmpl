@@ -1,6 +1,16 @@
 # Apply dotfiles
 apply:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    op whoami >/dev/null 2>&1 || eval "$(op signin --account my.1password.com)"
     chezmoi apply
+
+# Pull from the remote, then apply
+update:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    op whoami >/dev/null 2>&1 || eval "$(op signin --account my.1password.com)"
+    chezmoi update
 
 {{ if eq .chezmoi.os "darwin" -}}
 # Install declared packages
@@ -24,6 +34,3 @@ upgrade:
 # Update tmux plugins
 tpm-update:
     ~/.tmux/plugins/tpm/bin/update_plugins all
-
-# Full update: apply dotfiles + upgrade packages
-update: apply upgrade

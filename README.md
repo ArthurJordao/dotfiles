@@ -99,9 +99,16 @@ Items: `dotfiles-secrets`, `mars-secrets`, `ssh-ed25519`, `ssh-rsa` (Secure Note
 ## Day-to-day
 
 ```bash
-just apply       # Apply dotfiles
+just apply       # Apply dotfiles from the local source dir
+just update      # Pull from the remote first, then apply (= chezmoi update)
 just packages    # Install this host's declared packages
 just upgrade     # Full system upgrade, then install declared packages
 just tpm-update  # Update tmux plugins
-just update      # Full update
 ```
+
+`apply` and `update` differ by exactly one thing: `update` runs `git pull --autostash --rebase`
+in the source dir first. On the machine you author from, that rebases whatever you have in
+flight — reach for `apply` while you're iterating locally.
+
+Both sign in to 1Password first if `op whoami` says you aren't, since applying reads
+`secrets.fish` and the SSH keys.
