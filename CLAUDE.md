@@ -25,7 +25,7 @@ a file isn't universal:
 |---|---|---|
 | **OS** | `.chezmoi.os`, `.chezmoi.osRelease` | platform-only things: aerospace, hammerspoon, Brewfile, `brew`/`paru`/`apt` |
 | **Role** | `has "edge" $roles` | purpose — vocabulary is listed in `.chezmoidata.yaml` |
-| **Placement** | `services` list | podman quadlets — one instance in the fleet |
+| **Placement** | `quadlets` list | podman quadlets — one instance in the fleet |
 
 Roles compose: `gaming-mode` uses `and (has "server") (has "gaming")`. Never put OS/distro in
 `roles`.
@@ -35,9 +35,12 @@ identity, not platform — `.chezmoi.os` stays local, so OS-gated branches need 
 
 Silent failures worth knowing:
 - `dir/**` then `!dir/keep` in `.chezmoiignore` ignores everything. Negation needs single-star `dir/*`.
-- A `.container` not listed in a host's `services` deploys nowhere, no error.
+- A `.container` whose prefix is not in a host's `quadlets` deploys nowhere, no error.
 - `.chezmoi.osRelease.idLike` errors under `missingkey=error` when `ID_LIKE` is absent (plain Arch),
   and `| default` can't rescue it. Use `index .chezmoi.osRelease "idLike"`.
+- A Go template comment can't be indented inside its own action: `{{- /* x */ -}}` parses,
+  `{{-   /* x */ -}}` is `unexpected "/" in command`. A parse error in **any** `.chezmoitemplates`
+  file fails *every* template call, so the reported filename may not be the one you ran.
 
 # The mars self-hosted stack
 
@@ -68,22 +71,29 @@ uid/gid 0 (see the music stack). Fixed facts:
   Boot-start comes from `[Install] WantedBy=default.target` in the file itself. To bring one
   up: `systemctl --user daemon-reload && systemctl --user start <svc>.service`.
 
-**2. Reverse proxy (Caddy)** — `etc/caddy/Caddyfile`
+**2 and 3 — reverse proxy and DNS — are GENERATED.** You do not edit them. Declare an
+`endpoints` entry under the service in `.chezmoidata.yaml` and the Caddy block, both DNS
+records, and (with `public: true`) the tunnel rule all fall out of it. See "The generated
+edge" below.
 
-- One block per service: `<svc>.arthurjordao.dev { reverse_proxy 127.0.0.1:<port> ... }` with
+**2. Reverse proxy (Caddy)** — `etc/caddy/Caddyfile.tmpl`
+
+- One block per endpoint: `<name>.arthurjordao.dev { reverse_proxy 127.0.0.1:<port> ... }` with
   TLS via the Cloudflare DNS challenge (`dns cloudflare {env.CF_API_TOKEN}`) and a JSON access
   log. `CF_API_TOKEN` comes from `etc/caddy/caddy.env.tmpl`.
 - **Always `127.0.0.1`, never `localhost`.** `localhost` resolves to `::1` (IPv6) first, and
   rootless containers on the default network use **pasta**, which forwards IPv4 only — the IPv6
   connection is accepted then dropped, and Caddy returns a **502** without falling back. Only
   the music stack dodged this (custom `music.network` → netavark/rootlessport, dual-stack), so
-  the bug surfaces on any standalone (pasta) container reached through Caddy.
+  the bug surfaces on any standalone (pasta) container reached through Caddy. The template
+  emits `127.0.0.1` whenever the serving host *is* the edge host, so this is now structural.
 
-**3. DNS (CoreDNS, split-horizon)** — `etc/coredns/Corefile`
+**3. DNS (CoreDNS, split-horizon)** — `etc/coredns/Corefile.tmpl`
 
-- Add the hostname to **both** the `(local_hosts)` block (`192.168.15.23`) and the
-  `(tailscale_hosts)` block (`100.127.50.55`). LAN clients and Tailscale clients each resolve
-  to the right IP; everything else forwards to Cloudflare over DoT.
+- Every endpoint lands in **both** the `(local_hosts)` block (its host's `ip.lan`) and the
+  `(tailscale_hosts)` block (its host's `ip.tailscale`). LAN clients and Tailscale clients each
+  resolve to the right IP; everything else forwards to Cloudflare over DoT.
+- Every host with an `ip` also gets its own `<hostname>.arthurjordao.dev` record for free.
 
 ## Public exposure (optional) — Cloudflare Tunnel
 
@@ -91,12 +101,12 @@ Most services are internal-only (the above three concerns cover LAN/Tailscale). 
 from the public internet, add it to the **Cloudflare Tunnel** instead of opening router ports.
 
 - `cloudflared` runs as a **system** unit (`/etc/systemd/system/cloudflared.service`) using a
-  named tunnel; its config is tracked at `etc/cloudflared/config.yml` and deployed to
+  named tunnel; its config is generated from `etc/cloudflared/config.yml.tmpl` and deployed to
   `/etc/cloudflared/config.yml` by `run_onchange_70-deploy-etc.sh.tmpl`. The tunnel's credentials
   `.json` lives only on mars (never in the repo).
-- To expose a service: add an `ingress:` rule (`hostname:` + `service: http://localhost:<port>`)
-  **above** the `http_status:404` catch-all, then create the public proxied CNAME once with
-  `cloudflared tunnel route dns <tunnel-id> <hostname>`. `chezmoi apply` redeploys the config
+- To expose a service: set `public: true` on its endpoint in `.chezmoidata.yaml` — that emits the
+  `ingress:` rule above the `http_status:404` catch-all. Then create the public proxied CNAME once
+  with `cloudflared tunnel route dns <tunnel-id> <hostname>`. `chezmoi apply` redeploys the config
   and restarts cloudflared.
 - Tunnel routes go direct to `localhost:<port>`, bypassing Caddy (Cloudflare terminates TLS at
   its edge). Internal CoreDNS entries still win for LAN/Tailscale clients (split-horizon).
@@ -107,13 +117,83 @@ from the public internet, add it to the **Cloudflare Tunnel** instead of opening
   silently ignoring `config.yml` (there's no supported way to detach it — you'd have to recreate
   the tunnel, as was done to reach this state). Manage routes only via the file.
 
+## The generated edge
+
+The Caddyfile, Corefile and cloudflared config are **templates rendered from
+`.chezmoidata.yaml`**. There is no hand-written copy of any of them; editing `/etc` or trying to
+edit a non-`.tmpl` `etc/caddy/Caddyfile` is editing a file that doesn't exist.
+
+The data model, per host:
+
+**Each host declares three flat lists, one per consumer.** There is no per-service grouping — a
+service is not one entry, it's a line in each list that concerns it:
+
+| List | Drives | Contents |
+|---|---|---|
+| `quadlets` | `.chezmoiignore` | quadlet filename **prefixes**, matched `<prefix>*` |
+| `units` | `gaming-mode` `CANDIDATES` | systemd user units, **no** `.service` suffix |
+| `endpoints` | Caddy, CoreDNS, cloudflared | hostnames to serve and resolve |
+
+```yaml
+mars:
+  ip: {lan: 192.168.15.23, tailscale: 100.127.50.55}
+  quadlets: [calibre-web-automated, immich, music, open-webui, shelfmark, teamspeak3]
+  units: [immich-pod, immich-db, immich-valkey, immich-ml, immich-server,
+          navidrome, slskd, soulsync, calibre-web-automated, open-webui,
+          shelfmark, teamspeak3, minecraft@vanilla, minecraft@atm10]
+  endpoints:
+    - {name: books, port: 8083, public: true}
+    - {name: dns, port: 8053, scheme: https, tls_insecure: true, log: false}
+    - {name: minecraft}           # no port -> DNS record only
+```
+
+**The three lists are independent, and that is the one thing that can drift.** A quadlet with no
+`units` entry keeps running through gaming mode; a `units` entry with no quadlet names a unit that
+will never exist; an endpoint with no quadlet is a 502. None of it errors. This was chosen
+deliberately over a nested per-service shape — flat keeps each template reading exactly one list —
+so the cost is real and lands on whoever edits the data.
+
+Note the lists genuinely don't line up 1:1, which is why nesting them was awkward in the first
+place: `immich` is one quadlet, five units, one endpoint; `music` is one quadlet, three units,
+three endpoints; `teamspeak3` has no endpoint; `minecraft@*` are units with no quadlet; `dns` is an
+endpoint with neither.
+
+`units` must name **every** unit to restore, not just a pod. `Requires=` propagates stop to
+dependents but start only to dependencies — stopping `immich-pod` takes the containers down, but
+starting it alone brings up an empty pod.
+
+Endpoint fields: `name` (required), `port` (omit ⇒ DNS-only, no Caddy block, no tunnel),
+`public`, `scheme`, `tls_insecure`, `log`.
+
+Each template reads `.hosts` directly — there is no shared helper. The Corefile also emits
+`<hostname>.<domain>` for every host with an `ip`, which is why `mars`/`mercury`/`neptune` resolve
+without being declared as endpoints.
+
+Inspect any of them without applying — this is the way to review a change:
+
+```
+tools/simulate-host mars execute-template < etc/caddy/Caddyfile.tmpl
+tools/simulate-host mars execute-template < etc/coredns/Corefile.tmpl
+tools/simulate-host mars execute-template < etc/cloudflared/config.yml.tmpl
+tools/simulate-host mars execute-template < dot_local/scripts/executable_gaming-mode.tmpl
+```
+
+Ordering is deterministic: Go ranges maps in sorted key order, so hosts come out alphabetically,
+endpoints in declaration order within a host.
+
 ## Deploy flow
 
 `etc/` is in `.chezmoiignore` (never copied to `$HOME`); instead
-**`run_onchange_70-deploy-etc.sh.tmpl`** installs the Caddyfile + Corefile into `/etc` with
-`sudo`, renders `caddy.env` from its template, and reloads caddy / restarts coredns. It
-re-runs whenever any of those files change (sha256 in the script header). The quadlet files
-under `dot_config/` deploy normally to `~/.config/...`.
+**`run_onchange_70-deploy-etc.sh.tmpl`** renders the Caddyfile, Corefile, cloudflared config and
+`caddy.env` from their templates, installs them into `/etc` with `sudo`, and reloads caddy /
+restarts coredns / restarts cloudflared. Each render goes to a staging file before `install`, so a
+failing template (locked 1Password, say) can't truncate a live config. The quadlet files under
+`dot_config/` deploy normally to `~/.config/...`.
+
+**Its re-run trigger hashes the data, not just the template text.** Hashing
+`include "etc/caddy/Caddyfile.tmpl"` alone would miss a `.chezmoidata.yaml` edit, which changes the
+*output* while the template bytes stay identical — so the header also carries a `# data:` hash of
+`.hosts` + `.domain`. Keep that line if you touch the script.
 
 `run_*` scripts execute in alphabetical target order; the numeric prefix states it explicitly.
 Anything needing a package goes after 10; gaps of 10 leave room to insert.
@@ -189,17 +269,26 @@ in `.chezmoidata.yaml` relocates the whole Caddy/CoreDNS/cloudflared edge.
 
 1. `dot_config/containers/systemd/<svc>.container` (+ `<svc>.env.tmpl` if it needs secrets;
    add the keys to the `mars-secrets` 1Password item in vault `dotfiles`).
-2. Add `<svc>` to that host's `services` in `.chezmoidata.yaml` — without it nothing deploys and
-   there's no error. Check: `./tools/simulate-host <host> managed | grep <svc>`.
-3. Caddy block in `etc/caddy/Caddyfile` → `127.0.0.1:<port>`.
-4. `<svc>.arthurjordao.dev` in **both** host blocks of `etc/coredns/Corefile`.
-5. Add `<svc>.service` to `CANDIDATES` in `dot_local/scripts/executable_gaming-mode`.
-6. **(Optional — public internet access)** Add an `ingress:` rule to `etc/cloudflared/config.yml`
-   (`hostname:` + `service: http://localhost:<port>`) above the `http_status:404` catch-all, then
-   on mars run `cloudflared tunnel route dns <tunnel-id> <svc>.arthurjordao.dev` once to create
-   the CNAME. Do NOT use the dashboard (see the exposure section above).
-7. On mars: `chezmoi apply` (deploys /etc, reloads caddy/coredns, restarts cloudflared), then
-   `systemctl --user daemon-reload && systemctl --user start <svc>.service`.
+2. **Walk all three lists** in that host's entry in `.chezmoidata.yaml`. Nothing errors if you
+   miss one — see the drift warning above.
+
+   ```yaml
+   quadlets:  [..., <svc>]                          # else nothing deploys
+   units:     [..., <svc>]                          # else gaming mode ignores it
+   endpoints: [..., {name: <svc>, port: <port>}]    # else it has no hostname
+   ```
+
+   `units` takes every unit the container files generate, not just one per quadlet.
+   `endpoints` takes one entry per hostname — a service can have none (`teamspeak3`) or
+   several (`music` → music/slskd/soulsync), and the name need not match the quadlet
+   (`calibre-web-automated` → `books`).
+3. Verify before applying: `./tools/simulate-host <host> managed | grep <svc>` for the quadlet,
+   then the three `execute-template` commands above for the edge.
+4. **(Optional — public internet access)** `public: true` on the endpoint, then on mars run
+   `cloudflared tunnel route dns <tunnel-id> <svc>.arthurjordao.dev` once to create the CNAME.
+   Do NOT use the dashboard (see the exposure section above).
+5. On mars: `chezmoi apply` (renders and deploys /etc, reloads caddy/coredns, restarts
+   cloudflared), then `systemctl --user daemon-reload && systemctl --user start <svc>.service`.
 
 # Working in this repo
 
@@ -208,8 +297,11 @@ in `.chezmoidata.yaml` relocates the whole Caddy/CoreDNS/cloudflared edge.
   break it. `/nvim` is ignored so chezmoi doesn't double-copy it.
 - Configs are cross-platform by default. Gate only what *costs* something — packages, units,
   `/etc` writes, secret reads, `run_once_*` scripts. An unused config on the wrong host is inert.
-- Drift risk: `gaming-mode`'s `CANDIDATES` is hand-maintained (generating it needs a
-  service→unit-name map, since `immich` expands to 5 units).
+- The whole edge — Caddy, CoreDNS, cloudflared, `gaming-mode` — is generated from
+  `.chezmoidata.yaml`. Nothing about a service is declared in two places any more.
+- Never re-create a static `etc/caddy/Caddyfile`, `etc/coredns/Corefile`,
+  `etc/cloudflared/config.yml` or `dot_local/scripts/executable_gaming-mode`. The `.tmpl` files
+  are the only source; a static sibling would be silently ignored and drift forever.
 - On a fresh Linux host, `run_once_30-set-default-shell.sh.tmpl` needs `fish` present. It's in
   `packages/arch/common.txt`, but if the shell change is skipped on first apply (packages not
   installed yet), just run `chezmoi apply` again.

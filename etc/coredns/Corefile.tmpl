@@ -1,31 +1,30 @@
+{{- $domain := .domain -}}
+# GENERATED from .chezmoidata.yaml — edit the endpoints there, not this file.
+
 (local_hosts) {
     hosts {
-        192.168.15.23 immich.arthurjordao.dev
-        192.168.15.23 mars.arthurjordao.dev
-        192.168.15.28 mercury.arthurjordao.dev
-        192.168.15.23 minecraft.arthurjordao.dev
-        192.168.15.23 dns.arthurjordao.dev
-        192.168.15.23 music.arthurjordao.dev
-        192.168.15.23 slskd.arthurjordao.dev
-        192.168.15.23 soulsync.arthurjordao.dev
-        192.168.15.23 books.arthurjordao.dev
-        192.168.15.23 shelfmark.arthurjordao.dev
+{{- range $hostname, $host := .hosts }}
+{{- if index $host "ip" }}
+        {{ $host.ip.lan }} {{ $hostname }}.{{ $domain }}
+{{- range (index $host "endpoints" | default list) }}
+        {{ $host.ip.lan }} {{ .name }}.{{ $domain }}
+{{- end }}
+{{- end }}
+{{- end }}
         fallthrough
     }
 }
 
 (tailscale_hosts) {
     hosts {
-        100.127.50.55 immich.arthurjordao.dev
-        100.127.50.55 mars.arthurjordao.dev
-        100.121.125.41 mercury.arthurjordao.dev
-        100.127.50.55 minecraft.arthurjordao.dev
-        100.127.50.55 dns.arthurjordao.dev
-        100.127.50.55 music.arthurjordao.dev
-        100.127.50.55 slskd.arthurjordao.dev
-        100.127.50.55 soulsync.arthurjordao.dev
-        100.127.50.55 books.arthurjordao.dev
-        100.127.50.55 shelfmark.arthurjordao.dev
+{{- range $hostname, $host := .hosts }}
+{{- if index $host "ip" }}
+        {{ $host.ip.tailscale }} {{ $hostname }}.{{ $domain }}
+{{- range (index $host "endpoints" | default list) }}
+        {{ $host.ip.tailscale }} {{ .name }}.{{ $domain }}
+{{- end }}
+{{- end }}
+{{- end }}
         fallthrough
     }
 }

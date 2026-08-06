@@ -69,7 +69,7 @@ Pictures/**
 .config/containers/**
 {{ else }}
 .config/containers/systemd/*
-{{ range $me.services -}}
+{{ range $me.quadlets -}}
 !.config/containers/systemd/{{ . }}*
 {{ end -}}
 {{ end }}

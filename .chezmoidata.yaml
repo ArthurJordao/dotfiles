@@ -6,11 +6,20 @@
 #   minecraft  minecraft@ units + helper scripts
 #   edge       Caddy, CoreDNS, cloudflared, /etc deploy
 #   ddns       cloudflare-ddns service+timer
+#
+# quadlets/units/endpoints generate the edge configs, and nothing errors when
+# they disagree. CLAUDE.md has the contract.
+
+domain: arthurjordao.dev
 
 hosts:
   mars:
     roles: [server, podman, gui, gaming, minecraft, edge, ddns]
-    services:
+    ip:
+      lan: 192.168.15.23
+      tailscale: 100.127.50.55
+
+    quadlets:
       - calibre-web-automated
       - immich
       - music
@@ -18,10 +27,49 @@ hosts:
       - shelfmark
       - teamspeak3
 
+    units:
+      # Every immich unit, not just the pod: Requires= propagates stop to
+      # dependents but start only to dependencies, so starting immich-pod alone
+      # brings up an empty pod.
+      - immich-pod
+      - immich-db
+      - immich-valkey
+      - immich-ml
+      - immich-server
+      - navidrome
+      - slskd
+      - soulsync
+      - calibre-web-automated
+      - open-webui
+      - shelfmark
+      - teamspeak3
+      - minecraft@vanilla
+      - minecraft@atm10
+
+    endpoints:
+      - {name: books, port: 8083, public: true}
+      - {name: dns, port: 8053, scheme: https, tls_insecure: true, log: false}
+      - {name: immich, port: 2283, public: true}
+      - {name: minecraft}
+      - {name: music, port: 4533}
+      - {name: shelfmark, port: 8084}
+      - {name: slskd, port: 5030}
+      - {name: soulsync, port: 8008}
+
   mercury:
     roles: [gui, gaming]
-    services: []
+    ip:
+      lan: 192.168.15.28
+      tailscale: 100.121.125.41
+    quadlets: []
+    units: []
+    endpoints: []
 
   neptune:
     roles: [gui]
-    services: []
+    ip:
+      lan: 192.168.15.20
+      tailscale: 100.115.219.28
+    quadlets: []
+    units: []
+    endpoints: []

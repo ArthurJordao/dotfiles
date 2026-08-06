@@ -1,3 +1,4 @@
+{{- $me := index .hosts .hostname -}}
 #!/usr/bin/env bash
 # gaming-mode — free up CPU/GPU/RAM for gaming on mars by stopping the
 # self-hosted stack, then restore exactly what was running.
@@ -8,27 +9,16 @@
 #
 # All services are rootless user units, so no sudo. systemctl computes the
 # stop/start order from each unit's After=/Requires=, so the list order below
-# is only for readability.
+# does not matter.
+#
+# GENERATED — CANDIDATES is this host's `units` in .chezmoidata.yaml. A unit
+# missing from that list keeps running through gaming mode, and nothing warns you.
 set -euo pipefail
 
-# Candidate units, in dependency (start) order.
 CANDIDATES=(
-    immich-pod.service
-    immich-db.service
-    immich-valkey.service
-    immich-ml.service
-    immich-server.service
-    navidrome.service
-    slskd.service
-    soulsync.service
-    calibre-web-automated.service
-    shelfmark.service
-    open-webui.service
-    teamspeak3.service
-    # Minecraft is a template with mutually-exclusive instances; whichever is
-    # running gets recorded and restored.
-    minecraft@vanilla.service
-    minecraft@atm10.service
+{{- range (index $me "units" | default list) }}
+    {{ . }}.service
+{{- end }}
 )
 
 STATE="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/gaming-mode.units"

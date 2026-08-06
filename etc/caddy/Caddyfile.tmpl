@@ -1,0 +1,34 @@
+{{- $domain := .domain -}}
+{{- $edge := .hostname -}}
+# GENERATED from .chezmoidata.yaml — edit the endpoints there, not this file.
+#
+# Reverse-proxy upstreams use 127.0.0.1, never localhost. localhost resolves to
+# ::1 (IPv6) first, and rootless podman containers on the default network use
+# pasta, which only forwards IPv4 — an IPv6 connection is accepted then dropped,
+# which Caddy surfaces as a 502 (it won't fall back once the socket connects).
+# 127.0.0.1 is unambiguous and works regardless of the container's net backend.
+{{ range $hostname, $host := .hosts }}
+{{- range (index $host "endpoints" | default list) }}
+{{- if hasKey . "port" }}
+{{- /* endpoint served by this same box -> loopback; by another host -> its LAN IP */ -}}
+{{- $upstream := $host.ip.lan }}{{ if eq $hostname $edge }}{{ $upstream = "127.0.0.1" }}{{ end }}
+{{- $scheme := index . "scheme" | default "http" }}
+{{- $log := true }}{{ if hasKey . "log" }}{{ $log = .log }}{{ end }}
+{{ .name }}.{{ $domain }} {
+    reverse_proxy {{ if eq $scheme "https" }}https://{{ end }}{{ $upstream }}:{{ .port }}{{ if index . "tls_insecure" | default false }} {
+        transport http {
+            tls_insecure_skip_verify
+        }
+    }{{ end }}
+
+    tls {
+        dns cloudflare {env.CF_API_TOKEN}
+    }
+{{- if $log }}
+    log {
+        output file /var/log/caddy/{{ .name }}-access.log
+        format json
+    }
+{{- end }}
+}
+{{ end }}{{ end }}{{ end -}}
