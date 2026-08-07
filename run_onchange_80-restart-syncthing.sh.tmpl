@@ -1,7 +1,7 @@
 {{ if has "emulation" (index .hosts .hostname).roles -}}
 #!/bin/bash
 set -euo pipefail
-# config.xml: {{ include "dot_local/state/syncthing/config.xml.tmpl" | sha256sum }}
+# config.xml: {{ include "dot_local/state/syncthing/modify_config.xml.tmpl" | sha256sum }}
 #
 # Also hash the data: editing .chezmoidata/syncthing.yaml changes what the
 # template renders while leaving the template itself byte-identical, so hashing

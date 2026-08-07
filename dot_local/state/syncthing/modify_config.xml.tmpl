@@ -1,0 +1,143 @@
+#!/usr/bin/env python3
+{{- $me := index .hosts .hostname -}}
+{{- $myId := index $me "syncthing_id" | default "" -}}
+{{- $peers := list -}}
+{{- range $name, $h := .hosts -}}
+{{-   if and (has "emulation" $h.roles) (ne (index $h "syncthing_id" | default "") "") -}}
+{{-     $peers = append $peers $name -}}
+{{-   end -}}
+{{- end }}
+# GENERATED from .chezmoidata/syncthing.yaml — do not edit the deployed copy.
+#
+# A chezmoi `modify_` script, not a plain template: chezmoi feeds it the CURRENT
+# ~/.local/state/syncthing/config.xml on stdin and takes the new contents from
+# stdout. That matters because syncthing co-owns this file. Rendering it as a
+# static template meant every apply discarded the apikey syncthing injects, the
+# device entry it adds for itself, and the ~170 lines of defaults it writes out —
+# and syncthing put them straight back. The file was permanently dirty.
+#
+# So: own only what we declare. Replace the <folder> and top-level <device>
+# elements, pin the handful of <options> we care about, and pass everything else
+# through untouched — schema version, apikey, gui session settings, defaults.
+#
+# The transform must be IDEMPOTENT: chezmoi compares our stdout against the file
+# on disk, so re-running on our own output has to produce byte-identical text or
+# the file is rewritten on every apply, which is the problem we are fixing.
+import sys
+import xml.etree.ElementTree as ET
+
+FOLDERS = [
+{{- range $f := .syncthing.folders }}
+{{- $type := "sendreceive" }}
+{{- if eq $f.mode "oneway" }}
+{{-   if eq $f.source $.hostname }}{{ $type = "sendonly" }}{{ else }}{{ $type = "receiveonly" }}{{ end }}
+{{- end }}
+    {{ printf "(%q, %q, %q, %s)," $f.id $f.path $type (ternary "True" "False" (eq $f.mode "twoway")) }}
+{{- end }}
+]
+
+# (device id, name, address). "dynamic" for ourselves; peers are reached over
+# Tailscale, since global discovery and relaying are both off. LAN peers are
+# still found by local discovery regardless of this address.
+DEVICES = [
+{{- range $p := $peers }}
+{{- $h := index $.hosts $p }}
+    ({{ $h.syncthing_id | quote }}, {{ $p | quote }}, {{ if eq $p $.hostname }}"dynamic"{{ else }}{{ printf "tcp://%s:22000" $h.ip.tailscale | quote }}{{ end }}),
+{{- end }}
+]
+
+MY_ID = {{ $myId | quote }}
+
+OPTIONS = {
+    "globalAnnounceEnabled": "false",
+    "localAnnounceEnabled": "true",
+    "relaysEnabled": "false",
+    "natEnabled": "false",
+    "urAccepted": "-1",
+    "crashReportingEnabled": "false",
+}
+GUI_ADDRESS = "127.0.0.1:8384"
+
+# Fallback used only when there is no config yet. Syncthing expands it on first
+# start; from then on we are editing its output rather than replacing it.
+SEED = '<configuration version="52"></configuration>'
+
+
+def build_folder(fid, path, ftype, versioned):
+    el = ET.Element("folder", {
+        "id": fid,
+        "label": fid,
+        "path": "~/" + path,
+        "type": ftype,
+        "rescanIntervalS": "3600",
+        "fsWatcherEnabled": "true",
+        "fsWatcherDelayS": "10",
+        "ignorePerms": "false",
+    })
+    for did, _name, _addr in DEVICES:
+        ET.SubElement(el, "device", {"id": did, "introducedBy": ""})
+    v = ET.SubElement(el, "versioning")
+    if versioned:
+        ET.SubElement(v, "type").text = "simple"
+        ET.SubElement(v, "param", {"key": "keep", "val": "5"})
+        ET.SubElement(v, "cleanupIntervalS").text = "3600"
+    return el
+
+
+def build_device(did, name, addr):
+    el = ET.Element("device", {
+        "id": did,
+        "name": name,
+        "compression": "metadata",
+        "introducer": "false",
+        "skipIntroductionRemovals": "false",
+        "introducedBy": "",
+    })
+    ET.SubElement(el, "address").text = addr
+    ET.SubElement(el, "autoAcceptFolders").text = "false"
+    return el
+
+
+def set_child(parent, tag, text):
+    el = parent.find(tag)
+    if el is None:
+        el = ET.SubElement(parent, tag)
+    el.text = text
+
+
+def main():
+    current = sys.stdin.read()
+    try:
+        root = ET.fromstring(current if current.strip() else SEED)
+    except ET.ParseError:
+        # A corrupt or half-written config should not wedge apply; start clean
+        # and let syncthing re-expand.
+        root = ET.fromstring(SEED)
+
+    # Until this host has an ID of its own, or has no peer to pair with, leave
+    # folders and devices alone rather than emitting half a topology.
+    if MY_ID and len(DEVICES) > 1:
+        keep = [e for e in root if e.tag not in ("folder", "device")]
+        root[:] = (
+            [build_folder(*f) for f in FOLDERS]
+            + [build_device(*d) for d in DEVICES]
+            + keep
+        )
+
+    opts = root.find("options")
+    if opts is None:
+        opts = ET.SubElement(root, "options")
+    for key, val in OPTIONS.items():
+        set_child(opts, key, val)
+
+    gui = root.find("gui")
+    if gui is None:
+        gui = ET.SubElement(root, "gui")
+    set_child(gui, "address", GUI_ADDRESS)
+
+    ET.indent(root, space="    ")
+    out = ET.tostring(root, encoding="unicode")
+    sys.stdout.write('<?xml version="1.0" encoding="UTF-8"?>\n' + out.rstrip() + "\n")
+
+
+main()

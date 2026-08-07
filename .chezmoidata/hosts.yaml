@@ -28,7 +28,7 @@ hosts:
     # Derived from the TLS cert syncthing generates on first run, so it cannot
     # be known before that host has applied once. Empty = folders/devices are
     # omitted from config.xml rather than half-rendered.
-    syncthing_id: ""
+    syncthing_id: "34WVFBB-7BPUYSO-PIU3HJU-LQ7MA53-FIMPVUR-Q6YAKGI-DCTMY4D-VSTRKQB"
 
     quadlets:
       - calibre-web-automated
@@ -82,7 +82,7 @@ hosts:
     ip:
       lan: 192.168.15.28
       tailscale: 100.121.125.41
-    syncthing_id: ""
+    syncthing_id: "X2U3R6Y-HUJD53W-YLYDY42-TEWFQ5O-O5VBTL4-3SJ3JIL-UEEKXZJ-UIBXPQB"
     quadlets: []
     units: []
     endpoints: []

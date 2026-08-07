@@ -335,6 +335,23 @@ themselves never leave the host.
   to the wrong one and Syncthing silently generates its own default instead; it looks like the
   template did not apply. That directory also holds `cert.pem`, `key.pem` and the SQLite database —
   only `config.xml` is managed.
+- **`config.xml` is a `modify_` script, not a plain template — and it has to stay one.** Syncthing
+  co-owns the file: it injects an `apikey`, adds a `<device>` entry for itself, migrates the schema
+  version (38 → 52 on first start here, leaving a `config.xml.v38` backup), and expands every
+  default into ~200 lines. A static template loses all of that on every apply and Syncthing puts it
+  straight back, so the file is permanently dirty and `chezmoi diff` stops meaning anything.
+  `modify_config.xml.tmpl` gets the current file on **stdin** and owns only the `<folder>` and
+  top-level `<device>` elements plus a few `<options>`; everything else passes through.
+  **The transform must be idempotent** — chezmoi diffs our stdout against the file on disk, so
+  re-running on our own output has to be byte-identical. Verify with two passes:
+
+  ```
+  tools/simulate-host mars execute-template < dot_local/state/syncthing/modify_config.xml.tmpl > /tmp/m.py
+  ssh mars.arthurjordao.dev cat .local/state/syncthing/config.xml > /tmp/live.xml
+  python3 /tmp/m.py < /tmp/live.xml > /tmp/1.xml && python3 /tmp/m.py < /tmp/1.xml > /tmp/2.xml && diff /tmp/1.xml /tmp/2.xml
+  ```
+- Go templates render booleans as `true`/`false`; Python needs `True`/`False`. Use
+  `ternary "True" "False"` when generating Python from chezmoi data.
 - **`~/Emulation/saves/` is a farm of absolute symlinks**, not save data. EmuDeck points each one
   at wherever that emulator actually stores saves — inside `Emulation/storage/`, a flatpak's
   `.var/app/...`, `.local/share/...` or `.config/Ryujinx`. Syncing it would replicate 25 broken
@@ -366,8 +383,8 @@ well as the template, for the same reason `70-deploy-etc` does: editing
 Inspect before applying:
 
 ```
-tools/simulate-host mars execute-template < dot_local/state/syncthing/config.xml.tmpl
-tools/simulate-host mercury execute-template < dot_local/state/syncthing/config.xml.tmpl
+tools/simulate-host mars execute-template < dot_local/state/syncthing/modify_config.xml.tmpl
+tools/simulate-host mercury execute-template < dot_local/state/syncthing/modify_config.xml.tmpl
 ```
 
 # Adding a new service (checklist)
