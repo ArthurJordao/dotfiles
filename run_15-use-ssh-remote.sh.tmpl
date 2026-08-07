@@ -1,0 +1,34 @@
+#!/bin/bash
+# Switches the source-dir git remote from HTTPS to SSH.
+#
+# The bootstrap clones over HTTPS, because the repo is public and that removes
+# the chicken-and-egg of needing SSH keys (which live in 1Password) before the
+# first clone. chezmoi apply then writes those keys, and this flips the remote
+# so pushes use SSH.
+#
+# A plain run_ script, deliberately: it executes on every apply and exits on
+# the first check. A run_onchange_ keyed on the remote URL would never retry if
+# a flip were skipped, since unchanged content means no re-fire.
+set -euo pipefail
+
+SRC={{ .chezmoi.sourceDir | quote }}
+
+[ -d "$SRC/.git" ] || exit 0
+
+case "$(git -C "$SRC" remote get-url origin 2>/dev/null || echo none)" in
+    git@*) exit 0 ;;            # already SSH -- the common case, every apply
+    none)  exit 0 ;;            # no origin remote
+esac
+
+# Keys are written earlier in this same apply, but do not depend on that:
+# if they are not usable yet, defer to the next apply rather than fail.
+[ -f "$HOME/.ssh/id_ed25519" ] || exit 0
+
+if ! ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -T git@github.com 2>&1 \
+        | grep -q 'successfully authenticated'; then
+    echo "SSH to github.com not working yet; leaving the remote on HTTPS." >&2
+    exit 0
+fi
+
+git -C "$SRC" remote set-url origin git@github.com:ArthurJordao/dotfiles
+echo "Switched the source-dir remote to SSH."
