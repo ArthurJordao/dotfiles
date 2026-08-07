@@ -9,7 +9,7 @@ sourceDir = {{ .chezmoi.sourceDir | quote }}
   command = "op"
 
 # Runs after the repo is cloned but before chezmoi reads source state, so `op`
-# exists before any onepasswordRead template needs it. Exits immediately when
-# the CLI is already installed.
+# exists before any template that reads a 1Password secret needs it. Exits
+# immediately when the CLI is already installed.
 [hooks.read-source-state.pre]
   command = {{ printf "%s/.install-password-manager.sh" .chezmoi.sourceDir | quote }}
