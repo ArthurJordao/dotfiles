@@ -8,8 +8,8 @@ Hosts share this repo, gated by roles in `.chezmoidata/hosts.yaml`:
 - **`mars`** — Arch/CachyOS homelab server. Runs the self-hosted stack (containers, Caddy,
   CoreDNS, Minecraft). Also a desktop and gaming box. This is the interesting part and the
   focus of this file.
-- **`neptune`** — macOS workstation, the NoRedInk work laptop (Brewfile, aerospace, hammerspoon,
-  etc.). Renamed from `Arthurs-MacBook-Pro`. It's Kandji-MDM-enrolled, which can rewrite
+- **`neptune`** — macOS workstation, the NoRedInk work laptop (Brewfile, aerospace, etc.).
+  Renamed from `Arthurs-MacBook-Pro`. It's Kandji-MDM-enrolled, which can rewrite
   `ComputerName`/`LocalHostName` on check-in — `HostName` is the one chezmoi reads.
 - **`mercury`** — Lenovo Legion Go handheld, CachyOS, user `arthur`. Same arch package family as
   mars, so it reads the same `packages.arch` groups. Roles `[gui, gaming, moonlight, emulation]`:
@@ -27,7 +27,7 @@ file isn't universal:
 
 | Axis | Mechanism | Use for |
 |---|---|---|
-| **OS** | `.chezmoi.os`, `.chezmoi.osRelease` | platform-only things: aerospace, hammerspoon, Brewfile, `brew`/`paru`/`apt` |
+| **OS** | `.chezmoi.os`, `.chezmoi.osRelease` | platform-only things: aerospace, Brewfile, `brew`/`paru`/`apt` |
 | **Role** | `has "edge" $roles` | purpose — vocabulary is listed in `.chezmoidata/hosts.yaml` |
 | **Placement** | `quadlets` list | podman quadlets — one instance in the fleet |
 

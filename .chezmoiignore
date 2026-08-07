@@ -34,8 +34,6 @@ Pictures
 Pictures/**
 .config/aerospace
 .config/aerospace/**
-.config/hammerspoon
-.config/hammerspoon/**
 {{ end }}
 
 # Axis 2: role — gated by what the box is FOR.

@@ -124,7 +124,6 @@ packages:
       - mosh
       - tree-sitter
       - neovim
-      - nushell
       - oath-toolkit
       - openldap
       - ormolu
@@ -142,7 +141,6 @@ packages:
       - watchman
       - yazi
       - yozefu
-      - zellij
       - zig
       - zk
       - noborus/tap/trdsql
@@ -159,7 +157,6 @@ packages:
       - firefox
       - font-fira-code-nerd-font
       - gimp
-      - hammerspoon
       - keybase
       - moonlight
       - ngrok
@@ -168,7 +165,6 @@ packages:
       - opcode
       - qmk-toolbox
       - raycast
-      - rio
       - signal
       - steam
       - tableplus
