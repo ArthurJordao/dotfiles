@@ -22,6 +22,16 @@ syncthing:
     - {id: emu-switch-mods, path: Emulation/storage/eden/load, mode: oneway, source: mars}
     - {id: emu-switch-firmware, path: Emulation/storage/eden/nand/system/Contents/registered, mode: oneway, source: mars}
     - {id: emu-switch-keys, path: .local/share/eden/keys, mode: oneway, source: mars}
+    # Switch saves are stored per PROFILE, under
+    # nand/user/save/0000000000000000/<profile-uuid>/, and the profile registry
+    # is this one opaque binary (profiles.dat). Each host's Eden generated its
+    # own profile, so synced saves referenced a UUID the other host had never
+    # seen and Eden reported "a save with no attached profile".
+    #
+    # oneway, not twoway: a single binary file cannot merge, so two-way sync
+    # would be last-writer-wins and would silently drop one host's profile.
+    # mars is canonical, matching the rest of the content folders.
+    - {id: emu-switch-profiles, path: Emulation/storage/eden/nand/system/save/8000000000000010/su/avators, mode: oneway, source: mars}
     # Saves — change on both hosts, so two-way with versioning.
     - {id: emu-save-eden, path: Emulation/storage/eden/nand/user/save, mode: twoway}
     - {id: emu-save-retroarch, path: Emulation/saves/retroarch/saves, mode: twoway}

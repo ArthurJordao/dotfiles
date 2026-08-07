@@ -55,6 +55,12 @@ OPTIONS = {
     "natEnabled": "false",
     "urAccepted": "-1",
     "crashReportingEnabled": "false",
+    # Syncthing's default is 0 = scan/sync every folder at once. With 13 folders
+    # and ~17 GB to hash, that starved mars badly enough during the initial seed
+    # that sshd stopped answering (TCP accepted, no banner) and tailscaled
+    # dropped off, while the box still pinged at 3.8 ms. mars also runs immich,
+    # Caddy, CoreDNS and the podman stack; it cannot have all of this at once.
+    "maxFolderConcurrency": "2",
 }
 GUI_ADDRESS = "127.0.0.1:8384"
 

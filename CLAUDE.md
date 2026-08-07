@@ -371,6 +371,14 @@ themselves never leave the host.
 - **`emu-save-dolphin`'s folder root is Dolphin's whole flatpak data dir**, so its `.stignore`
   admits only `GC/`, `Wii/` and `StateSaves/`. Each needs *two* lines (`!/GC` and `!/GC/**`):
   without the second, children fall through to the catch-all and only an empty directory syncs.
+- **Switch saves are per-profile, and the profile registry is one binary file.** Saves live at
+  `nand/user/save/0000000000000000/<profile-uuid>/`; the registry is
+  `nand/system/save/8000000000000010/su/avators/profiles.dat`. Sync the saves without it and Eden
+  reports "a save with no attached profile", because each host's Eden generated its own profile
+  UUID. `emu-switch-profiles` is **oneway from mars** on purpose: a single opaque binary cannot be
+  merged, so two-way would be last-writer-wins and would silently drop a host's profile. EmuDeck's
+  own `saves/eden/profiles` symlink pointed at this all along — worth reading the symlink farm as a
+  list of what belongs together, not just where files live.
 - **`gamelist.xml` is the most conflict-prone file here.** ES-DE rewrites it on exit to update
   `playcount`/`playtime`/`lastplayed`, so playing on both hosts between syncs conflicts every
   session. Low stakes, and it is also what carries favourites and the per-game emulator choice.
