@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+# emu-merge-gamelists — resolve ES-DE gamelist sync-conflicts by union.
+#
+#   emu-merge-gamelists --dry-run    # report what would change
+#   emu-merge-gamelists              # merge, leaving .pre-merge backups
+#
+# emu-gamelists is a two-way folder and ES-DE rewrites gamelist.xml on exit to
+# bump playcount/playtime/lastplayed, so playing on both hosts between syncs
+# conflicts by design. Syncthing resolves whole files, so the losing side keeps
+# its favourites only in the .sync-conflict copy. This unions them: every game
+# kept, favourite if EITHER side had it, highest counters, latest lastplayed.
+set -uo pipefail
+
+python3 - "${1:-}" <<'PY'
+import os, sys, glob, re, shutil
+import xml.etree.ElementTree as ET
+
+dry = sys.argv[1] == "--dry-run"
+base = os.path.join(os.path.expanduser("~"), "ES-DE", "gamelists")
+
+def load(path):
+    # ES-DE gamelists are NOT valid XML: <alternativeEmulator> and <gameList>
+    # are both root elements, so a strict parser rejects the whole file.
+    text = open(path, encoding="utf-8").read()
+    m = re.search(r"<gameList>.*</gameList>", text, re.S)
+    if not m:
+        return None, None, None
+    return ET.fromstring(m.group(0)), text, m
+
+def child(parent, tag):
+    # An Element with no children is falsy, so `find(x) or SubElement(x)`
+    # appends a duplicate. Always compare against None.
+    el = parent.find(tag)
+    if el is None:
+        el = ET.SubElement(parent, tag)
+    return el
+
+def num(el, tag):
+    try:
+        return int(el.findtext(tag))
+    except (TypeError, ValueError):
+        return 0
+
+changed = 0
+for d in sorted(glob.glob(os.path.join(base, "*"))):
+    live_p = os.path.join(d, "gamelist.xml")
+    confs = sorted(glob.glob(os.path.join(d, "gamelist.sync-conflict-*.xml")))
+    if not os.path.isfile(live_p) or not confs:
+        continue
+    system = os.path.basename(d)
+    live, text, m = load(live_p)
+    if live is None:
+        print("  %s: unparseable live gamelist, skipped" % system)
+        continue
+
+    by_path = {g.findtext("path"): g for g in live.findall("game")}
+    added = favs = bumped = 0
+
+    for cp in confs:
+        conf, _, _ = load(cp)
+        if conf is None:
+            print("  %s: %s has no <gameList>, nothing to take"
+                  % (system, os.path.basename(cp)))
+            continue
+        for g in conf.findall("game"):
+            p = g.findtext("path")
+            cur = by_path.get(p)
+            if cur is None:
+                live.append(g)
+                by_path[p] = g
+                added += 1
+                if (g.findtext("favorite") or "").lower() == "true":
+                    favs += 1
+                continue
+            if (g.findtext("favorite") or "").lower() == "true" and \
+               (cur.findtext("favorite") or "").lower() != "true":
+                child(cur, "favorite").text = "true"
+                favs += 1
+            for tag in ("playcount", "playtime"):
+                if num(g, tag) > num(cur, tag):
+                    child(cur, tag).text = str(num(g, tag))
+                    bumped += 1
+            new_lp = g.findtext("lastplayed") or ""
+            if new_lp > (cur.findtext("lastplayed") or ""):
+                child(cur, "lastplayed").text = new_lp
+
+    if added or favs or bumped:
+        changed += 1
+        print("  %s: +%d games, +%d favourites, %d counters raised"
+              % (system, added, favs, bumped))
+        if not dry:
+            shutil.copy2(live_p, live_p + ".pre-merge")
+            ET.indent(live, space="\t")
+            body = ET.tostring(live, encoding="unicode")
+            open(live_p, "w", encoding="utf-8").write(
+                text[:m.start()] + body + text[m.end():])
+    else:
+        print("  %s: nothing to merge" % system)
+
+print("%s%d gamelist(s) changed" % ("[dry run] " if dry else "", changed))
+if not dry and changed:
+    print("Delete the .sync-conflict copies once ES-DE looks right, then let sync propagate.")
+PY

@@ -72,6 +72,7 @@ Emulation/**
 .local/state
 .local/state/**
 .local/scripts/emu-sync-check
+.local/scripts/emu-merge-gamelists
 {{ end }}
 {{ if ne .chezmoi.os "linux" }}
 .local/scripts/install-packages
