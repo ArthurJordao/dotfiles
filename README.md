@@ -4,8 +4,13 @@ Personal dotfiles managed with [chezmoi](https://www.chezmoi.io/).
 
 ## Bootstrap (new machine)
 
-SSH only, no HTTPS. Step 3 fetches the SSH key from 1Password *before* the first clone,
-which is what avoids the chicken-and-egg and keeps this to a single `chezmoi apply`.
+The first clone is over HTTPS — the repo is public, so there's no chicken-and-egg
+needing SSH keys (which live in 1Password) before there's anything to read them
+with. `chezmoi apply` writes those keys, and a script then flips the source-dir
+remote to SSH once they actually work. That flip is mostly for honesty, not
+function: `dot_config/git/config`'s `insteadOf` rule already rewrites any HTTPS
+remote to SSH transparently once it's deployed, so pushes go over SSH either way
+— the script just makes the configured remote match what's actually happening.
 
 ### 0. Add the host to `.chezmoidata/hosts.yaml` and push
 
@@ -33,23 +38,53 @@ sudo hostnamectl set-hostname <hostname>   # Linux
 sudo scutil --set HostName <hostname>      # macOS
 ```
 
-### 2. Install the three prerequisites
+### 2. Install chezmoi
+
+Everything else needed to read this repo — `1password-cli` included — installs
+itself: chezmoi's `read-source-state.pre` hook runs `.install-password-manager.sh`
+the first time source state is read, and the rest are declared packages installed
+in step 6.
 
 ```bash
 # macOS
-brew install chezmoi 1password-cli git
+brew install chezmoi
 
-# Arch / CachyOS — paru, not pacman: 1password-cli is AUR-only.
-# CachyOS ships paru; on stock Arch, install chezmoi and git with pacman and bootstrap paru first.
-paru -S --needed chezmoi 1password-cli git
+# Arch / CachyOS — CachyOS ships paru; on stock Arch, bootstrap paru first.
+paru -S --needed chezmoi git
 
-# Debian / Ubuntu — chezmoi and 1password-cli need their own repos, see their docs
+# Debian / Ubuntu — chezmoi needs its own repo, see its docs
 sudo apt install -y git
 ```
 
-Everything else, `fish` and `gnupg` included, is a declared package installed in step 6.
+### 3. Clone and initialise
 
-### 3. Sign in to 1Password, then fetch the SSH keys
+```bash
+chezmoi init --source ~/dev/personal/dotfiles https://github.com/ArthurJordao/dotfiles
+```
+
+Use the full URL, not chezmoi's `ArthurJordao` shorthand — that expands to
+`https://user@github.com/user/dotfiles.git`, with a username embedded, which
+prompts for credentials.
+
+### 4. Check it resolved — and let the hook install the 1Password CLI
+
+Bare `chezmoi init` clones and generates the config but never reads source
+state, so the hook above hasn't fired yet. This is the first command that does
+read source state, which is why it doubles as the trigger:
+
+```bash
+chezmoi data | grep '"hostname"'                              # must match step 1
+chezmoi execute-template '{{ (index .hosts .hostname).roles }}'
+```
+
+Don't "simplify" this by moving it below the signin step — it has to run first
+for the hook to fire before anything needs `op` to already be signed in.
+
+`chezmoi init --apply` would collapse steps 3 and 6 into one, and it does fire
+the hook, but don't use it here: apply reads secrets from 1Password, and at
+this point nothing has signed in yet.
+
+### 5. Sign in to 1Password
 
 ```bash
 # Desktop machines: enabling the desktop-app CLI integration (Settings → Developer)
@@ -57,35 +92,16 @@ Everything else, `fish` and `gnupg` included, is a declared package installed in
 op account add   # first time only: sign-in address, email, Secret Key, password
 eval "$(op signin)"          # bash/zsh
 # eval (op signin)           # fish
-
-mkdir -p ~/.ssh && chmod 700 ~/.ssh
-op read "op://dotfiles/ssh-ed25519/private" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
-op read "op://dotfiles/ssh-rsa/private"     > ~/.ssh/id_rsa     && chmod 600 ~/.ssh/id_rsa
-ssh-keyscan github.com >> ~/.ssh/known_hosts   # skips the interactive host-key prompt
 ```
 
-chezmoi rewrites these from the same items later, so doing it early is harmless.
+Sanity-check before writing anything:
 
 ```bash
-ssh -T git@github.com   # expect: "Hi <user>! You've successfully authenticated"
-```
-
-### 4. Clone over SSH
-
-```bash
-git clone git@github.com:ArthurJordao/dotfiles ~/dev/personal/dotfiles
-```
-
-### 5. Init chezmoi
-
-```bash
-chezmoi init --source ~/dev/personal/dotfiles
-
-# sanity-check before writing anything
-chezmoi data | grep '"hostname"'                              # must match step 1
-chezmoi execute-template '{{ (index .hosts .hostname).roles }}'
 chezmoi diff | head -40
 ```
+
+This needs a signed-in `op` too — it renders the same secret-bearing templates
+`apply` would.
 
 ### 6. Apply — once
 
@@ -93,11 +109,18 @@ chezmoi diff | head -40
 chezmoi apply --force
 ```
 
-Packages install here too, via `run_onchange_10-install-packages`. It fires on this first
-apply, prints what's declared but not installed, and asks before installing — answer `y`.
-Later additions to `.chezmoidata/packages.yaml` re-fire it automatically on the next apply, so
-there's no separate step; if you decline the prompt or apply headlessly, `just packages` picks
-up the delta. Log out and back in for the new login shell.
+This writes the SSH keys from 1Password and installs this host's declared
+packages, via `run_onchange_10-install-packages`. It fires on this first apply,
+prints what's declared but not installed, and asks before installing — answer
+`y`. Later additions to `.chezmoidata/packages.yaml` re-fire it automatically on
+the next apply, so there's no separate step; if you decline the prompt or apply
+headlessly, `just packages` picks up the delta.
+
+This apply also runs `run_15-use-ssh-remote`, a plain `run_` script (it runs on
+every apply, not just the first) that checks whether the SSH keys it just wrote
+actually work and, if so, flips the source-dir remote from HTTPS to
+`git@github.com:ArthurJordao/dotfiles`. Log out and back in for the new login
+shell.
 
 ## Host configuration
 
