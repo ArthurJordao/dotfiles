@@ -5,18 +5,16 @@
 #   tools/simulate-host pluto managed           # same, explicit
 #   tools/simulate-host mercury execute-template < some.tmpl
 #
-# Works by overriding the `hostname` config data key, which every host-aware
-# template reads instead of the builtin .chezmoi.hostname (the builtin cannot be
-# overridden per-invocation, config data can).
+# Overrides the `hostname` config data key, which every host-aware template
+# reads instead of the builtin .chezmoi.hostname (that one can't be overridden).
 #
 # Read-only: destDir is a throwaway temp dir, so nothing in $HOME is touched.
 #
 # LIMITS:
 #  - Overrides identity, never platform. .chezmoi.os / .chezmoi.osRelease stay
-#    those of the machine you run it on, so OS-gated branches can't be checked
-#    this way.
-#  - Subcommands that render every template (diff, apply) try to read 1Password
-#    secrets for *.env.tmpl files. Stick to `managed` unless `op` is unlocked.
+#    those of the machine you run it on.
+#  - diff and apply render *.env.tmpl too, which needs `op` unlocked. Stick to
+#    `managed`.
 set -euo pipefail
 
 HOST="${1:?usage: simulate-host <hostname> [chezmoi args...]}"

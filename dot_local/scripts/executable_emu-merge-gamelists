@@ -4,11 +4,8 @@
 #   emu-merge-gamelists --dry-run    # report what would change
 #   emu-merge-gamelists              # merge, leaving .pre-merge backups
 #
-# emu-gamelists is a two-way folder and ES-DE rewrites gamelist.xml on exit to
-# bump playcount/playtime/lastplayed, so playing on both hosts between syncs
-# conflicts by design. Syncthing resolves whole files, so the losing side keeps
-# its favourites only in the .sync-conflict copy. This unions them: every game
-# kept, favourite if EITHER side had it, highest counters, latest lastplayed.
+# Every game kept, favourite if EITHER side had it, highest counters, latest
+# lastplayed.
 set -uo pipefail
 
 python3 - "${1:-}" <<'PY'

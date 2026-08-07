@@ -1,16 +1,12 @@
 // Syncthing ignore list for the emu-save-dolphin folder.
 // Deployed by chezmoi, gated on the `emulation` role.
 //
-// The folder root is Dolphin's whole flatpak data dir, which holds shader
-// caches, dumps and Load/ alongside the actual saves. Only the three save
-// directories should cross machines; the rest is large and per-host (and the
-// two hosts have different GPUs, so a shared shader cache would be wrong).
+// The folder root is Dolphin's whole flatpak data dir; only the three save
+// directories should cross hosts. Caches and dumps are large and per-host.
 //
-// Patterns are matched in order and the FIRST match wins, so every include
-// must precede the catch-all. Each directory needs two lines: `!/GC` admits
-// the directory itself, `!/GC/**` admits its contents -- without the second,
-// children fall through to `**` and are excluded while the empty directory
-// syncs. That asymmetry is the easy mistake here.
+// First match wins, so every include precedes the catch-all. Each directory
+// needs two lines: `!/GC` admits the directory, `!/GC/**` its contents.
+// Without the second, only an empty directory syncs.
 
 !/GC
 !/GC/**

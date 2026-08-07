@@ -15,24 +15,11 @@ systemctl --user enable --now podman-auto-update.timer
 systemctl --user enable --now minecraft-backup.timer
 {{ end -}}
 {{ if has "sunshine" $roles -}}
-# Shipped by the sunshine package, not by this repo — so `just packages` has to
-# have run first. If it hasn't, this fails loudly, chezmoi does not record the
-# script as run, and the next apply retries it.
-#
-# Must be the real unit name. The unit declares Alias=sunshine.service, but an
-# alias symlink is only created BY enabling, so the short name does not resolve
-# until after this line has run once. It is WantedBy=graphical-session.target,
-# so it comes up with the desktop rather than at boot.
+# Must be the real unit name: the Alias=sunshine.service symlink is only
+# created by enabling, so the short name doesn't resolve until after this runs.
 systemctl --user enable --now app-dev.lizardbyte.app.Sunshine.service
 {{ end -}}
 {{ if has "emulation" $roles -}}
-# Also shipped by its package (syncthing), not by this repo, so `just packages`
-# must have run first — same contract as sunshine above.
-#
-# First run generates ~/.local/state/syncthing/{cert.pem,key.pem} and a default
-# config.xml. That cert is what the device ID is derived from, which is why
-# pairing is a two-phase bootstrap: apply once to get an ID, put it in
-# .chezmoidata/hosts.yaml, apply again to render the real config.
 systemctl --user enable --now syncthing.service
 {{ end -}}
 {{ end }}

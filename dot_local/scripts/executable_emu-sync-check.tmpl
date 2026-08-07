@@ -1,13 +1,9 @@
 #!/usr/bin/env bash
-# emu-sync-check — report drift in the shared emulation library.
+# emu-sync-check — report drift in the shared emulation library: sync conflicts
+# and emulators installed into the ROM tree. Read-only.
 #
 # GENERATED — the folder list below is `.syncthing.folders` from
-# .chezmoidata/syncthing.yaml. Read-only: this only ever reports.
-#
-# Syncthing is silent about the two things that actually bite:
-#   * sync conflicts, which it writes to disk and never surfaces again
-#   * an emulator installing itself into the ROM tree, which then syncs as
-#     content unless .stignore is updated to match
+# .chezmoidata/syncthing.yaml.
 set -uo pipefail
 
 RED=$'\033[31m'; YELLOW=$'\033[33m'; GREEN=$'\033[32m'; DIM=$'\033[2m'; OFF=$'\033[0m'
@@ -64,15 +60,11 @@ done
 
 echo
 echo "=== emulator files inside the ROM tree, not covered by .stignore ==="
-# EmuDeck installs emulators into ~/Emulation/roms (Cemu in wiiu/, the Model 2
-# emulator in model2/, launcher scripts in emulators/). Those are per-host and
-# must not cross machines, so each needs a .stignore rule. This flags the ones
-# that have none — install a new Proton-based emulator and it shows up here
-# before it syncs as if it were a game.
+# EmuDeck installs emulators into ~/Emulation/roms. Those are per-host and each
+# needs a .stignore rule; this flags the ones that have none.
 #
-# The matcher below approximates Syncthing's pattern rules (anchoring, `(?i)`,
-# `/*` and `/**` suffixes, unanchored basename globs). Syncthing itself remains
-# authoritative; this is a tripwire, not a reimplementation.
+# The matcher only approximates Syncthing's pattern rules — a tripwire, not a
+# reimplementation.
 ROMS="$HOME/Emulation/roms"
 IGN="$ROMS/.stignore"
 
@@ -132,18 +124,12 @@ echo "=== syncthing state ==="
 if ! systemctl --user is-active --quiet syncthing.service; then
     bad "  syncthing.service is not running"
 elif command -v syncthing >/dev/null 2>&1; then
-    # `syncthing cli` reads the local config for its own API key, so this needs
-    # no credentials of ours.
     ok "  syncthing.service running"
-    # Per-folder state comes from the REST API, not `syncthing cli`: there is no
-    # `cli show folder` subcommand, and an earlier version of this script called
-    # one — it failed silently and this section reported nothing at all. The API
-    # key is read from the local config, so no credentials live here.
+    # Per-folder state comes from the REST API: there is no `cli show folder`.
     APIKEY=$(sed -n 's:.*<apikey>\(.*\)</apikey>.*:\1:p' "$HOME/.local/state/syncthing/config.xml" 2>/dev/null)
     if [ -z "$APIKEY" ]; then
         note "  no apikey in config.xml yet — skipping folder status"
     else
-        # Exits non-zero when something is off, so the summary below counts it.
         python3 - "$APIKEY" "${FOLDERS[@]}" <<'PY' || note "  ^ folders above need attention"
 import sys, json, urllib.request
 key, entries = sys.argv[1], sys.argv[2:]

@@ -40,9 +40,8 @@ INSTALLED="$(pacman -Qq)"
 INSTALLED="$(dpkg-query -W -f='${Package}\n')"
 {{ end -}}
 
-# The delta drives the prompt only. It is allowed to be slightly
-# over-inclusive -- a package satisfied by another's `provides` shows as
-# missing -- because --needed remains the real guard against reinstalling.
+# The delta drives the prompt only, so it may be slightly over-inclusive (a
+# package satisfied by another's `provides`). --needed is the real guard.
 MISSING="$(comm -13 <(printf '%s\n' "$INSTALLED" | sort -u) \
                     <(printf '%s\n' "$DECLARED"  | sort -u))"
 

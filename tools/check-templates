@@ -3,18 +3,13 @@
 #
 #   tools/check-templates
 #
-# Catches the failure class that `simulate-host <host> managed` does NOT: a
-# template whose `include` or path reference went stale. `managed` only lists
-# target paths, so a broken include inside a run_onchange script passes it and
-# then blows up during a real apply on the host.
+# Catches what `simulate-host <host> managed` does not: a stale `include` or
+# path reference. `managed` only lists target paths, so a broken include inside
+# a run_onchange script passes it and blows up during a real apply.
 #
-# Templates that actually CALL `onepasswordRead` (as a template action, `{{ ... }}`)
-# are skipped -- they need `op` unlocked and would fail everywhere for an unrelated
-# reason. The match is deliberately restricted to inside `{{ }}`, not a bare
-# substring: a bare `grep -q onepasswordRead` also matches the token in a comment
-# or in prose describing the function, which silently removed a template from this
-# check entirely (a comment mentioning it cost 3 renders of coverage on
-# .chezmoi.toml.tmpl, with nothing reported).
+# Templates that CALL `onepasswordRead` are skipped -- they need `op` unlocked.
+# The match is restricted to inside `{{ }}` so a mention in a comment doesn't
+# silently drop a template from the check.
 set -uo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."

@@ -10,16 +10,13 @@
 #   minecraft list         list available servers (~/minecraft/*)
 #   minecraft attach       attach to the running server's tmux console
 #
-# Servers are discovered from ~/minecraft/*/ (each holds startserver.sh), so a
-# new server needs no edit here. The enabled symlink is the source of truth for
-# what boots — `use` keeps it matched to your choice.
+# Servers are discovered from ~/minecraft/*/, so a new one needs no edit here.
 set -euo pipefail
 
 MC_DIR="$HOME/minecraft"
 
 uctl() { systemctl --user "$@"; }
 
-# Print available instance names (basenames of dirs under ~/minecraft).
 instances() {
     local d
     for d in "$MC_DIR"/*/; do
@@ -28,7 +25,6 @@ instances() {
     done
 }
 
-# Echo the currently-running instance, if any.
 running_instance() {
     local inst
     for inst in $(instances); do
@@ -39,8 +35,8 @@ running_instance() {
     done
 }
 
-# Echo the boot-enabled instance, if any (may differ from running when a
-# server has crashed or was stopped outside this CLI).
+# May differ from running_instance when a server crashed or was stopped
+# outside this CLI.
 enabled_instance() {
     local inst
     for inst in $(instances); do

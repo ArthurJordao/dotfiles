@@ -1,15 +1,12 @@
 #!/usr/bin/env bash
-# minecraft-backup — daily tarball of the vanilla world, stored on the bulk SSD
-# (/mnt/x9pro) so a root-disk (nvme0n1) failure doesn't take the backups with it.
-# Keeps only the newest KEEP daily tarballs.
+# minecraft-backup — daily tarball of the vanilla world onto the bulk SSD, so a
+# root-disk failure doesn't take the backups with it. Keeps the newest KEEP.
 #
-# On MC 26.2 every dimension lives inside world/ (world/dimensions/minecraft/...);
-# older Paper split them into world_nether / world_the_end. We back up whichever
-# world* dirs exist, so either layout works.
+# Backs up whichever world* dirs exist: newer MC keeps every dimension inside
+# world/, older Paper split them into world_nether / world_the_end.
 #
-# If the server is running, saves are paused and flushed through its tmux console
-# first for a consistent snapshot, and re-enabled via the EXIT trap (which also
-# removes any half-written tarball). Run by minecraft-backup.timer; safe by hand.
+# If the server is running, saves are paused and flushed through its tmux
+# console first. Run by minecraft-backup.timer; safe by hand.
 set -euo pipefail
 
 INSTANCE="vanilla"
@@ -36,7 +33,6 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Collect the world dir(s) that exist (handles 26.2 unified + old split layouts).
 worlds=()
 for name in world world_nether world_the_end; do
     [ -d "$SRC_DIR/$name" ] && worlds+=("$name")
@@ -46,7 +42,6 @@ if [ "${#worlds[@]}" -eq 0 ]; then
     exit 1
 fi
 
-# Pause world writes and flush pending chunks for a consistent snapshot.
 if [ "$running" -eq 1 ]; then
     mc_console "save-off"
     mc_console "save-all flush"
@@ -57,7 +52,6 @@ fi
 tar -C "$SRC_DIR" -czf "$archive.part" "${worlds[@]}"
 mv -f "$archive.part" "$archive"
 
-# Retention: keep the newest KEEP tarballs, delete the rest.
 mapfile -t backups < <(ls -1t "$DEST_DIR/${INSTANCE}-"*.tar.gz 2>/dev/null || true)
 if [ "${#backups[@]}" -gt "$KEEP" ]; then
     for old in "${backups[@]:$KEEP}"; do

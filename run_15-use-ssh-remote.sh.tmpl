@@ -1,50 +1,27 @@
 #!/bin/bash
-# Makes the source-dir git remote explicit once SSH keys are available.
+# Switches the source-dir remote from the bootstrap HTTPS clone to SSH, once
+# the keys chezmoi deploys actually work.
 #
-# The bootstrap clones over HTTPS, because the repo is public and that removes
-# the chicken-and-egg of needing SSH keys (which live in 1Password) before the
-# first clone. chezmoi apply then writes those keys.
-#
-# This does NOT "enable" SSH pushes on its own: dot_config/git/config carries
-# a `url.ssh://git@github.com/.insteadOf https://github.com/` rule, so once
-# that file is deployed, an HTTPS remote already pushes over SSH transparently
-# -- git rewrites it at the transport layer. What this script does is make the
-# configured remote match what actually happens: honest, and no longer
-# dependent on that rewrite rule continuing to exist.
-#
-# A plain run_ script, deliberately: it executes on every apply and exits on
-# the first check. A run_onchange_ keyed on the remote URL would never retry if
-# a flip were skipped, since unchanged content means no re-fire.
+# A plain run_ deliberately, not run_onchange_: keyed on the remote URL, a flip
+# skipped once (keys not ready) would never retry.
 set -euo pipefail
 
 SRC={{ .chezmoi.sourceDir | quote }}
 
 [ -d "$SRC/.git" ] || exit 0
 
-# `git remote get-url` applies the insteadOf rewrite above, so an HTTPS remote
-# would come back looking like ssh://git@github.com/... -- read the raw
-# configured value instead, and act only when it is genuinely HTTPS. Any SSH
-# spelling (git@host:path, ssh://git@host/path, or no origin at all) is a
-# no-op.
-#
-# The pattern below is pinned to this exact repo, not just the https scheme:
-# the set-url destination further down is a hardcoded SSH URL, so matching
-# any https:// remote here would let an unrelated origin (a different repo
-# or host) be silently clobbered with this repo's URL instead of deferred.
+# `config --get`, not `remote get-url`: the latter applies the insteadOf
+# rewrite and reports an HTTPS remote as ssh://.
 url="$(git -C "$SRC" config --get remote.origin.url || true)"
 case "$url" in
     https://github.com/ArthurJordao/dotfiles*) ;;   # only ever rewrite THIS repo
-    *) exit 0 ;;                # already SSH, a foreign remote, or no origin at all
+    *) exit 0 ;;                # already SSH, a foreign remote, or no origin
 esac
 
-# Keys are written earlier in this same apply, but do not depend on that:
-# if they are not usable yet, defer to the next apply rather than fail.
 [ -f "$HOME/.ssh/id_ed25519" ] || exit 0
 
-# ssh -T against github.com always exits non-zero -- GitHub authenticates but
-# refuses a shell -- so the exit code can't be trusted and this must not be a
-# pipeline under set -o pipefail (ssh's expected non-zero would poison it even
-# when grep matches). Capture the output instead and test its contents.
+# ssh -T against github.com always exits non-zero (it authenticates, then
+# refuses a shell), so test the output, not the status.
 ssh_out="$(ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -T git@github.com 2>&1 || true)"
 case "$ssh_out" in
     *'successfully authenticated'*) ;;

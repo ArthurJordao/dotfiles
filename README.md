@@ -237,7 +237,7 @@ describe the shapes above, and each file in `.chezmoidata/` opens with a
 (`../schemas/hosts.schema.json`, `../schemas/syncthing.schema.json`,
 `../schemas/packages.schema.json`), so Neovim validates as you type and shows each field's
 meaning on hover. It catches the mistakes that otherwise fail *silently*: a misspelled
-`tls-insecure` currently reads as absent and quietly disables the flag, `endpoint:` instead of
+`tls-insecure` reads as absent and quietly disables the flag, `endpoint:` instead of
 `endpoints:` yields no endpoints at all, and a typo'd role is inert by design.
 
 It validates structure only. It cannot know that a quadlet is missing from `units`,

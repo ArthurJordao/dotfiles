@@ -13,9 +13,8 @@
 #   ddns       cloudflare-ddns service+timer
 #
 # quadlets/units/endpoints generate the Caddy, CoreDNS, cloudflared and
-# gaming-mode configs. They are independent, and nothing errors when they
-# disagree — a quadlet missing from `units` keeps running through gaming mode.
-# `syncthing.folders` is a fourth such list, with the same property.
+# gaming-mode configs. They are independent lists and nothing errors when they
+# disagree. `syncthing.folders` is a fourth such list.
 
 domain: arthurjordao.dev
 
@@ -25,9 +24,7 @@ hosts:
     ip:
       lan: 192.168.15.23
       tailscale: 100.127.50.55
-    # Derived from the TLS cert syncthing generates on first run, so it cannot
-    # be known before that host has applied once. Empty = folders/devices are
-    # omitted from config.xml rather than half-rendered.
+    # Read off the host after its first syncthing start; empty omits it.
     syncthing_id: "34WVFBB-7BPUYSO-PIU3HJU-LQ7MA53-FIMPVUR-Q6YAKGI-DCTMY4D-VSTRKQB"
 
     quadlets:
@@ -39,9 +36,8 @@ hosts:
       - teamspeak3
 
     units:
-      # Every immich unit, not just the pod: Requires= propagates stop to
-      # dependents but start only to dependencies, so starting immich-pod alone
-      # brings up an empty pod.
+      # Every immich unit, not just the pod: starting immich-pod alone brings
+      # up an empty pod (Requires= propagates stop, not start).
       - immich-pod
       - immich-db
       - immich-valkey
@@ -56,12 +52,9 @@ hosts:
       - teamspeak3
       - minecraft@vanilla
       - minecraft@atm10-tts
-      # Unlike sunshine, syncthing IS safe to stop: idle-cheap, but a
-      # multi-gigabyte transfer mid-session is exactly the contention
-      # gaming-mode exists to prevent, and it resumes cleanly on restart.
       - syncthing
-      # sunshine is deliberately absent: `units` is what gaming-mode stops, and
-      # stopping the game-stream host would kill the session being streamed.
+      # sunshine is deliberately absent: gaming-mode stops everything in this
+      # list, and that would kill the session being streamed.
 
     endpoints:
       - {name: books, port: 8083, public: true}
@@ -72,9 +65,7 @@ hosts:
       - {name: shelfmark, port: 8084}
       - {name: slskd, port: 5030}
       - {name: soulsync, port: 8008}
-      # Caddy fronts the config UI only (self-signed, hence tls_insecure).
-      # Moonlight itself talks TCP 47984-47990 / UDP 47998-48010 straight to the
-      # host, so the DNS record is the part that matters to a client.
+      # Config UI only — moonlight talks straight to the host, not via Caddy.
       - {name: sunshine, port: 47990, scheme: https, tls_insecure: true}
 
   mercury:

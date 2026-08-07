@@ -1,22 +1,17 @@
 // Syncthing ignore list for the emu-roms folder.
 // Deployed by chezmoi, gated on the `emulation` role.
 //
-// ~/Emulation/roms is NOT pure content. EmuDeck installs emulators and writes
-// per-host launchers inside the ROM tree, and none of it should cross machines:
-// the hosts are different architectures with different emulator sets.
+// ~/Emulation/roms is not pure content — EmuDeck installs emulators and
+// per-host launchers inside the ROM tree, and none of it should cross hosts.
 //
-// Patterns are matched in order and the FIRST match wins, so the `!` includes
-// must come first. A leading `/` anchors to the folder root; without one a
-// pattern matches at any depth. `(?i)` makes a pattern case-insensitive, which
-// matters because EmuDeck ships both `EMULATOR.EXE` and `xenia_canary.exe`.
+// First match wins, so the `!` includes come first. A leading `/` anchors to
+// the folder root; without one a pattern matches at any depth.
 //
-// Prefer structural rules over listing files you happened to notice — an
-// earlier version of this file enumerated `/model2/*.lua` and missed the ~150
-// scripts one directory deeper. `just emu-sync-check` reports what is not
-// covered here.
+// Prefer structural rules to listing files. `just emu-sync-check` reports
+// what is not covered here.
 
 // --- includes, first ---
-// Only this subdirectory of model2 holds games (it is currently empty).
+// Only this subdirectory of model2 holds games.
 !/model2/roms
 !/model2/roms/**
 
@@ -25,11 +20,10 @@
 // EmuDeck's generated per-host launcher scripts.
 /emulators
 
-// The Sega Model 2 emulator install: EMULATOR.EXE, CFG/, scripts/, *.lua, *.pat.
-// Everything except the roms/ admitted above.
+// The Sega Model 2 emulator install — everything but the roms/ admitted above.
 /model2/*
 
-// Cemu installed into the Wii U ROM directory (mercury only today).
+// Cemu installed into the Wii U ROM directory.
 /wiiu/gameProfiles
 /wiiu/resources
 

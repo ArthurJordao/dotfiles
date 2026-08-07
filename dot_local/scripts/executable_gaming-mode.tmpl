@@ -7,12 +7,10 @@
 #   gaming-mode off     start back the services that were stopped
 #   gaming-mode status  show whether gaming mode is on
 #
-# All services are rootless user units, so no sudo. systemctl computes the
-# stop/start order from each unit's After=/Requires=, so the list order below
-# does not matter.
+# All rootless user units, so no sudo. systemctl derives the stop/start order
+# from After=/Requires=, so the list order below does not matter.
 #
-# GENERATED — CANDIDATES is this host's `units` in .chezmoidata/hosts.yaml. A unit
-# missing from that list keeps running through gaming mode, and nothing warns you.
+# GENERATED — CANDIDATES is this host's `units` in .chezmoidata/hosts.yaml.
 set -euo pipefail
 
 CANDIDATES=(

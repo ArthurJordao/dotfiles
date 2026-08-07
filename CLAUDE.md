@@ -12,11 +12,10 @@ Hosts share this repo, gated by roles in `.chezmoidata/hosts.yaml`:
   etc.). Renamed from `Arthurs-MacBook-Pro`. It's Kandji-MDM-enrolled, which can rewrite
   `ComputerName`/`LocalHostName` on check-in — `HostName` is the one chezmoi reads.
 - **`mercury`** — Lenovo Legion Go handheld, CachyOS, user `arthur`. Same arch package family as
-  mars, so it reads the same `packages.arch` groups in `.chezmoidata/packages.yaml`. Roles
-  `[gui, gaming, moonlight, emulation]`: shared dotfiles and GUI configs, no containers and no
-  `/etc` deploy. Runs no hosted services. `gaming` has no key under `packages.arch` — CachyOS
-  ships the gaming stack. `emulation` makes it the second half of the shared EmuDeck library
-  (see "Emulation library sync").
+  mars, so it reads the same `packages.arch` groups. Roles `[gui, gaming, moonlight, emulation]`:
+  shared dotfiles and GUI configs, no containers, no `/etc` deploy, no hosted services. `gaming`
+  has no key under `packages.arch` — CachyOS ships the gaming stack. `emulation` makes it the
+  second half of the shared EmuDeck library (see "Emulation library sync").
 
 ## Host gating: three axes
 
@@ -41,8 +40,7 @@ identity, not platform — `.chezmoi.os` stays local, so OS-gated branches need 
 **`managed` is not enough on its own.** It lists target paths, so a template whose `include` path
 went stale still passes it and only fails during a real apply on the host. `./tools/check-templates`
 renders *every* template for *every* host and is the check to run after moving or renaming any
-source file — a `dot_local/state/syncthing` → `private_syncthing` rename shipped exactly that bug.
-It skips `onepasswordRead` templates, which need `op` unlocked.
+source file. It skips `onepasswordRead` templates, which need `op` unlocked.
 
 Silent failures worth knowing:
 - `dir/**` then `!dir/keep` in `.chezmoiignore` ignores everything. Negation needs single-star `dir/*`.
@@ -53,27 +51,19 @@ Silent failures worth knowing:
   `{{-   /* x */ -}}` is `unexpected "/" in command`. A parse error in **any** `.chezmoitemplates`
   file fails *every* template call, so the reported filename may not be the one you ran.
 - **Never put `exact_` on a directory that holds user content.** chezmoi leaves unmanaged files
-  alone in a normal managed directory (verified: a stray ROM survives an apply), but `exact_`
-  deletes everything in the target not present in source. `exact_Emulation` would wipe the ROM
-  library. `private_` is unrelated — it sets 0700/0600 permissions, and on a flatpak data dir like
-  `.var/app/org.DolphinEmu.dolphin-emu/` that would be a change for no benefit.
-  `private_` **is** right where the target really is 0700: `dot_local/state/private_syncthing/`
-  matches the 0700 syncthing sets on a directory holding `key.pem`. Without it chezmoi relaxes a
-  private-key directory to 0755 and reports "has changed since chezmoi last wrote it" every apply.
-- **systemd-resolved sends private reverse lookups to mDNS and waits out the timeout.** On mars a
-  PTR for a LAN address cost a flat **7.7s** — not a network wait, a protocol that only ends on
-  timeout. Proof: `resolvectl query --protocol=dns <ip>` answered in 2ms, the same query on
-  `tailscale0` (a link with `-LLMNR -mDNS`) took 2ms, and pinning wlan0's DNS to CoreDNS alone
-  changed nothing. Fixed with `nmcli connection modify ap-not-found connection.llmnr 0
-  connection.mdns 0` — now 0ms. **mDNS was the culprit, not LLMNR** (LLMNR off alone: still
-  7602ms). Safe here because `avahi-daemon` is active and provides `.local` service discovery
-  independently — `_nvstream._tcp` (Sunshine) and `_kdeconnect._udp` still advertise fine.
+  alone in a normal managed directory, but `exact_` deletes everything in the target not present
+  in source — `exact_Emulation` would wipe the ROM library. `private_` is unrelated: it sets
+  0700/0600, and is right only where the target really is 0700. `dot_local/state/private_syncthing/`
+  needs it (syncthing sets 0700 on a directory holding `key.pem`, and without it chezmoi reports
+  "has changed since chezmoi last wrote it" every apply); a flatpak data dir does not.
+- **systemd-resolved sends private reverse lookups to mDNS and waits out the timeout** — a PTR for
+  a LAN address cost mars a flat 7.7s. Fixed with `nmcli connection modify ap-not-found
+  connection.llmnr 0 connection.mdns 0`. mDNS was the culprit, not LLMNR. Safe because
+  `avahi-daemon` provides `.local` service discovery independently.
 
-  **It has a second half.** Turning off resolved's mDNS also removed glibc's only route to `.local`,
-  so `ssh mercury.local` stopped resolving on mars even though `avahi-resolve` still answered.
-  `nss-mdns` was installed but never wired in; the fix is `mdns_minimal [NOTFOUND=return]` in
-  `/etc/nsswitch.conf`'s `hosts:` line, right after `mymachines`. It only ever answers for `.local`
-  and `[NOTFOUND=return]` stops there, so reverse lookups stay at 1ms. Final line:
+  **It has a second half.** Turning off resolved's mDNS removed glibc's only route to `.local`, so
+  `ssh mercury.local` stopped resolving. The fix is `mdns_minimal [NOTFOUND=return]` in
+  `/etc/nsswitch.conf`'s `hosts:` line, right after `mymachines`:
 
   ```
   hosts: mymachines mdns_minimal [NOTFOUND=return] resolve [!UNAVAIL=return] files myhostname dns
@@ -84,19 +74,16 @@ Silent failures worth knowing:
 - **Every** file in `.chezmoidata/` is loaded as template data, JSON included — so the JSON Schemas
   live in `schemas/`, not next to the YAML they describe. Putting `hosts.schema.json` in there
   merges its `title`, `type`, `$schema` and `properties` keys into the top-level namespace, where
-  they silently shadow real data. Verified, not theoretical.
-- **`.chezmoi.toml.tmpl` must never call `onepasswordRead`.** chezmoi has to render the config
-  template before it can read the resulting config and learn which hooks are configured, so a
-  `hooks.read-source-state.pre` hook (e.g. `.install-password-manager.sh`) cannot satisfy a
-  dependency the config template itself needs. On a fresh machine that ordering would fail
-  `chezmoi init` with `op: executable file not found in $PATH`, with no hook able to rescue it
-  (source: chezmoi discussion #4702, maintainer twpayne, Oct 2025). A related but distinct trap:
-  the hook command itself is baked into the generated, unmanaged `~/.config/chezmoi/chezmoi.toml`
-  as an **absolute path** (`.chezmoi.sourceDir`-derived). Move, rename, or re-clone the source dir
-  elsewhere and that path goes stale — every chezmoi command then fails with
-  `read-source-state: pre: ...: no such file or directory`, exit 1 (verified), not just `apply`.
-  Recovery: edit or delete the `[hooks.read-source-state.pre]` stanza in
-  `~/.config/chezmoi/chezmoi.toml` by hand, or re-run `chezmoi init`.
+  they silently shadow real data.
+- **`.chezmoi.toml.tmpl` must never call `onepasswordRead`.** chezmoi renders the config template
+  before it can learn which hooks are configured, so the `hooks.read-source-state.pre` hook
+  (`.install-password-manager.sh`) cannot satisfy a dependency the config template itself needs —
+  `chezmoi init` would fail with `op: executable file not found in $PATH` and no hook could rescue
+  it. Related trap: the hook command is baked into the generated, unmanaged
+  `~/.config/chezmoi/chezmoi.toml` as an **absolute path**. Move or re-clone the source dir and
+  every chezmoi command fails with `read-source-state: pre: ...: no such file or directory`, not
+  just `apply`. Recovery: edit or delete the `[hooks.read-source-state.pre]` stanza by hand, or
+  re-run `chezmoi init`.
 
 # The mars self-hosted stack
 
@@ -137,12 +124,10 @@ edge" below.
 - One block per endpoint: `<name>.arthurjordao.dev { reverse_proxy 127.0.0.1:<port> ... }` with
   TLS via the Cloudflare DNS challenge (`dns cloudflare {env.CF_API_TOKEN}`) and a JSON access
   log. `CF_API_TOKEN` comes from `etc/caddy/caddy.env.tmpl`.
-- **Always `127.0.0.1`, never `localhost`.** `localhost` resolves to `::1` (IPv6) first, and
-  rootless containers on the default network use **pasta**, which forwards IPv4 only — the IPv6
-  connection is accepted then dropped, and Caddy returns a **502** without falling back. Only
-  the music stack dodged this (custom `music.network` → netavark/rootlessport, dual-stack), so
-  the bug surfaces on any standalone (pasta) container reached through Caddy. The template
-  emits `127.0.0.1` whenever the serving host *is* the edge host, so this is now structural.
+- **Always `127.0.0.1`, never `localhost`.** `localhost` resolves to `::1` first, and rootless
+  containers on the default network use **pasta**, which forwards IPv4 only — the connection is
+  accepted then dropped, and Caddy returns a **502** without falling back. The template emits
+  `127.0.0.1` whenever the serving host *is* the edge host, so this is structural.
 
 **3. DNS (CoreDNS, split-horizon)** — `etc/coredns/Corefile.tmpl`
 
@@ -169,9 +154,9 @@ from the public internet, add it to the **Cloudflare Tunnel** instead of opening
 - Cloudflare's proxy caps requests at ~100 MB — fine for typical app traffic, a limit for large
   file downloads.
 - **This tunnel is locally-managed — never edit it in the Cloudflare dashboard.** Adding a
-  Public Hostname / config there attaches a *remote* config, which cloudflared then obeys while
-  silently ignoring `config.yml` (there's no supported way to detach it — you'd have to recreate
-  the tunnel, as was done to reach this state). Manage routes only via the file.
+  Public Hostname there attaches a *remote* config, which cloudflared obeys while silently
+  ignoring `config.yml`, and there is no supported way to detach it. Manage routes only via
+  the file.
 
 ## The generated edge
 
@@ -205,14 +190,11 @@ mars:
 
 **The three lists are independent, and that is the one thing that can drift.** A quadlet with no
 `units` entry keeps running through gaming mode; a `units` entry with no quadlet names a unit that
-will never exist; an endpoint with no quadlet is a 502. None of it errors. This was chosen
-deliberately over a nested per-service shape — flat keeps each template reading exactly one list —
-so the cost is real and lands on whoever edits the data.
+will never exist; an endpoint with no quadlet is a 502. None of it errors.
 
-Note the lists genuinely don't line up 1:1, which is why nesting them was awkward in the first
-place: `immich` is one quadlet, five units, one endpoint; `music` is one quadlet, three units,
-three endpoints; `teamspeak3` has no endpoint; `minecraft@*` are units with no quadlet; `dns` is an
-endpoint with neither.
+They don't line up 1:1: `immich` is one quadlet, five units, one endpoint; `music` is one quadlet,
+three units, three endpoints; `teamspeak3` has no endpoint; `minecraft@*` are units with no
+quadlet; `dns` is an endpoint with neither.
 
 `units` must name **every** unit to restore, not just a pod. `Requires=` propagates stop to
 dependents but start only to dependencies — stopping `immich-pod` takes the containers down, but
@@ -243,13 +225,12 @@ endpoints in declaration order within a host.
 **`run_onchange_70-deploy-etc.sh.tmpl`** renders the Caddyfile, Corefile, cloudflared config and
 `caddy.env` from their templates, installs them into `/etc` with `sudo`, and reloads caddy /
 restarts coredns / restarts cloudflared. Each render goes to a staging file before `install`, so a
-failing template (locked 1Password, say) can't truncate a live config. The quadlet files under
-`dot_config/` deploy normally to `~/.config/...`.
+failing template can't truncate a live config. The quadlet files under `dot_config/` deploy
+normally to `~/.config/...`.
 
-**Its re-run trigger hashes the data, not just the template text.** Hashing
-`include "etc/caddy/Caddyfile.tmpl"` alone would miss a `.chezmoidata/` edit, which changes the
-*output* while the template bytes stay identical — so the header also carries a `# data:` hash of
-`.hosts` + `.domain`. Keep that line if you touch the script.
+**Its re-run trigger hashes the data, not just the template text** — a `.chezmoidata/` edit changes
+the *output* while the template bytes stay identical, so the header also carries a `# data:` hash
+of `.hosts` + `.domain`. Keep that line if you touch the script.
 
 `run_*` scripts execute in alphabetical target order; the numeric prefix states it explicitly.
 Anything needing a package goes after 10; gaps of 10 leave room to insert.
@@ -273,24 +254,18 @@ source state is read, before any template needing `op` runs.
 Two top-level files drive the bootstrap and have no `run_*` slot of their own:
 
 - **`.install-password-manager.sh`** — the `hooks.read-source-state.pre` hook itself. Deliberately
-  **not** a `.tmpl`: hooks run before chezmoi's template machinery exists, so it detects the OS
-  with `uname` instead of `.chezmoi.os`. Deliberately **dot-prefixed**: chezmoi ignores dotfiles as
-  source state, so without the leading dot it would try to manage the script as a target. Either
-  change — templating it, or dropping the dot — breaks it silently.
-- **`run_15-use-ssh-remote.sh.tmpl`** (the `15` row above) — flips the source-dir remote from
-  HTTPS to SSH once the keys this same apply just wrote actually work. Deliberately a plain `run_`,
-  not `run_onchange_`: a `run_onchange_` keyed on the remote URL would only re-fire while the
-  remote is still HTTPS, so a flip that got skipped once (keys not ready yet) would never retry —
-  the trigger would already look "unchanged" on the next apply.
+  **not** a `.tmpl` (hooks run before chezmoi's template machinery exists, so it uses `uname`) and
+  deliberately **dot-prefixed** (chezmoi ignores dotfiles as source state; without the dot it would
+  manage the script as a target). Either change breaks it silently.
+- **`run_15-use-ssh-remote.sh.tmpl`** — flips the source-dir remote from HTTPS to SSH once the keys
+  this same apply just wrote actually work. Deliberately a plain `run_`: a `run_onchange_` keyed on
+  the remote URL would never retry a flip that got skipped once.
 
-**Adding a role that needs both a package and a unit used to be a chicken-and-egg; it mostly
-isn't one now.** `run_onchange_10-install-packages.sh.tmpl` renders the package names straight
-into its own body, so adding a role's key to `.chezmoidata/packages.yaml` (or adding the role to
-a host) changes that script's hash, and `10-` sorts before `50-enable-systemd-units` — so the
-new package installs in the *same* apply that enables its unit, provided the install prompt (see
-"Packages" below) is answered `y`. The one remaining catch: decline the prompt, or run headless
-with no TTY, and step 50 still fails for lack of the package. Hit by `sunshine`, then by
-`emulation`, before the fix; a declined prompt is now the only way to still hit it.
+`run_onchange_10-install-packages.sh.tmpl` renders the package names into its own body, so adding
+a role's key to `.chezmoidata/packages.yaml` changes that script's hash, and `10-` sorts before
+`50-enable-systemd-units` — a new role's package installs in the *same* apply that enables its
+unit. The catch: decline the install prompt (see "Packages"), or run headless with no TTY, and
+step 50 still fails for lack of the package.
 
 `run_once_50-enable-systemd-units.sh.tmpl` enables only the hand-written units, gated by the role
 that owns each (`ddns`, `podman`, `minecraft`) — quadlet services are generated and can't be enabled.
@@ -304,18 +279,12 @@ Packages are declared in `.chezmoidata/packages.yaml` — the only place package
 `arch` key is grouped by `common` plus one key per role name; a role with no key installs
 nothing, which is not an error — but guard every lookup with `hasKey`, since under
 `missingkey=error` a bare `.packages.arch.podman` fails the template when the key is absent. The
-`darwin` key is flat, since neptune is the only Mac, and each entry is a bare string or
-`{name, trusted}` where Homebrew needs the trust flag: seven taps and two brews currently carry
-`trusted: true`, and losing one makes `brew bundle cleanup --force` wipe `trust.json`.
+`darwin` key is flat, and each entry is a bare string or `{name, trusted}` where Homebrew needs
+the trust flag — losing one makes `brew bundle cleanup --force` wipe `trust.json`.
 
 **The names render *into* `run_onchange_10-install-packages.sh.tmpl`** (both the Linux body and
-the darwin branch inline in the same file), so editing `.chezmoidata/packages.yaml` changes the
-rendered script's own hash and the hook re-fires on the next `chezmoi apply`. This is why no
-`sha256sum` fingerprint on the data is needed — do not add one; the script's hash already moves
-with the data because the data *is* the script's content now. It's also what mostly dissolved
-the old chicken-and-egg (see Deploy flow above): `10-` runs before `50-enable-systemd-units`, so
-a new role's package installs in the same apply that enables its unit — as long as the prompt
-below gets a `y`.
+the darwin branch), so editing the YAML changes the rendered script's own hash and the hook
+re-fires on the next apply. No `sha256sum` fingerprint on the data is needed — do not add one.
 
 `chezmoi apply` prints only the delta — declared minus installed — and **asks before
 installing**. Declining exits 0; chezmoi records `run_onchange` state only on success, so the
@@ -324,27 +293,21 @@ never prompts, because running it is itself the confirmation. With no TTY (a hea
 script prints the delta and exits without installing anything.
 
 **On macOS, both the apply-time check and the apply-time install pass `brew bundle`
-`--no-upgrade`.** Without it, `brew bundle check` reports merely-outdated formulae as unmet
-— its message is literally "needs to be installed or updated" — so `chezmoi apply` would prompt
-on every apply where anything had drifted stale, not just genuinely missing ones (a point-in-time
-check found 5 such packages on neptune; that count drifts with whatever's outdated that day, it
-isn't a fixed property of the host). The install call needs the flag too, or answering `y` to a
-short list of genuinely-missing packages would also silently upgrade every unrelated outdated
-package in the same run. `just packages` and `just upgrade` deliberately keep the upgrading
-behavior — the asymmetry is intentional: an unattended `apply` should never surprise-upgrade
-something you didn't ask for.
+`--no-upgrade`.** Without it, `brew bundle check` reports merely-outdated formulae as unmet, so
+apply would prompt whenever anything had drifted stale; and the install call needs the flag too,
+or answering `y` to a few missing packages would silently upgrade every unrelated outdated one.
+`just packages` and `just upgrade` deliberately keep the upgrading behavior — an unattended
+`apply` should never surprise-upgrade something you didn't ask for.
 
 `schemas/packages.schema.json` lives in `schemas/`, not `.chezmoidata/` — see the shadowing trap
 above.
 
 **The Brewfile is generated, so `brew bundle dump` is retired as an authoring workflow** — a
 re-dump would be overwritten on the next apply and would destroy every `trusted` flag. Add
-packages to the YAML by hand instead. `.chezmoitemplates/brewfile` is the shared body; it's
-rendered by `Brewfile.tmpl` (deploys `~/Brewfile`, with a two-line `# GENERATED …` header warning
-against hand-editing) and separately by the darwin branch of
-`run_onchange_10-install-packages.sh.tmpl`, which renders its own copy to a temp file rather than
-reading `~/Brewfile` off disk — the numbered script sorts before `Brewfile` in the apply's target
-order, so `~/Brewfile` isn't deployed yet the first time the script runs.
+packages to the YAML by hand. `.chezmoitemplates/brewfile` is the shared body, rendered by
+`Brewfile.tmpl` (deploys `~/Brewfile`) and separately by the darwin branch of
+`run_onchange_10-install-packages.sh.tmpl`, which renders its own copy to a temp file — the
+numbered script sorts before `Brewfile`, so `~/Brewfile` isn't on disk yet the first time it runs.
 
 The shared body for Linux is `.chezmoitemplates/install-packages.sh`, included by both the hook
 and `dot_local/scripts/executable_install-packages.tmpl` — what `just packages` runs, with no
@@ -372,14 +335,12 @@ in `.chezmoidata/hosts.yaml` relocates the whole Caddy/CoreDNS/cloudflared edge.
 - **Minecraft instances are named in exactly one place**: the `minecraft@*` entries in a host's
   `units`. `gaming-mode`'s `CANDIDATES` and `minecraft@.service`'s `Conflicts=` are both derived
   from them, the latter by prefix-filtering that list. Renaming an instance is a one-line edit.
-  It used to be two, and `d31cecf` is what happens when you only remember one.
 - `dot_local/scripts/executable_minecraft` — helper to keep the boot server in sync with the
   running one.
 - **JDKs are pinned.** `~/minecraft/<instance>/startserver.sh` (not in this repo) hardcodes an
   absolute JVM path per instance — vanilla `/usr/lib/jvm/java-25-openjdk`, modpack 21 — so the
-  `minecraft` key under `packages.arch` in `.chezmoidata/packages.yaml` must match. Never use
-  `jdk-openjdk` (rolling): its directory is renamed on each bump and silently breaks the path.
-  Only LTS is pinnable (8, 11, 17, 21, 25).
+  `minecraft` key under `packages.arch` must match. Never use `jdk-openjdk` (rolling): its
+  directory is renamed on each bump and silently breaks the path. Only LTS is pinnable.
 - `dot_local/scripts/executable_minecraft-backup` — daily tarball of the `vanilla` world tree to
   `/mnt/x9pro/minecraft-backups`, keeping the newest 3. Pauses+flushes saves via the server's
   tmux console when it's running so the snapshot is consistent. Run by `minecraft-backup.timer`.
@@ -409,8 +370,7 @@ same drift property: nothing errors when it disagrees with reality.
 non-source host structurally cannot push content back. `mode: twoway` renders Send & Receive with
 simple file versioning (keep 5). Paths are home-relative and rendered as `~/<path>` — Syncthing
 expands the tilde. Deliberately not `.chezmoi.homeDir`: the hosts have different usernames
-(`turisa`/`arthur`), and `simulate-host` overrides identity but not platform, so `homeDir` would
-render the previewing machine's home.
+(`turisa`/`arthur`), and `simulate-host` would render the previewing machine's home.
 
 Each host also carries `syncthing_id`, its device ID.
 
@@ -435,34 +395,30 @@ themselves never leave the host.
   only `config.xml` is managed.
 - **`config.xml` is a `modify_` script, not a plain template — and it has to stay one.** Syncthing
   co-owns the file: it injects an `apikey`, adds a `<device>` entry for itself, migrates the schema
-  version (38 → 52 on first start here, leaving a `config.xml.v38` backup), and expands every
-  default into ~200 lines. A static template loses all of that on every apply and Syncthing puts it
-  straight back, so the file is permanently dirty and `chezmoi diff` stops meaning anything.
+  version, and expands every default into ~200 lines. A static template loses all of that on every
+  apply and Syncthing puts it straight back, so the file stays permanently dirty.
   `modify_config.xml.tmpl` gets the current file on **stdin** and owns only the `<folder>` and
   top-level `<device>` elements plus a few `<options>`; everything else passes through.
   **The transform must be idempotent** — chezmoi diffs our stdout against the file on disk, so
   re-running on our own output has to be byte-identical. Verify with two passes:
 
   ```
-  tools/simulate-host mars execute-template < dot_local/state/syncthing/modify_config.xml.tmpl > /tmp/m.py
+  tools/simulate-host mars execute-template < dot_local/state/private_syncthing/modify_config.xml.tmpl > /tmp/m.py
   ssh mars.arthurjordao.dev cat .local/state/syncthing/config.xml > /tmp/live.xml
   python3 /tmp/m.py < /tmp/live.xml > /tmp/1.xml && python3 /tmp/m.py < /tmp/1.xml > /tmp/2.xml && diff /tmp/1.xml /tmp/2.xml
   ```
 - Go templates render booleans as `true`/`false`; Python needs `True`/`False`. Use
   `ternary "True" "False"` when generating Python from chezmoi data.
 - **`~/Emulation/saves/` is a farm of absolute symlinks**, not save data. EmuDeck points each one
-  at wherever that emulator actually stores saves — inside `Emulation/storage/`, a flatpak's
-  `.var/app/...`, `.local/share/...` or `.config/Ryujinx`. Syncing it would replicate 25 broken
-  links (wrong username on the far side) and zero bytes. Every folder path must be **real storage
-  on both hosts**.
+  at wherever that emulator actually stores saves. Syncing it would replicate broken links (wrong
+  username on the far side) and zero bytes. Every folder path must be **real storage on both
+  hosts**.
 - **`~/Emulation/roms/` is not pure content.** EmuDeck installs emulators inside it — Cemu in
   `wiiu/`, the Sega Model 2 emulator in `model2/`, launcher scripts in `emulators/`. Those are
   per-host and are excluded by `Emulation/roms/.stignore`. Write structural rules there, not a list
-  of files you noticed: an early version enumerated `/model2/*.lua` and missed ~150 scripts one
-  directory deeper. `just emu-sync-check` reports what is uncovered.
-- **XML comments cannot contain `--`**, so the config template cannot write flags like
-  a `‑‑flag` in a comment. Syncthing rejects the whole file. (The ID command is the
-  `device-id` subcommand, not a flag, but the trap is general.)
+  of files you noticed. `just emu-sync-check` reports what is uncovered.
+- **XML comments cannot contain `--`**, so the config template cannot write a `--flag` in a
+  comment. Syncthing rejects the whole file.
 - **`emu-save-dolphin`'s folder root is Dolphin's whole flatpak data dir**, so its `.stignore`
   admits only `GC/`, `Wii/` and `StateSaves/`. Each needs *two* lines (`!/GC` and `!/GC/**`):
   without the second, children fall through to the catch-all and only an empty directory syncs.
@@ -470,10 +426,8 @@ themselves never leave the host.
   `nand/user/save/0000000000000000/<profile-uuid>/`; the registry is
   `nand/system/save/8000000000000010/su/avators/profiles.dat`. Sync the saves without it and Eden
   reports "a save with no attached profile", because each host's Eden generated its own profile
-  UUID. `emu-switch-profiles` is **oneway from mars** on purpose: a single opaque binary cannot be
-  merged, so two-way would be last-writer-wins and would silently drop a host's profile. EmuDeck's
-  own `saves/eden/profiles` symlink pointed at this all along — worth reading the symlink farm as a
-  list of what belongs together, not just where files live.
+  UUID. `emu-switch-profiles` is **oneway from mars** on purpose: an opaque binary cannot be
+  merged, so two-way would be last-writer-wins and would drop a host's profile.
 - **`gamelist.xml` is the most conflict-prone file here.** ES-DE rewrites it on exit to update
   `playcount`/`playtime`/`lastplayed`, so playing on both hosts between syncs conflicts every
   session. Low stakes, and it is also what carries favourites and the per-game emulator choice.
@@ -483,14 +437,13 @@ themselves never leave the host.
 ## Changing the folder list
 
 `run_onchange_80-restart-syncthing.sh.tmpl` restarts the unit. Its trigger hashes the **data** as
-well as the template, for the same reason `70-deploy-etc` does: editing
-`.chezmoidata/syncthing.yaml` changes what renders while leaving the template byte-identical.
+well as the template, for the same reason `70-deploy-etc` does.
 
 Inspect before applying:
 
 ```
-tools/simulate-host mars execute-template < dot_local/state/syncthing/modify_config.xml.tmpl
-tools/simulate-host mercury execute-template < dot_local/state/syncthing/modify_config.xml.tmpl
+tools/simulate-host mars execute-template < dot_local/state/private_syncthing/modify_config.xml.tmpl
+tools/simulate-host mercury execute-template < dot_local/state/private_syncthing/modify_config.xml.tmpl
 ```
 
 # Adding a new service (checklist)
@@ -521,17 +474,18 @@ tools/simulate-host mercury execute-template < dot_local/state/syncthing/modify_
 # Working in this repo
 
 - The user runs `chezmoi apply` themselves — don't run it for them.
+- **Keep comments short.** State the constraint, not how it was discovered, what it looked like
+  when broken, or what an earlier version got wrong. One or two lines is usually enough.
 - `~/.config/nvim` is a **live symlink** into the repo (`dot_config/symlink_nvim.tmpl`); don't
   break it. `/nvim` is ignored so chezmoi doesn't double-copy it.
 - Configs are cross-platform by default. Gate only what *costs* something — packages, units,
   `/etc` writes, secret reads, `run_once_*` scripts. An unused config on the wrong host is inert.
 - The whole edge — Caddy, CoreDNS, cloudflared, `gaming-mode` — is generated from
-  `.chezmoidata/`. Nothing about a service is declared in two places any more.
+  `.chezmoidata/`. Nothing about a service is declared in two places.
 - Never re-create a static `etc/caddy/Caddyfile`, `etc/coredns/Corefile`,
   `etc/cloudflared/config.yml`, `dot_local/scripts/executable_gaming-mode` or
   `dot_config/systemd/user/minecraft@.service`. The `.tmpl` files are the only source; a static
   sibling would be silently ignored and drift forever.
 - On a fresh Linux host, `run_once_30-set-default-shell.sh.tmpl` needs `fish` present. It's in
-  the `common` group of `packages.arch` in `.chezmoidata/packages.yaml`, but if the shell change
-  is skipped on first apply (the install prompt declined, or packages not installed yet), just
-  run `chezmoi apply` again.
+  the `common` group of `packages.arch`, but if the shell change is skipped on first apply (the
+  install prompt declined, or packages not installed yet), just run `chezmoi apply` again.

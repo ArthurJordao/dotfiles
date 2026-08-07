@@ -1,42 +1,26 @@
 # yaml-language-server: $schema=../schemas/syncthing.schema.json
 #
-# Merged into the same template data as hosts.yaml — chezmoi reads every
-# file in .chezmoidata/ and merges them, so templates just see `.syncthing`.
-#
 # Syncthing folders shared between every host with the `emulation` role.
 #
 # `mode: oneway` + `source:` renders Send Only on the source host and Receive
-# Only everywhere else, so a non-source host structurally cannot push content
-# back. `mode: twoway` renders Send & Receive with file versioning.
+# Only everywhere else. `mode: twoway` renders Send & Receive with versioning.
 #
-# Paths are home-relative on every host. They must point at REAL storage on
-# both sides: ~/Emulation/saves/ is a farm of absolute symlinks that EmuDeck
-# regenerates per host, so syncing it would replicate broken links and no data.
+# Paths are home-relative and must point at REAL storage on both hosts:
+# ~/Emulation/saves/ is a farm of per-host absolute symlinks, not data.
 syncthing:
   folders:
     # Content — mars is authoritative.
     - {id: emu-roms, path: Emulation/roms, mode: oneway, source: mars}
     - {id: emu-bios, path: Emulation/bios, mode: oneway, source: mars}
     - {id: emu-media, path: Emulation/tools/downloaded_media, mode: oneway, source: mars}
-    # Switch support files. Without mods/firmware, synced Switch games misbehave.
-    # Installed updates and DLC (4.5 GB on mars). This is where Eden puts an
-    # installed NSP — NOT `load/`, which is for mods/cheats and is empty on both
-    # hosts. Missing this means the other host runs base-version games with no
-    # updates and no DLC, which looks like an emulator problem, not a sync gap.
+    # Installed updates/DLC. Eden puts installed NSPs here, not in load/.
     - {id: emu-switch-installed, path: Emulation/storage/eden/nand/user/Contents/registered, mode: oneway, source: mars}
-    # Mods and cheats. Empty today; kept so they propagate if ever added.
+    # Mods and cheats.
     - {id: emu-switch-mods, path: Emulation/storage/eden/load, mode: oneway, source: mars}
     - {id: emu-switch-firmware, path: Emulation/storage/eden/nand/system/Contents/registered, mode: oneway, source: mars}
     - {id: emu-switch-keys, path: .local/share/eden/keys, mode: oneway, source: mars}
-    # Switch saves are stored per PROFILE, under
-    # nand/user/save/0000000000000000/<profile-uuid>/, and the profile registry
-    # is this one opaque binary (profiles.dat). Each host's Eden generated its
-    # own profile, so synced saves referenced a UUID the other host had never
-    # seen and Eden reported "a save with no attached profile".
-    #
-    # oneway, not twoway: a single binary file cannot merge, so two-way sync
-    # would be last-writer-wins and would silently drop one host's profile.
-    # mars is canonical, matching the rest of the content folders.
+    # Profile registry the per-profile saves below reference. One opaque
+    # binary, so oneway: two-way would drop a host's profile.
     - {id: emu-switch-profiles, path: Emulation/storage/eden/nand/system/save/8000000000000010/su/avators, mode: oneway, source: mars}
     # Saves — change on both hosts, so two-way with versioning.
     - {id: emu-save-eden, path: Emulation/storage/eden/nand/user/save, mode: twoway}
@@ -45,5 +29,4 @@ syncthing:
     - {id: emu-save-dolphin, path: .var/app/org.DolphinEmu.dolphin-emu/data/dolphin-emu, mode: twoway}
     - {id: emu-save-melonds, path: Emulation/saves/melonds, mode: twoway}
     - {id: emu-save-duckstation, path: Emulation/saves/duckstation, mode: twoway}
-    # Favourites, playtime and per-game emulator choice all live here.
     - {id: emu-gamelists, path: ES-DE/gamelists, mode: twoway}

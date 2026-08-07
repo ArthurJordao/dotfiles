@@ -9,20 +9,13 @@
 {{- end }}
 # GENERATED from .chezmoidata/syncthing.yaml — do not edit the deployed copy.
 #
-# A chezmoi `modify_` script, not a plain template: chezmoi feeds it the CURRENT
-# ~/.local/state/syncthing/config.xml on stdin and takes the new contents from
-# stdout. That matters because syncthing co-owns this file. Rendering it as a
-# static template meant every apply discarded the apikey syncthing injects, the
-# device entry it adds for itself, and the ~170 lines of defaults it writes out —
-# and syncthing put them straight back. The file was permanently dirty.
+# A `modify_` script, not a plain template: syncthing co-owns this file (apikey,
+# its own <device>, schema migrations, expanded defaults), so we take the
+# current file on stdin and own only the <folder> and top-level <device>
+# elements plus a few <options>. Everything else passes through untouched.
 #
-# So: own only what we declare. Replace the <folder> and top-level <device>
-# elements, pin the handful of <options> we care about, and pass everything else
-# through untouched — schema version, apikey, gui session settings, defaults.
-#
-# The transform must be IDEMPOTENT: chezmoi compares our stdout against the file
-# on disk, so re-running on our own output has to produce byte-identical text or
-# the file is rewritten on every apply, which is the problem we are fixing.
+# The transform must be IDEMPOTENT: chezmoi diffs our stdout against the file on
+# disk, so re-running on our own output has to be byte-identical.
 import sys
 import xml.etree.ElementTree as ET
 
@@ -38,12 +31,9 @@ FOLDERS = [
 
 # (device id, name, [addresses]). "dynamic" for ourselves.
 #
-# Peers get BOTH their LAN and Tailscale addresses. Listing only Tailscale meant
-# the initial 16.5 GB seed went over the tunnel even though both hosts sit on
-# 192.168.15.0/24 — local discovery had not found the peer (APs often block
-# client-to-client multicast), so the only address syncthing had was the tunnel.
-# With both listed it dials each and keeps the one that connects, so it uses the
-# wire at home and Tailscale away.
+# Peers get BOTH their LAN and Tailscale addresses: syncthing dials each and
+# keeps whichever connects, so it uses the wire at home and Tailscale away.
+# Tailscale alone would tunnel even a local transfer when discovery fails.
 DEVICES = [
 {{- range $p := $peers }}
 {{- $h := index $.hosts $p }}
@@ -64,17 +54,12 @@ OPTIONS = {
     "natEnabled": "false",
     "urAccepted": "-1",
     "crashReportingEnabled": "false",
-    # Syncthing's default is 0 = scan/sync every folder at once. With 13 folders
-    # and ~17 GB to hash, that starved mars badly enough during the initial seed
-    # that sshd stopped answering (TCP accepted, no banner) and tailscaled
-    # dropped off, while the box still pinged at 3.8 ms. mars also runs immich,
-    # Caddy, CoreDNS and the podman stack; it cannot have all of this at once.
+    # Default 0 = hash every folder at once, which starves mars off the network.
     "maxFolderConcurrency": "2",
 }
 GUI_ADDRESS = "127.0.0.1:8384"
 
-# Fallback used only when there is no config yet. Syncthing expands it on first
-# start; from then on we are editing its output rather than replacing it.
+# Used only when there is no config yet; syncthing expands it on first start.
 SEED = '<configuration version="52"></configuration>'
 
 
@@ -126,12 +111,11 @@ def main():
     try:
         root = ET.fromstring(current if current.strip() else SEED)
     except ET.ParseError:
-        # A corrupt or half-written config should not wedge apply; start clean
-        # and let syncthing re-expand.
+        # A corrupt config should not wedge apply; start clean.
         root = ET.fromstring(SEED)
 
-    # Until this host has an ID of its own, or has no peer to pair with, leave
-    # folders and devices alone rather than emitting half a topology.
+    # No ID of our own, or no peer to pair with: leave folders and devices
+    # alone rather than emitting half a topology.
     if MY_ID and len(DEVICES) > 1:
         keep = [e for e in root if e.tag not in ("folder", "device")]
         root[:] = (

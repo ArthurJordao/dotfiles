@@ -6,8 +6,8 @@ set -euo pipefail
 # Corefile:    {{ include "etc/coredns/Corefile.tmpl" | sha256sum }}
 # cloudflared: {{ include "etc/cloudflared/config.yml.tmpl" | sha256sum }}
 #
-# Also hash the data: an edit there changes what these templates render while
-# leaving every one of them byte-identical.
+# Hash the data too: an edit there changes the output while leaving every
+# template byte-identical.
 # data:        {{ dict "hosts" .hosts "domain" .domain | toJson | sha256sum }}
 
 SRC="{{ .chezmoi.sourceDir }}"
@@ -18,7 +18,7 @@ STAGE="$(mktemp -d)"
 trap 'rm -rf "$STAGE"' EXIT
 
 # Stage before installing: `sudo tee` would truncate the live config before a
-# failing template (a locked 1Password, say) ever produced a byte.
+# failing template produced a byte.
 render() {
     # $1 = source template, $2 = destination, $3 = mode
     chezmoi execute-template < "$SRC/$1" > "$STAGE/out"

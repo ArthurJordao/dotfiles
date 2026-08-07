@@ -2,11 +2,9 @@
 {{- $edge := .hostname -}}
 # GENERATED from .chezmoidata/hosts.yaml — edit the endpoints there, not this file.
 #
-# Reverse-proxy upstreams use 127.0.0.1, never localhost. localhost resolves to
-# ::1 (IPv6) first, and rootless podman containers on the default network use
-# pasta, which only forwards IPv4 — an IPv6 connection is accepted then dropped,
-# which Caddy surfaces as a 502 (it won't fall back once the socket connects).
-# 127.0.0.1 is unambiguous and works regardless of the container's net backend.
+# Upstreams use 127.0.0.1, never localhost: localhost resolves to ::1 first,
+# and rootless pasta containers forward IPv4 only — the connection is accepted
+# then dropped, and Caddy returns a 502 without falling back.
 {{ range $hostname, $host := .hosts }}
 {{- range (index $host "endpoints" | default list) }}
 {{- if hasKey . "port" }}

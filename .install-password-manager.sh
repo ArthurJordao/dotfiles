@@ -1,17 +1,12 @@
 #!/bin/sh
 # Installs the 1Password CLI if it is missing.
 #
-# Wired as chezmoi's hooks.read-source-state.pre, which runs after the repo is
-# cloned but before chezmoi reads source state -- the only window in which a
-# prerequisite can be installed for the same apply that needs it. Templates
-# calling onepasswordRead therefore always find `op` present.
+# Wired as chezmoi's hooks.read-source-state.pre, so templates calling
+# onepasswordRead always find `op` present. It runs on EVERY source-state read,
+# not just apply -- keep the happy path to a single `command -v`.
 #
-# NOT a template: hooks run before any template machinery exists, so the OS has
-# to be detected with uname. The leading dot keeps chezmoi from treating this
-# file as source state.
-#
-# This runs on EVERY source-state read -- `chezmoi data`, `execute-template`,
-# `diff`, not just `apply`. Keep the happy path to a single `command -v`.
+# NOT a template: hooks run before the template machinery exists, hence uname.
+# The leading dot keeps chezmoi from managing this file as a target.
 
 set -eu
 
