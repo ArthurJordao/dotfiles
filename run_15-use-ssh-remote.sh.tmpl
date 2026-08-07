@@ -26,10 +26,15 @@ SRC={{ .chezmoi.sourceDir | quote }}
 # configured value instead, and act only when it is genuinely HTTPS. Any SSH
 # spelling (git@host:path, ssh://git@host/path, or no origin at all) is a
 # no-op.
+#
+# The pattern below is pinned to this exact repo, not just the https scheme:
+# the set-url destination further down is a hardcoded SSH URL, so matching
+# any https:// remote here would let an unrelated origin (a different repo
+# or host) be silently clobbered with this repo's URL instead of deferred.
 url="$(git -C "$SRC" config --get remote.origin.url || true)"
 case "$url" in
-    https://*) ;;               # the only case we act on
-    *) exit 0 ;;                # already SSH, or no origin at all
+    https://github.com/ArthurJordao/dotfiles*) ;;   # only ever rewrite THIS repo
+    *) exit 0 ;;                # already SSH, a foreign remote, or no origin at all
 esac
 
 # Keys are written earlier in this same apply, but do not depend on that:
