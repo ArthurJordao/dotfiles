@@ -1,7 +1,30 @@
 {{ if eq .chezmoi.os "darwin" -}}
 #!/bin/bash
 set -euo pipefail
-brew bundle --file "$HOME/Brewfile"
+
+BREWFILE="$(mktemp)"
+trap 'rm -f "$BREWFILE"' EXIT
+cat > "$BREWFILE" <<'BREWEOF'
+{{ template "brewfile" . }}
+BREWEOF
+
+if brew bundle check --file "$BREWFILE" --no-upgrade >/dev/null 2>&1; then
+    exit 0
+fi
+
+echo "Declared but not installed:"
+brew bundle check --file "$BREWFILE" --no-upgrade --verbose | sed 's/^/  /' || true
+
+if [ ! -t 0 ]; then
+    echo "Not a terminal -- skipping. Run 'just packages' to install." >&2
+    exit 0
+fi
+printf 'Install these now? [y/N] '
+read -r reply
+case "$reply" in
+    [yY]*) brew bundle install --file "$BREWFILE" --no-upgrade ;;
+    *) echo "Skipped. Run 'just packages' when ready." ;;
+esac
 {{ else if eq .chezmoi.os "linux" -}}
 #!/bin/bash
 PROMPT=1

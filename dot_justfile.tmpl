@@ -17,10 +17,18 @@ update:
 packages:
     brew bundle --file ~/Brewfile
 
-# Upgrade everything, then prune undeclared
+# Report installed packages that aren't declared
+packages-check:
+    brew bundle cleanup --file ~/Brewfile
+
+# Remove installed packages that aren't declared
+packages-prune:
+    brew bundle cleanup --file ~/Brewfile --force
+
+# Upgrade everything, then report what's undeclared
 upgrade: packages
     brew upgrade --cask --greedy
-    brew bundle cleanup --file ~/Brewfile --force
+    brew bundle cleanup --file ~/Brewfile
 {{ else -}}
 # Install declared packages
 packages:
