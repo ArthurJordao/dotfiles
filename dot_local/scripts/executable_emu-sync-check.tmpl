@@ -134,20 +134,44 @@ if ! systemctl --user is-active --quiet syncthing.service; then
 elif command -v syncthing >/dev/null 2>&1; then
     # `syncthing cli` reads the local config for its own API key, so this needs
     # no credentials of ours.
-    if ! syncthing cli show system >/dev/null 2>&1; then
-        note "  syncthing running but its API is not answering yet"
+    ok "  syncthing.service running"
+    # Per-folder state comes from the REST API, not `syncthing cli`: there is no
+    # `cli show folder` subcommand, and an earlier version of this script called
+    # one — it failed silently and this section reported nothing at all. The API
+    # key is read from the local config, so no credentials live here.
+    APIKEY=$(sed -n 's:.*<apikey>\(.*\)</apikey>.*:\1:p' "$HOME/.local/state/syncthing/config.xml" 2>/dev/null)
+    if [ -z "$APIKEY" ]; then
+        note "  no apikey in config.xml yet — skipping folder status"
     else
-        ok "  syncthing.service running"
-        for entry in "${FOLDERS[@]}"; do
-            IFS='|' read -r id path mode <<< "$entry"
-            state=$(syncthing cli show folder --folder "$id" 2>/dev/null | sed -n 's/.*"state": *"\([^"]*\)".*/\1/p' | head -1)
-            [ -z "$state" ] && continue
-            if [ "$state" = "idle" ]; then
-                printf '  %-22s %s\n' "$id" "$state"
-            else
-                note "  $id: $state"
-            fi
-        done
+        # Exits non-zero when something is off, so the summary below counts it.
+        python3 - "$APIKEY" "${FOLDERS[@]}" <<'PY' || note "  ^ folders above need attention"
+import sys, json, urllib.request
+key, entries = sys.argv[1], sys.argv[2:]
+def api(p):
+    r = urllib.request.Request("http://127.0.0.1:8384" + p, headers={"X-API-Key": key})
+    return json.load(urllib.request.urlopen(r, timeout=10))
+need_total = 0
+problems = 0
+for e in entries:
+    fid = e.split("|")[0]
+    try:
+        s = api("/rest/db/status?folder=" + fid)
+    except Exception:
+        print(f"  {fid:22s} unknown to syncthing (declared in the repo but not applied here)")
+        problems += 1
+        continue
+    g, n, st = s.get("globalBytes", 0), s.get("needBytes", 0), s.get("state", "?")
+    need_total += n
+    pct = 100 * (g - n) / g if g else 100.0
+    err = s.get("errors", 0)
+    okish = (n == 0 and st == "idle" and not err)
+    if not okish:
+        problems += 1
+    flag = "" if okish else "   <--"
+    print(f"  {fid:22s} {st:12s} {pct:5.1f}%  {g/2**30:6.2f} GB" + (f"  errors={err}" if err else "") + flag)
+print(f"  {'TOTAL':22s} {'':12s}        remaining {need_total/2**30:.2f} GB")
+sys.exit(1 if problems else 0)
+PY
     fi
 else
     bad "  syncthing binary not found — run 'just packages'"

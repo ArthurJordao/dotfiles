@@ -36,13 +36,22 @@ FOLDERS = [
 {{- end }}
 ]
 
-# (device id, name, address). "dynamic" for ourselves; peers are reached over
-# Tailscale, since global discovery and relaying are both off. LAN peers are
-# still found by local discovery regardless of this address.
+# (device id, name, [addresses]). "dynamic" for ourselves.
+#
+# Peers get BOTH their LAN and Tailscale addresses. Listing only Tailscale meant
+# the initial 16.5 GB seed went over the tunnel even though both hosts sit on
+# 192.168.15.0/24 — local discovery had not found the peer (APs often block
+# client-to-client multicast), so the only address syncthing had was the tunnel.
+# With both listed it dials each and keeps the one that connects, so it uses the
+# wire at home and Tailscale away.
 DEVICES = [
 {{- range $p := $peers }}
 {{- $h := index $.hosts $p }}
-    ({{ $h.syncthing_id | quote }}, {{ $p | quote }}, {{ if eq $p $.hostname }}"dynamic"{{ else }}{{ printf "tcp://%s:22000" $h.ip.tailscale | quote }}{{ end }}),
+{{- if eq $p $.hostname }}
+    ({{ $h.syncthing_id | quote }}, {{ $p | quote }}, ["dynamic"]),
+{{- else }}
+    ({{ $h.syncthing_id | quote }}, {{ $p | quote }}, [{{ printf "tcp://%s:22000" $h.ip.lan | quote }}, {{ printf "tcp://%s:22000" $h.ip.tailscale | quote }}]),
+{{- end }}
 {{- end }}
 ]
 
@@ -90,7 +99,7 @@ def build_folder(fid, path, ftype, versioned):
     return el
 
 
-def build_device(did, name, addr):
+def build_device(did, name, addrs):
     el = ET.Element("device", {
         "id": did,
         "name": name,
@@ -99,7 +108,8 @@ def build_device(did, name, addr):
         "skipIntroductionRemovals": "false",
         "introducedBy": "",
     })
-    ET.SubElement(el, "address").text = addr
+    for a in addrs:
+        ET.SubElement(el, "address").text = a
     ET.SubElement(el, "autoAcceptFolders").text = "false"
     return el
 

@@ -19,6 +19,12 @@ syncthing:
     - {id: emu-bios, path: Emulation/bios, mode: oneway, source: mars}
     - {id: emu-media, path: Emulation/tools/downloaded_media, mode: oneway, source: mars}
     # Switch support files. Without mods/firmware, synced Switch games misbehave.
+    # Installed updates and DLC (4.5 GB on mars). This is where Eden puts an
+    # installed NSP — NOT `load/`, which is for mods/cheats and is empty on both
+    # hosts. Missing this means the other host runs base-version games with no
+    # updates and no DLC, which looks like an emulator problem, not a sync gap.
+    - {id: emu-switch-installed, path: Emulation/storage/eden/nand/user/Contents/registered, mode: oneway, source: mars}
+    # Mods and cheats. Empty today; kept so they propagate if ever added.
     - {id: emu-switch-mods, path: Emulation/storage/eden/load, mode: oneway, source: mars}
     - {id: emu-switch-firmware, path: Emulation/storage/eden/nand/system/Contents/registered, mode: oneway, source: mars}
     - {id: emu-switch-keys, path: .local/share/eden/keys, mode: oneway, source: mars}
