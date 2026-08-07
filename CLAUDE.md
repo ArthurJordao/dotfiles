@@ -49,6 +49,9 @@ Silent failures worth knowing:
   deletes everything in the target not present in source. `exact_Emulation` would wipe the ROM
   library. `private_` is unrelated — it sets 0700/0600 permissions, and on a flatpak data dir like
   `.var/app/org.DolphinEmu.dolphin-emu/` that would be a change for no benefit.
+  `private_` **is** right where the target really is 0700: `dot_local/state/private_syncthing/`
+  matches the 0700 syncthing sets on a directory holding `key.pem`. Without it chezmoi relaxes a
+  private-key directory to 0755 and reports "has changed since chezmoi last wrote it" every apply.
 - **Every** file in `.chezmoidata/` is loaded as template data, JSON included — so the JSON Schemas
   live in `schemas/`, not next to the YAML they describe. Putting `hosts.schema.json` in there
   merges its `title`, `type`, `$schema` and `properties` keys into the top-level namespace, where
