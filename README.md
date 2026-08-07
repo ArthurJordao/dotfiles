@@ -253,7 +253,7 @@ just update          # Pull from the remote first, then apply (= chezmoi update)
 just packages        # Install this host's declared packages, no prompt
 just packages-check  # macOS only: report installed packages that aren't declared
 just packages-prune  # macOS only: remove installed packages that aren't declared
-just upgrade         # Full system upgrade, then install declared packages
+just upgrade         # Full system upgrade, then install declared packages (macOS: installs declared first, then upgrades, then reports undeclared)
 just tpm-update      # Update tmux plugins
 ```
 

@@ -298,11 +298,13 @@ script prints the delta and exits without installing anything.
 **On macOS, both the apply-time check and the apply-time install pass `brew bundle`
 `--no-upgrade`.** Without it, `brew bundle check` reports merely-outdated formulae as unmet
 — its message is literally "needs to be installed or updated" — so `chezmoi apply` would prompt
-on every apply where anything had drifted stale (5 packages on neptune when this was checked),
-not just genuinely missing ones. The install call needs the flag too, or answering `y` to "2
-missing" would silently upgrade the other 23 that happened to be outdated in the same run.
-`just packages` and `just upgrade` deliberately keep the upgrading behavior — the asymmetry is
-intentional: an unattended `apply` should never surprise-upgrade something you didn't ask for.
+on every apply where anything had drifted stale, not just genuinely missing ones (a point-in-time
+check found 5 such packages on neptune; that count drifts with whatever's outdated that day, it
+isn't a fixed property of the host). The install call needs the flag too, or answering `y` to a
+short list of genuinely-missing packages would also silently upgrade every unrelated outdated
+package in the same run. `just packages` and `just upgrade` deliberately keep the upgrading
+behavior — the asymmetry is intentional: an unattended `apply` should never surprise-upgrade
+something you didn't ask for.
 
 `schemas/packages.schema.json` lives in `schemas/`, not `.chezmoidata/` — see the shadowing trap
 above.
@@ -328,7 +330,7 @@ Linux — that would mean pacman orphan removal, which isn't implemented.
 just packages        # install this host's declared packages, no prompt
 just packages-check  # macOS only: report installed-but-undeclared, removes nothing
 just packages-prune  # macOS only: remove installed-but-undeclared
-just upgrade         # full system upgrade, then install declared (macOS: reports afterward, doesn't prune)
+just upgrade         # full system upgrade, then install declared (macOS: installs declared first, then upgrades, then reports undeclared)
 ```
 
 `run_onchange_70-deploy-etc.sh.tmpl` is gated on the **`edge`** role, so moving `edge` between hosts
