@@ -32,12 +32,18 @@
 {{/* Reverse (PTR) zones, one per /24 that any declared host address falls in.
 
      Without these, a PTR for a private address falls through to `forward .
-     tls://1.1.1.1`, which cannot answer RFC1918 or CGNAT space — so it costs a
-     full DoT timeout, measured at 7.7s on mars. That is not cosmetic: mars
-     resolves through itself, and sshd looks up the client address before
-     sending its banner, so every SSH connection paid 7.7s. Under load (the
-     16.5 GB syncthing seed over Wi-Fi) it stretched past the client's timeout
-     and looked exactly like the host had hung.
+     tls://1.1.1.1`, which cannot answer RFC1918 or CGNAT space. Queried
+     directly, CoreDNS now answers NXDOMAIN in 8ms instead of forwarding, and
+     LAN addressing stops being leaked upstream.
+
+     NOTE ON SCOPE: this was originally written believing it explained mars
+     becoming unreachable over SSH. It does not. `getent`/`resolvectl` on mars
+     still take ~7.5s for a private PTR *after* this change, because the delay
+     is in systemd-resolved on wlan0 (which has both 192.168.15.23 and 1.1.1.1
+     configured, and answers slowly even though dig against either is fast) —
+     not in CoreDNS. And SSH connects in ~300ms while resolved is still slow,
+     which proves sshd was never doing the reverse lookup. The SSH outages
+     correlated with heavy syncthing load; the mechanism is still unknown.
 
      `template` returning NXDOMAIN, not `hosts`: the hosts plugin does not
      synthesize PTRs from inline entries here, and with no `fallthrough` and no
