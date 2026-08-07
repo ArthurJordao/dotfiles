@@ -20,7 +20,7 @@ if [ ! -t 0 ]; then
     exit 0
 fi
 printf 'Install these now? [y/N] '
-read -r reply
+read -r reply || reply=n
 case "$reply" in
     [yY]*) brew bundle install --file "$BREWFILE" --no-upgrade ;;
     *) echo "Skipped. Run 'just packages' when ready." ;;

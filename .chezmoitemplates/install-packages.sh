@@ -59,7 +59,7 @@ if [ "${PROMPT:-0}" = "1" ]; then
         exit 0
     fi
     printf 'Install these now? [y/N] '
-    read -r reply
+    read -r reply || reply=n
     case "$reply" in
         [yY]*) ;;
         *) echo "Skipped. Run 'just packages' when ready."; exit 0 ;;
