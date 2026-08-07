@@ -50,3 +50,144 @@ packages:
       - podman
     sunshine:
       - sunshine
+  # Faithful conversion of the previous `brew bundle dump` output, transitive
+  # dependencies included. Pruning to `brew leaves` is deliberately deferred --
+  # it would destroy the byte-equivalence check and make packages-check noisy.
+  darwin:
+    taps:
+      - homebrew/cask-fonts
+      - {name: nikitabobko/tap, trusted: true}
+      - {name: noborus/tap, trusted: true}
+      - {name: osx-cross/arm, trusted: true}
+      - {name: osx-cross/avr, trusted: true}
+      - {name: qmk/qmk, trusted: true}
+      - {name: sst/tap, trusted: true}
+      - {name: unisonweb/unison, trusted: true}
+    brews:
+      - glib
+      - xz
+      - gcc
+      - harfbuzz
+      - python@3.12
+      - webp
+      - pillow
+      - aider
+      - jpeg-xl
+      - aom
+      - boost
+      - avrdude
+      - python@3.13
+      - awscli
+      - caddy
+      - dnsmasq
+      - libssh2
+      - libgit2
+      - bat
+      - node
+      - chezmoi
+      - pango
+      - librsvg
+      - chafa
+      - openjdk
+      - clojure
+      - folly
+      - fizz
+      - wangle
+      - fbthrift
+      - fb303
+      - edencommon
+      - erlang
+      - elixir
+      - exiftool
+      - fd
+      - unbound
+      - gnutls
+      - libass
+      - librist
+      - tesseract
+      - ffmpeg
+      - fish
+      - fzf
+      - gemini-cli
+      - gh
+      - ghcup
+      - git
+      - rebar3
+      - gleam
+      - gnu-sed
+      - gnupg
+      - go
+      - grep
+      - hugo
+      - libheif
+      - libraw
+      - imagemagick
+      - jless
+      - jq
+      - just
+      - lazygit
+      - lesspipe
+      - librdkafka
+      - libxmlsec1
+      - luv
+      - markdown
+      - mosh
+      - tree-sitter
+      - neovim
+      - nushell
+      - oath-toolkit
+      - openldap
+      - ormolu
+      - pass
+      - pass-otp
+      - pinentry-mac
+      - pipx
+      - postgresql@17
+      - ripgrep
+      - shellcheck
+      - tmux
+      - tmuxinator
+      - tree-sitter-cli
+      - vivid
+      - watchman
+      - yazi
+      - yozefu
+      - zellij
+      - zig
+      - zk
+      - noborus/tap/trdsql
+      - qmk/qmk/qmk
+      - {name: sst/tap/opencode, trusted: true}
+      - unisonweb/unison/unison-language
+      - {name: nikhil1raghav/tap/kindle-send, trusted: true}
+    casks:
+      - 1password
+      - aerospace
+      - alacritty
+      - anki
+      - claude
+      - firefox
+      - font-fira-code-nerd-font
+      - gimp
+      - hammerspoon
+      - keybase
+      - moonlight
+      - ngrok
+      - obs
+      - obsidian
+      - opcode
+      - qmk-toolbox
+      - raycast
+      - rio
+      - signal
+      - steam
+      - tableplus
+      - vial
+      - wezterm
+      - whatsapp
+      - zed
+      - prismlauncher
+      - slack
+      - 1password-cli
+    go:
+      - github.com/mightymoud/sidekick

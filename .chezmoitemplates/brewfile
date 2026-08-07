@@ -1,0 +1,12 @@
+{{ range .packages.darwin.taps -}}
+{{ if kindIs "string" . }}tap "{{ . }}"{{ else }}tap "{{ .name }}"{{ if .trusted }}, trusted: true{{ end }}{{ end }}
+{{ end -}}
+{{ range .packages.darwin.brews -}}
+{{ if kindIs "string" . }}brew "{{ . }}"{{ else }}brew "{{ .name }}"{{ if .trusted }}, trusted: true{{ end }}{{ end }}
+{{ end -}}
+{{ range .packages.darwin.casks -}}
+{{ if kindIs "string" . }}cask "{{ . }}"{{ else }}cask "{{ .name }}"{{ if .trusted }}, trusted: true{{ end }}{{ end }}
+{{ end -}}
+{{ range .packages.darwin.go -}}
+{{ if kindIs "string" . }}go "{{ . }}"{{ else }}go "{{ .name }}"{{ if .trusted }}, trusted: true{{ end }}{{ end }}
+{{ end -}}
