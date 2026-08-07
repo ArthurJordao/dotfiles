@@ -4,5 +4,6 @@ set -euo pipefail
 brew bundle --file "$HOME/Brewfile"
 {{ else if eq .chezmoi.os "linux" -}}
 #!/bin/bash
+PROMPT=1
 {{ template "install-packages.sh" . }}
 {{- end -}}

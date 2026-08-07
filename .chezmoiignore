@@ -16,8 +16,6 @@ flavours/
 bin/
 tools/
 etc/
-packages/
-packages/**
 .config/fish/fish_variables
 .config/tmux/plugins/**
 .ssh/known_hosts*

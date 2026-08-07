@@ -1,3 +1,0 @@
-cloudflared
-coredns
-xcaddy-bin

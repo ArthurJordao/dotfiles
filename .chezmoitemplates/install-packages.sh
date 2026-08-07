@@ -34,10 +34,41 @@ if [ -z "$DECLARED" ]; then
     exit 0
 fi
 
-echo "Installing declared packages for family={{ $family }} groups={{ $groups | join " " }}"
+{{ if eq $family "arch" -}}
+INSTALLED="$(pacman -Qq)"
+{{ else -}}
+INSTALLED="$(dpkg-query -W -f='${Package}\n')"
+{{ end -}}
+
+# The delta drives the prompt only. It is allowed to be slightly
+# over-inclusive -- a package satisfied by another's `provides` shows as
+# missing -- because --needed remains the real guard against reinstalling.
+MISSING="$(comm -13 <(printf '%s\n' "$INSTALLED" | sort -u) \
+                    <(printf '%s\n' "$DECLARED"  | sort -u))"
+
+if [ -z "$MISSING" ]; then
+    exit 0
+fi
+
+echo "Declared but not installed (family={{ $family }}):"
+printf '%s\n' "$MISSING" | sed 's/^/  /'
+
+if [ "${PROMPT:-0}" = "1" ]; then
+    if [ ! -t 0 ]; then
+        echo "Not a terminal -- skipping. Run 'just packages' to install." >&2
+        exit 0
+    fi
+    printf 'Install these now? [y/N] '
+    read -r reply
+    case "$reply" in
+        [yY]*) ;;
+        *) echo "Skipped. Run 'just packages' when ready."; exit 0 ;;
+    esac
+fi
+
 LIST="$(mktemp)"
 trap 'rm -f "$LIST"' EXIT
-printf '%s\n' "$DECLARED" | sort -u > "$LIST"
+printf '%s\n' "$MISSING" > "$LIST"
 {{ if eq $family "arch" -}}
 if ! paru -S --needed --noconfirm - < "$LIST"; then
     cat >&2 <<'HINT'
