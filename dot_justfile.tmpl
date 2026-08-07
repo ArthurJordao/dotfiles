@@ -25,10 +25,9 @@ packages-check:
 packages-prune:
     brew bundle cleanup --file ~/Brewfile --force
 
-# Upgrade everything, then report what's undeclared
+# Install declared packages, then upgrade everything
 upgrade: packages
     brew upgrade --cask --greedy
-    brew bundle cleanup --file ~/Brewfile
 {{ else -}}
 # Install declared packages
 packages:

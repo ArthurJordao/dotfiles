@@ -85,6 +85,12 @@ Silent failures worth knowing:
   live in `schemas/`, not next to the YAML they describe. Putting `hosts.schema.json` in there
   merges its `title`, `type`, `$schema` and `properties` keys into the top-level namespace, where
   they silently shadow real data. Verified, not theoretical.
+- **`.chezmoi.toml.tmpl` must never call `onepasswordRead`.** chezmoi has to render the config
+  template before it can read the resulting config and learn which hooks are configured, so a
+  `hooks.read-source-state.pre` hook (e.g. `.install-password-manager.sh`) cannot satisfy a
+  dependency the config template itself needs. On a fresh machine that ordering would fail
+  `chezmoi init` with `op: executable file not found in $PATH`, with no hook able to rescue it
+  (source: chezmoi discussion #4702, maintainer twpayne, Oct 2025).
 
 # The mars self-hosted stack
 
@@ -330,7 +336,7 @@ Linux — that would mean pacman orphan removal, which isn't implemented.
 just packages        # install this host's declared packages, no prompt
 just packages-check  # macOS only: report installed-but-undeclared, removes nothing
 just packages-prune  # macOS only: remove installed-but-undeclared
-just upgrade         # full system upgrade, then install declared (macOS: installs declared first, then upgrades, then reports undeclared)
+just upgrade         # full system upgrade, then install declared (macOS: installs declared first, then upgrades)
 ```
 
 `run_onchange_70-deploy-etc.sh.tmpl` is gated on the **`edge`** role, so moving `edge` between hosts

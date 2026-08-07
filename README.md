@@ -276,7 +276,7 @@ just update          # Pull from the remote first, then apply (= chezmoi update)
 just packages        # Install this host's declared packages, no prompt
 just packages-check  # macOS only: report installed packages that aren't declared
 just packages-prune  # macOS only: remove installed packages that aren't declared
-just upgrade         # Full system upgrade, then install declared packages (macOS: installs declared first, then upgrades, then reports undeclared)
+just upgrade         # Full system upgrade, then install declared packages (macOS: installs declared first, then upgrades)
 just tpm-update      # Update tmux plugins
 ```
 
@@ -285,9 +285,9 @@ in the source dir first. On the machine you author from, that rebases whatever y
 flight — reach for `apply` while you're iterating locally.
 
 `packages-check` and `packages-prune` only exist on macOS — Linux has no orphan-removal
-equivalent. On macOS, `upgrade` used to prune undeclared packages as part of upgrading; now it
-only reports them, same as `packages-check` — run `packages-prune` yourself to actually remove
-anything.
+equivalent. On macOS, `upgrade` used to prune undeclared packages as part of upgrading, then just
+reported them; now it doesn't touch undeclared packages at all — run `packages-check` to report
+them or `packages-prune` yourself to remove anything.
 
 Both sign in to 1Password first if `op whoami` says you aren't, since applying reads
 `secrets.fish` and the SSH keys.
