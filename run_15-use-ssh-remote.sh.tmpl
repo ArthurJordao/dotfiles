@@ -1,10 +1,16 @@
 #!/bin/bash
-# Switches the source-dir git remote from HTTPS to SSH.
+# Makes the source-dir git remote explicit once SSH keys are available.
 #
 # The bootstrap clones over HTTPS, because the repo is public and that removes
 # the chicken-and-egg of needing SSH keys (which live in 1Password) before the
-# first clone. chezmoi apply then writes those keys, and this flips the remote
-# so pushes use SSH.
+# first clone. chezmoi apply then writes those keys.
+#
+# This does NOT "enable" SSH pushes on its own: dot_config/git/config carries
+# a `url.ssh://git@github.com/.insteadOf https://github.com/` rule, so once
+# that file is deployed, an HTTPS remote already pushes over SSH transparently
+# -- git rewrites it at the transport layer. What this script does is make the
+# configured remote match what actually happens: honest, and no longer
+# dependent on that rewrite rule continuing to exist.
 #
 # A plain run_ script, deliberately: it executes on every apply and exits on
 # the first check. A run_onchange_ keyed on the remote URL would never retry if
@@ -15,20 +21,33 @@ SRC={{ .chezmoi.sourceDir | quote }}
 
 [ -d "$SRC/.git" ] || exit 0
 
-case "$(git -C "$SRC" remote get-url origin 2>/dev/null || echo none)" in
-    git@*) exit 0 ;;            # already SSH -- the common case, every apply
-    none)  exit 0 ;;            # no origin remote
+# `git remote get-url` applies the insteadOf rewrite above, so an HTTPS remote
+# would come back looking like ssh://git@github.com/... -- read the raw
+# configured value instead, and act only when it is genuinely HTTPS. Any SSH
+# spelling (git@host:path, ssh://git@host/path, or no origin at all) is a
+# no-op.
+url="$(git -C "$SRC" config --get remote.origin.url || true)"
+case "$url" in
+    https://*) ;;               # the only case we act on
+    *) exit 0 ;;                # already SSH, or no origin at all
 esac
 
 # Keys are written earlier in this same apply, but do not depend on that:
 # if they are not usable yet, defer to the next apply rather than fail.
 [ -f "$HOME/.ssh/id_ed25519" ] || exit 0
 
-if ! ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -T git@github.com 2>&1 \
-        | grep -q 'successfully authenticated'; then
-    echo "SSH to github.com not working yet; leaving the remote on HTTPS." >&2
-    exit 0
-fi
+# ssh -T against github.com always exits non-zero -- GitHub authenticates but
+# refuses a shell -- so the exit code can't be trusted and this must not be a
+# pipeline under set -o pipefail (ssh's expected non-zero would poison it even
+# when grep matches). Capture the output instead and test its contents.
+ssh_out="$(ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -T git@github.com 2>&1 || true)"
+case "$ssh_out" in
+    *'successfully authenticated'*) ;;
+    *)
+        echo "SSH to github.com not working yet; leaving the remote on HTTPS." >&2
+        exit 0
+        ;;
+esac
 
 git -C "$SRC" remote set-url origin git@github.com:ArthurJordao/dotfiles
 echo "Switched the source-dir remote to SSH."
