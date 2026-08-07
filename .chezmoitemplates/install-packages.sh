@@ -1,5 +1,8 @@
-{{- /* Shared by run_once_10-install-packages.sh.tmpl and
-       dot_local/scripts/executable_install-packages.tmpl. Callers add the shebang. */ -}}
+{{- /* Shared by run_onchange_10-install-packages.sh.tmpl and
+       dot_local/scripts/executable_install-packages.tmpl.
+       Callers add the shebang. Set PROMPT=1 to ask before installing.
+       Linux only: .local/scripts/install-packages is not deployed on darwin,
+       so the brew path lives inline in the run_onchange script instead. */ -}}
 {{- $roles := (index .hosts .hostname).roles -}}
 {{- $id := (index .chezmoi.osRelease "id" | default "") -}}
 {{- $like := (index .chezmoi.osRelease "idLike" | default "") -}}
@@ -13,25 +16,28 @@ set -euo pipefail
 {{ if eq $family "" -}}
 echo "Unsupported distro: id={{ $id }} id_like={{ $like }}" >&2
 exit 1
+{{ else if not (hasKey .packages $family) -}}
+echo "No packages declared for family {{ $family }} in .chezmoidata/packages.yaml" >&2
+exit 1
 {{ else -}}
-PKGDIR="{{ .chezmoi.sourceDir }}/packages/{{ $family }}"
-PKG_GROUPS=(common{{ range $roles }} {{ . }}{{ end }})
+{{- $fam := index .packages $family -}}
+{{- $groups := prepend $roles "common" -}}
 
-LIST="$(mktemp)"
-trap 'rm -f "$LIST"' EXIT
+DECLARED=$(cat <<'PKGLIST'
+{{ range $groups }}{{ if hasKey $fam . }}{{ range index $fam . }}{{ . }}
+{{ end }}{{ end }}{{ end -}}
+PKGLIST
+)
 
-for g in "${PKG_GROUPS[@]}"; do
-    [ -f "$PKGDIR/$g.txt" ] && cat "$PKGDIR/$g.txt" >> "$LIST"
-done
-
-sort -u -o "$LIST" "$LIST"
-
-if [ ! -s "$LIST" ]; then
-    echo "No packages selected for groups: ${PKG_GROUPS[*]}" >&2
+if [ -z "$DECLARED" ]; then
+    echo "No packages declared for groups: {{ $groups | join " " }}" >&2
     exit 0
 fi
 
-echo "Installing $(wc -l < "$LIST") packages for family={{ $family }} groups=${PKG_GROUPS[*]}"
+echo "Installing declared packages for family={{ $family }} groups={{ $groups | join " " }}"
+LIST="$(mktemp)"
+trap 'rm -f "$LIST"' EXIT
+printf '%s\n' "$DECLARED" | sort -u > "$LIST"
 {{ if eq $family "arch" -}}
 if ! paru -S --needed --noconfirm - < "$LIST"; then
     cat >&2 <<'HINT'
