@@ -29,6 +29,42 @@
     }
 }
 
+{{/* Reverse (PTR) zones, one per /24 that any declared host address falls in.
+
+     Without these, a PTR for a private address falls through to `forward .
+     tls://1.1.1.1`, which cannot answer RFC1918 or CGNAT space — so it costs a
+     full DoT timeout, measured at 7.7s on mars. That is not cosmetic: mars
+     resolves through itself, and sshd looks up the client address before
+     sending its banner, so every SSH connection paid 7.7s. Under load (the
+     16.5 GB syncthing seed over Wi-Fi) it stretched past the client's timeout
+     and looked exactly like the host had hung.
+
+     `template` returning NXDOMAIN, not `hosts`: the hosts plugin does not
+     synthesize PTRs from inline entries here, and with no `fallthrough` and no
+     plugin after it, it answers SERVFAIL ("no next plugin found") — verified
+     against a throwaway CoreDNS on port 15353. Nor can the two be combined:
+     CoreDNS orders plugins by its own plugin.cfg, where `template` precedes
+     `hosts`, so a template fallback would shadow any hosts entries.
+
+     Fast failure is the whole point — nothing on this network needs reverse DNS
+     to succeed, it just must not cost a 7.7s upstream timeout. */}}
+{{- $rev := dict -}}
+{{- range $hostname, $host := .hosts -}}
+{{-   if index $host "ip" -}}
+{{-     range $kind := list "lan" "tailscale" -}}
+{{-       $o := splitList "." (index $host.ip $kind) -}}
+{{-       $_ := set $rev (printf "%s.%s.%s.in-addr.arpa" (index $o 2) (index $o 1) (index $o 0)) true -}}
+{{-     end -}}
+{{-   end -}}
+{{- end -}}
+{{ range $zone, $_ := $rev }}
+{{ $zone }}:53 {
+    template IN PTR {
+        rcode NXDOMAIN
+    }
+    errors
+}
+{{ end }}
 .:53 {
     view local {
         expr incidr(client_ip(), '192.168.15.0/24') || incidr(client_ip(), '127.0.0.1/32')
