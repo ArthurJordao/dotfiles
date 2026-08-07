@@ -12,17 +12,19 @@ Hosts share this repo, gated by roles in `.chezmoidata/hosts.yaml`:
   etc.). Renamed from `Arthurs-MacBook-Pro`. It's Kandji-MDM-enrolled, which can rewrite
   `ComputerName`/`LocalHostName` on check-in — `HostName` is the one chezmoi reads.
 - **`mercury`** — Lenovo Legion Go handheld, CachyOS, user `arthur`. Same arch package family as
-  mars, so it shares `packages/arch/*`. Roles `[gui, gaming, moonlight, emulation]`: shared
-  dotfiles and GUI configs, no containers and no `/etc` deploy. Runs no hosted services. `gaming`
-  carries no package file — CachyOS ships the gaming stack. `emulation` makes it the second half of
-  the shared EmuDeck library (see "Emulation library sync").
+  mars, so it reads the same `packages.arch` groups in `.chezmoidata/packages.yaml`. Roles
+  `[gui, gaming, moonlight, emulation]`: shared dotfiles and GUI configs, no containers and no
+  `/etc` deploy. Runs no hosted services. `gaming` has no key under `packages.arch` — CachyOS
+  ships the gaming stack. `emulation` makes it the second half of the shared EmuDeck library
+  (see "Emulation library sync").
 
 ## Host gating: three axes
 
 `.chezmoidata/` is the only place hosts are named — `hosts.yaml` holds the per-host inventory,
-`syncthing.yaml` the shared emulation folders. chezmoi merges every file in that directory into one
-template data namespace, so templates just read `.hosts` / `.domain` / `.syncthing`. Gate on the
-axis that is the actual reason a file isn't universal:
+`syncthing.yaml` the shared emulation folders, `packages.yaml` the package declarations. chezmoi
+merges every file in that directory into one template data namespace, so templates just read
+`.hosts` / `.domain` / `.syncthing` / `.packages`. Gate on the axis that is the actual reason a
+file isn't universal:
 
 | Axis | Mechanism | Use for |
 |---|---|---|
@@ -253,13 +255,14 @@ Anything needing a package goes after 10; gaps of 10 leave room to insert.
 
 Pre-installed prerequisites: `chezmoi`, `1password-cli`, `git` (see README bootstrap).
 
-**Adding a role that needs both a package and a unit is a chicken-and-egg.** The deployed
-`~/.local/scripts/install-packages` bakes the host's roles in at render time
-(`PKG_GROUPS=(common ...)`), so `just packages` cannot see a group for a role the deployed copy
-predates. Re-rendering needs `chezmoi apply`, but that apply runs `50-enable-systemd-units`, which
-fails without the package. Install the package by hand once (`paru -S --needed <pkg>`), then apply.
-Applying first also works — `.local/...` sorts before `50-...`, so the script is re-rendered before
-the failure — but it means a failed apply. Hit by `sunshine`, then by `emulation`.
+**Adding a role that needs both a package and a unit used to be a chicken-and-egg; it mostly
+isn't one now.** `run_onchange_10-install-packages.sh.tmpl` renders the package names straight
+into its own body, so adding a role's key to `.chezmoidata/packages.yaml` (or adding the role to
+a host) changes that script's hash, and `10-` sorts before `50-enable-systemd-units` — so the
+new package installs in the *same* apply that enables its unit, provided the install prompt (see
+"Packages" below) is answered `y`. The one remaining catch: decline the prompt, or run headless
+with no TTY, and step 50 still fails for lack of the package. Hit by `sunshine`, then by
+`emulation`, before the fix; a declined prompt is now the only way to still hit it.
 
 `run_once_50-enable-systemd-units.sh.tmpl` enables only the hand-written units, gated by the role
 that owns each (`ddns`, `podman`, `minecraft`) — quadlet services are generated and can't be enabled.
@@ -269,30 +272,64 @@ name (renaming re-runs it).
 
 ## Packages
 
-Packages live in `packages/<family>/<group>.txt`, where family is `arch` or `debian` (derived from
-`.chezmoi.osRelease`) and group is `common` plus one file per role. Missing group files are skipped,
-so a role with no packages needs no file. The concatenated list is piped to `paru -S -` /
-`apt-get install`, which read **one package name per line** — so no comments and no blank lines in
-those files, or the name becomes an install target.
+Packages are declared in `.chezmoidata/packages.yaml` — the only place package names live. The
+`arch` key is grouped by `common` plus one key per role name; a role with no key installs
+nothing, which is not an error — but guard every lookup with `hasKey`, since under
+`missingkey=error` a bare `.packages.arch.podman` fails the template when the key is absent. The
+`darwin` key is flat, since neptune is the only Mac, and each entry is a bare string or
+`{name, trusted}` where Homebrew needs the trust flag: seven taps and two brews currently carry
+`trusted: true`, and losing one makes `brew bundle cleanup --force` wipe `trust.json`.
 
-Packages install on a host's **first** apply only, via `run_once_10-install-packages.sh.tmpl`.
-After that:
+**The names render *into* `run_onchange_10-install-packages.sh.tmpl`** (both the Linux body and
+the darwin branch inline in the same file), so editing `.chezmoidata/packages.yaml` changes the
+rendered script's own hash and the hook re-fires on the next `chezmoi apply`. This is why no
+`sha256sum` fingerprint on the data is needed — do not add one; the script's hash already moves
+with the data because the data *is* the script's content now. It's also what mostly dissolved
+the old chicken-and-egg (see Deploy flow above): `10-` runs before `50-enable-systemd-units`, so
+a new role's package installs in the same apply that enables its unit — as long as the prompt
+below gets a `y`.
 
-```
-just packages    # install this host's declared packages
-just upgrade     # full system upgrade first, then install declared
-```
+`chezmoi apply` prints only the delta — declared minus installed — and **asks before
+installing**. Declining exits 0; chezmoi records `run_onchange` state only on success, so the
+prompt won't return until the data changes again, and `just packages` is the escape hatch: it
+never prompts, because running it is itself the confirmation. With no TTY (a headless apply) the
+script prints the delta and exits without installing anything.
 
-**Adding a package to a group file does nothing until you run `just packages`** — the names are read
-at runtime, so the script's hash doesn't change and the hook doesn't re-fire. That is intended; do
-not add per-list `sha256sum` fingerprints to make it re-fire.
+**On macOS, both the apply-time check and the apply-time install pass `brew bundle`
+`--no-upgrade`.** Without it, `brew bundle check` reports merely-outdated formulae as unmet
+— its message is literally "needs to be installed or updated" — so `chezmoi apply` would prompt
+on every apply where anything had drifted stale (5 packages on neptune when this was checked),
+not just genuinely missing ones. The install call needs the flag too, or answering `y` to "2
+missing" would silently upgrade the other 23 that happened to be outdated in the same run.
+`just packages` and `just upgrade` deliberately keep the upgrading behavior — the asymmetry is
+intentional: an unattended `apply` should never surprise-upgrade something you didn't ask for.
 
-The shared body is `.chezmoitemplates/install-packages.sh`, included by both the hook and
-`dot_local/scripts/executable_install-packages.tmpl`.
+`schemas/packages.schema.json` lives in `schemas/`, not `.chezmoidata/` — see the shadowing trap
+above.
+
+**The Brewfile is generated, so `brew bundle dump` is retired as an authoring workflow** — a
+re-dump would be overwritten on the next apply and would destroy every `trusted` flag. Add
+packages to the YAML by hand instead. `.chezmoitemplates/brewfile` is the shared body; it's
+rendered by `Brewfile.tmpl` (deploys `~/Brewfile`, with a two-line `# GENERATED …` header warning
+against hand-editing) and separately by the darwin branch of
+`run_onchange_10-install-packages.sh.tmpl`, which renders its own copy to a temp file rather than
+reading `~/Brewfile` off disk — the numbered script sorts before `Brewfile` in the apply's target
+order, so `~/Brewfile` isn't deployed yet the first time the script runs.
+
+The shared body for Linux is `.chezmoitemplates/install-packages.sh`, included by both the hook
+and `dot_local/scripts/executable_install-packages.tmpl` — what `just packages` runs, with no
+`PROMPT` set, so it never asks.
 
 The install is `paru -S`, never `-Syu` (partial upgrades break Arch). `just upgrade` runs `-Syu`
 first, which also avoids the 404s `paru -S` hits against a stale DB. No `cleanup` counterpart on
-Linux — that would mean orphan removal.
+Linux — that would mean pacman orphan removal, which isn't implemented.
+
+```
+just packages        # install this host's declared packages, no prompt
+just packages-check  # macOS only: report installed-but-undeclared, removes nothing
+just packages-prune  # macOS only: remove installed-but-undeclared
+just upgrade         # full system upgrade, then install declared (macOS: reports afterward, doesn't prune)
+```
 
 `run_onchange_70-deploy-etc.sh.tmpl` is gated on the **`edge`** role, so moving `edge` between hosts
 in `.chezmoidata/hosts.yaml` relocates the whole Caddy/CoreDNS/cloudflared edge.
@@ -309,9 +346,10 @@ in `.chezmoidata/hosts.yaml` relocates the whole Caddy/CoreDNS/cloudflared edge.
 - `dot_local/scripts/executable_minecraft` — helper to keep the boot server in sync with the
   running one.
 - **JDKs are pinned.** `~/minecraft/<instance>/startserver.sh` (not in this repo) hardcodes an
-  absolute JVM path per instance — vanilla `/usr/lib/jvm/java-25-openjdk`, modpack 21 — so
-  `packages/arch/minecraft.txt` must match. Never use `jdk-openjdk` (rolling): its directory is
-  renamed on each bump and silently breaks the path. Only LTS is pinnable (8, 11, 17, 21, 25).
+  absolute JVM path per instance — vanilla `/usr/lib/jvm/java-25-openjdk`, modpack 21 — so the
+  `minecraft` key under `packages.arch` in `.chezmoidata/packages.yaml` must match. Never use
+  `jdk-openjdk` (rolling): its directory is renamed on each bump and silently breaks the path.
+  Only LTS is pinnable (8, 11, 17, 21, 25).
 - `dot_local/scripts/executable_minecraft-backup` — daily tarball of the `vanilla` world tree to
   `/mnt/x9pro/minecraft-backups`, keeping the newest 3. Pauses+flushes saves via the server's
   tmux console when it's running so the snapshot is consistent. Run by `minecraft-backup.timer`.
@@ -351,9 +389,9 @@ Each host also carries `syncthing_id`, its device ID.
 A device ID is derived from a TLS cert Syncthing generates on first run, so it cannot be known in
 advance:
 
-1. `just packages` then `chezmoi apply` — installs syncthing, enables the user unit, and writes a
-   config with **no** folders or devices (an empty `syncthing_id` omits them rather than emitting
-   half a config).
+1. `chezmoi apply` — installs syncthing (answer `y` at the install prompt; see "Packages" above),
+   enables the user unit, and writes a config with **no** folders or devices (an empty
+   `syncthing_id` omits them rather than emitting half a config).
 2. Read the ID off each host, put it in `.chezmoidata/hosts.yaml`, apply again.
 
 Device IDs are public — a hash of the cert public key — so committing them is fine. The certs
@@ -464,5 +502,6 @@ tools/simulate-host mercury execute-template < dot_local/state/syncthing/modify_
   `dot_config/systemd/user/minecraft@.service`. The `.tmpl` files are the only source; a static
   sibling would be silently ignored and drift forever.
 - On a fresh Linux host, `run_once_30-set-default-shell.sh.tmpl` needs `fish` present. It's in
-  `packages/arch/common.txt`, but if the shell change is skipped on first apply (packages not
-  installed yet), just run `chezmoi apply` again.
+  the `common` group of `packages.arch` in `.chezmoidata/packages.yaml`, but if the shell change
+  is skipped on first apply (the install prompt declined, or packages not installed yet), just
+  run `chezmoi apply` again.

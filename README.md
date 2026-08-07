@@ -93,8 +93,11 @@ chezmoi diff | head -40
 chezmoi apply --force
 ```
 
-Packages install here too, via the `run_once_` hooks. They fire on a host's first apply
-only; later additions need `just packages`. Log out and back in for the new login shell.
+Packages install here too, via `run_onchange_10-install-packages`. It fires on this first
+apply, prints what's declared but not installed, and asks before installing — answer `y`.
+Later additions to `.chezmoidata/packages.yaml` re-fire it automatically on the next apply, so
+there's no separate step; if you decline the prompt or apply headlessly, `just packages` picks
+up the delta. Log out and back in for the new login shell.
 
 ## Host configuration
 
@@ -103,12 +106,13 @@ gated on what's declared there.
 
 chezmoi reads **every** file in `.chezmoidata/` and merges them into one template
 data namespace, so the split is organisational only — templates just see `.hosts`,
-`.domain` and `.syncthing` regardless of which file each came from.
+`.domain`, `.syncthing` and `.packages` regardless of which file each came from.
 
 | File | Holds |
 |---|---|
 | `hosts.yaml` | `domain`, and the per-host inventory: roles, ip, quadlets, units, endpoints |
 | `syncthing.yaml` | `syncthing.folders` — the shared emulation library, not owned by any one host |
+| `packages.yaml` | `packages` — `arch`, grouped by `common` plus one key per role; `darwin`, flat |
 
 ### Roles
 
@@ -159,29 +163,13 @@ is derived from a TLS certificate Syncthing generates on its first run, so it ca
 known in advance — pairing is a **two-phase bootstrap**:
 
 ```sh
-# 1. install syncthing by hand THIS ONCE (see the ordering note below).
-#    Full upgrade first: a bare `paru -S` against a stale package DB 404s on
-#    every mirror, then fails signature verification on the partial download.
-paru -Syu
-paru -S --needed syncthing
-
-# 2. start it; chezmoi writes a config with no folders yet
+# 1. apply — this installs syncthing (answer y at the prompt) and starts it
+#    with a config that has no folders yet
 chezmoi apply
 
-# 3. read the ID this host just generated
+# 2. read the ID this host just generated
 syncthing device-id
 ```
-
-**Why not `just packages`?** `~/.local/scripts/install-packages` has the host's role
-list baked in at render time (`PKG_GROUPS=(common ...)`), so it cannot see a package
-group for a role the deployed copy predates. Re-rendering it needs `chezmoi apply`,
-but that same apply runs `run_once_50-enable-systemd-units`, which fails if the
-package isn't installed yet. Installing by hand once breaks the cycle. This applies
-to **any** new role that adds a package and a unit together — `sunshine` had it too.
-
-(If you'd rather not install by hand: `chezmoi apply` fails at step 50 but *does*
-re-render `install-packages` first, since `.local/...` sorts before `50-...`. So
-apply → `just packages` → apply also works, just noisily.)
 
 Put that value in the host's `syncthing_id` in `.chezmoidata/hosts.yaml`, push, and
 `chezmoi apply` again on both hosts. The second apply renders the full folder set and
@@ -219,13 +207,14 @@ to `ip.lan` for LAN clients and `ip.tailscale` for tailnet clients.
 
 ### Editor validation
 
-`schemas/hosts.schema.json` and `schemas/syncthing.schema.json` describe the shapes above, and each
-file in `.chezmoidata/` opens with a `# yaml-language-server: $schema=` modeline
-pointing at its own schema (`../schemas/hosts.schema.json`, `../schemas/syncthing.schema.json`), so Neovim
-validates as you type and shows each field's meaning on hover. It catches the
-mistakes that otherwise fail *silently*: a misspelled `tls-insecure` currently reads
-as absent and quietly disables the flag, `endpoint:` instead of `endpoints:` yields
-no endpoints at all, and a typo'd role is inert by design.
+`schemas/hosts.schema.json`, `schemas/syncthing.schema.json` and `schemas/packages.schema.json`
+describe the shapes above, and each file in `.chezmoidata/` opens with a
+`# yaml-language-server: $schema=` modeline pointing at its own schema
+(`../schemas/hosts.schema.json`, `../schemas/syncthing.schema.json`,
+`../schemas/packages.schema.json`), so Neovim validates as you type and shows each field's
+meaning on hover. It catches the mistakes that otherwise fail *silently*: a misspelled
+`tls-insecure` currently reads as absent and quietly disables the flag, `endpoint:` instead of
+`endpoints:` yields no endpoints at all, and a typo'd role is inert by design.
 
 It validates structure only. It cannot know that a quadlet is missing from `units`,
 that a port is wrong, or that an IP points at the wrong machine.
@@ -259,16 +248,23 @@ Items: `dotfiles-secrets`, `mars-secrets`, `ssh-ed25519`, `ssh-rsa` (Secure Note
 ## Day-to-day
 
 ```bash
-just apply       # Apply dotfiles from the local source dir
-just update      # Pull from the remote first, then apply (= chezmoi update)
-just packages    # Install this host's declared packages
-just upgrade     # Full system upgrade, then install declared packages
-just tpm-update  # Update tmux plugins
+just apply           # Apply dotfiles from the local source dir
+just update          # Pull from the remote first, then apply (= chezmoi update)
+just packages        # Install this host's declared packages, no prompt
+just packages-check  # macOS only: report installed packages that aren't declared
+just packages-prune  # macOS only: remove installed packages that aren't declared
+just upgrade         # Full system upgrade, then install declared packages
+just tpm-update      # Update tmux plugins
 ```
 
 `apply` and `update` differ by exactly one thing: `update` runs `git pull --autostash --rebase`
 in the source dir first. On the machine you author from, that rebases whatever you have in
 flight — reach for `apply` while you're iterating locally.
+
+`packages-check` and `packages-prune` only exist on macOS — Linux has no orphan-removal
+equivalent. On macOS, `upgrade` used to prune undeclared packages as part of upgrading; now it
+only reports them, same as `packages-check` — run `packages-prune` yourself to actually remove
+anything.
 
 Both sign in to 1Password first if `op whoami` says you aren't, since applying reads
 `secrets.fish` and the SSH keys.
