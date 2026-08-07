@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Render every template for every host and report any that fail.
+#
+#   tools/check-templates
+#
+# Catches the failure class that `simulate-host <host> managed` does NOT: a
+# template whose `include` or path reference went stale. `managed` only lists
+# target paths, so a broken include inside a run_onchange script passes it and
+# then blows up during a real apply on the host.
+#
+# Templates containing `onepasswordRead` are skipped -- they need `op` unlocked
+# and would fail everywhere for an unrelated reason.
+set -uo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+HOSTS=$(python3 -c "
+import re,sys
+s=open('.chezmoidata/hosts.yaml').read()
+print(' '.join(re.findall(r'^  ([a-z][a-z0-9-]*):$', s, re.M)))")
+
+fail=0 n=0
+for h in $HOSTS; do
+    for t in $(git ls-files | grep -E '\.tmpl$'); do
+        grep -q 'onepasswordRead' "$t" && continue
+        n=$((n + 1))
+        if ! out=$(./tools/simulate-host "$h" execute-template < "$t" 2>&1 >/dev/null); then
+            printf 'FAIL %-9s %s\n' "$h" "$t"
+            printf '     %s\n' "$(echo "$out" | head -2)"
+            fail=1
+        fi
+    done
+done
+
+if [ "$fail" -eq 0 ]; then
+    echo "ok: $n renders across $(echo $HOSTS | wc -w | tr -d ' ') hosts"
+else
+    echo "FAILURES above" >&2
+fi
+exit "$fail"

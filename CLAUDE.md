@@ -36,6 +36,12 @@ Roles compose: `gaming-mode` uses `and (has "server") (has "gaming")`. Never put
 `./tools/simulate-host <host> managed` renders any host's output from any machine. It overrides
 identity, not platform — `.chezmoi.os` stays local, so OS-gated branches need the real host.
 
+**`managed` is not enough on its own.** It lists target paths, so a template whose `include` path
+went stale still passes it and only fails during a real apply on the host. `./tools/check-templates`
+renders *every* template for *every* host and is the check to run after moving or renaming any
+source file — a `dot_local/state/syncthing` → `private_syncthing` rename shipped exactly that bug.
+It skips `onepasswordRead` templates, which need `op` unlocked.
+
 Silent failures worth knowing:
 - `dir/**` then `!dir/keep` in `.chezmoiignore` ignores everything. Negation needs single-star `dir/*`.
 - A `.container` whose prefix is not in a host's `quadlets` deploys nowhere, no error.
