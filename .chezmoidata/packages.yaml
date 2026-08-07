@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=../schemas/packages.schema.json
+#
+# The only place package names are declared.
+#
+# arch  — keyed by group: "common" plus one key per role name. A role with no
+#         key simply installs nothing; that is not an error.
+# darwin— flat, because neptune is the only Mac and carries one role. An entry
+#         is a bare string, or {name, trusted} when Homebrew needs the trust
+#         flag. Losing a trust flag makes `brew bundle cleanup --force` wipe
+#         trust.json.
+
+packages:
+  arch:
+    common:
+      - 1password-cli
+      - chezmoi
+      - fish
+      - git
+      - gnupg
+      - go
+      - just
+      - mosh
+      - neovim
+      - python-pipx
+      - ripgrep
+      - tailscale
+      - tmux
+    edge:
+      - cloudflared
+      - coredns
+      - xcaddy-bin
+    emulation:
+      - syncthing
+    gui:
+      - 1password
+      - alacritty
+      - firefox
+      - qbittorrent
+    minecraft:
+      # LTS only. jdk-openjdk is rolling and renames its directory on every
+      # bump, which silently breaks the absolute JVM path baked into each
+      # instance's startserver.sh.
+      - jdk21-openjdk
+      - jdk25-openjdk
+    moonlight:
+      - moonlight-qt
+    server:
+      - cockpit
+      - cockpit-podman
+      - podman
+    sunshine:
+      - sunshine

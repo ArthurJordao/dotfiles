@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "chezmoi package declarations",
+  "type": "object",
+  "required": ["packages"],
+  "properties": {
+    "packages": {
+      "type": "object",
+      "description": "Package declarations, keyed by OS family.",
+      "properties": {
+        "arch": {
+          "type": "object",
+          "description": "Arch/CachyOS packages, keyed by group: 'common' plus one key per role name.",
+          "additionalProperties": {
+            "type": "array",
+            "description": "Package names, installed with paru -S --needed.",
+            "items": {"type": "string"}
+          }
+        },
+        "darwin": {
+          "type": "object",
+          "description": "Homebrew declarations. Flat, not role-grouped.",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {"type": "string", "description": "Package name."},
+                {
+                  "type": "object",
+                  "description": "Package needing Homebrew's trust flag.",
+                  "required": ["name"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "name": {"type": "string"},
+                    "trusted": {
+                      "type": "boolean",
+                      "description": "Emits ', trusted: true'. Required for taps and formulae from untrusted third-party taps."
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}
