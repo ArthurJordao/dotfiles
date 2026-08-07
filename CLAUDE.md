@@ -58,6 +58,15 @@ Silent failures worth knowing:
   `private_` **is** right where the target really is 0700: `dot_local/state/private_syncthing/`
   matches the 0700 syncthing sets on a directory holding `key.pem`. Without it chezmoi relaxes a
   private-key directory to 0755 and reports "has changed since chezmoi last wrote it" every apply.
+- **systemd-resolved sends private reverse lookups to mDNS and waits out the timeout.** On mars a
+  PTR for a LAN address cost a flat **7.7s** — not a network wait, a protocol that only ends on
+  timeout. Proof: `resolvectl query --protocol=dns <ip>` answered in 2ms, the same query on
+  `tailscale0` (a link with `-LLMNR -mDNS`) took 2ms, and pinning wlan0's DNS to CoreDNS alone
+  changed nothing. Fixed with `nmcli connection modify ap-not-found connection.llmnr 0
+  connection.mdns 0` — now 0ms. **mDNS was the culprit, not LLMNR** (LLMNR off alone: still
+  7602ms). Safe here because `avahi-daemon` is active and provides `.local` service discovery
+  independently — `_nvstream._tcp` (Sunshine) and `_kdeconnect._udp` still advertise fine. This is
+  host config, not chezmoi-managed; it will not survive a mars rebuild.
 - **Every** file in `.chezmoidata/` is loaded as template data, JSON included — so the JSON Schemas
   live in `schemas/`, not next to the YAML they describe. Putting `hosts.schema.json` in there
   merges its `title`, `type`, `$schema` and `properties` keys into the top-level namespace, where
