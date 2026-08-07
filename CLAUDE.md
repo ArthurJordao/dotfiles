@@ -65,8 +65,20 @@ Silent failures worth knowing:
   changed nothing. Fixed with `nmcli connection modify ap-not-found connection.llmnr 0
   connection.mdns 0` — now 0ms. **mDNS was the culprit, not LLMNR** (LLMNR off alone: still
   7602ms). Safe here because `avahi-daemon` is active and provides `.local` service discovery
-  independently — `_nvstream._tcp` (Sunshine) and `_kdeconnect._udp` still advertise fine. This is
-  host config, not chezmoi-managed; it will not survive a mars rebuild.
+  independently — `_nvstream._tcp` (Sunshine) and `_kdeconnect._udp` still advertise fine.
+
+  **It has a second half.** Turning off resolved's mDNS also removed glibc's only route to `.local`,
+  so `ssh mercury.local` stopped resolving on mars even though `avahi-resolve` still answered.
+  `nss-mdns` was installed but never wired in; the fix is `mdns_minimal [NOTFOUND=return]` in
+  `/etc/nsswitch.conf`'s `hosts:` line, right after `mymachines`. It only ever answers for `.local`
+  and `[NOTFOUND=return]` stops there, so reverse lookups stay at 1ms. Final line:
+
+  ```
+  hosts: mymachines mdns_minimal [NOTFOUND=return] resolve [!UNAVAIL=return] files myhostname dns
+  ```
+
+  Both halves are **host config, not chezmoi-managed**, and will not survive a mars rebuild.
+  Backup of the original at `/etc/nsswitch.conf.pre-mdns`.
 - **Every** file in `.chezmoidata/` is loaded as template data, JSON included — so the JSON Schemas
   live in `schemas/`, not next to the YAML they describe. Putting `hosts.schema.json` in there
   merges its `title`, `type`, `$schema` and `properties` keys into the top-level namespace, where
