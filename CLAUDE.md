@@ -90,7 +90,13 @@ Silent failures worth knowing:
   `hooks.read-source-state.pre` hook (e.g. `.install-password-manager.sh`) cannot satisfy a
   dependency the config template itself needs. On a fresh machine that ordering would fail
   `chezmoi init` with `op: executable file not found in $PATH`, with no hook able to rescue it
-  (source: chezmoi discussion #4702, maintainer twpayne, Oct 2025).
+  (source: chezmoi discussion #4702, maintainer twpayne, Oct 2025). A related but distinct trap:
+  the hook command itself is baked into the generated, unmanaged `~/.config/chezmoi/chezmoi.toml`
+  as an **absolute path** (`.chezmoi.sourceDir`-derived). Move, rename, or re-clone the source dir
+  elsewhere and that path goes stale — every chezmoi command then fails with
+  `read-source-state: pre: ...: no such file or directory`, exit 1 (verified), not just `apply`.
+  Recovery: edit or delete the `[hooks.read-source-state.pre]` stanza in
+  `~/.config/chezmoi/chezmoi.toml` by hand, or re-run `chezmoi init`.
 
 # The mars self-hosted stack
 
@@ -251,6 +257,7 @@ Anything needing a package goes after 10; gaps of 10 leave room to insert.
 | | Script | Needs |
 |---|---|---|
 | 10 | `install-packages` | — |
+| 15 | `use-ssh-remote` | SSH keys deployed |
 | 20 | `install-tpm` | `git` |
 | 30 | `set-default-shell` | `fish` |
 | 40 | `setup-gpg-key` | `gpg`, `op` |
@@ -259,7 +266,22 @@ Anything needing a package goes after 10; gaps of 10 leave room to insert.
 | 70 | `deploy-etc` | `caddy`, `coredns` (edge role) |
 | 80 | `restart-syncthing` | `syncthing` (emulation role) |
 
-Pre-installed prerequisites: `chezmoi`, `1password-cli`, `git` (see README bootstrap).
+Pre-installed prerequisites: `chezmoi` and `git`. `1password-cli` is **not** one — it installs
+itself via the `hooks.read-source-state.pre` hook (`.install-password-manager.sh`) the first time
+source state is read, before any template needing `op` runs.
+
+Two top-level files drive the bootstrap and have no `run_*` slot of their own:
+
+- **`.install-password-manager.sh`** — the `hooks.read-source-state.pre` hook itself. Deliberately
+  **not** a `.tmpl`: hooks run before chezmoi's template machinery exists, so it detects the OS
+  with `uname` instead of `.chezmoi.os`. Deliberately **dot-prefixed**: chezmoi ignores dotfiles as
+  source state, so without the leading dot it would try to manage the script as a target. Either
+  change — templating it, or dropping the dot — breaks it silently.
+- **`run_15-use-ssh-remote.sh.tmpl`** (the `15` row above) — flips the source-dir remote from
+  HTTPS to SSH once the keys this same apply just wrote actually work. Deliberately a plain `run_`,
+  not `run_onchange_`: a `run_onchange_` keyed on the remote URL would only re-fire while the
+  remote is still HTTPS, so a flip that got skipped once (keys not ready yet) would never retry —
+  the trigger would already look "unchanged" on the next apply.
 
 **Adding a role that needs both a package and a unit used to be a chicken-and-egg; it mostly
 isn't one now.** `run_onchange_10-install-packages.sh.tmpl` renders the package names straight

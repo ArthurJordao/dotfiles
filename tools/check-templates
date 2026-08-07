@@ -8,8 +8,13 @@
 # target paths, so a broken include inside a run_onchange script passes it and
 # then blows up during a real apply on the host.
 #
-# Templates containing `onepasswordRead` are skipped -- they need `op` unlocked
-# and would fail everywhere for an unrelated reason.
+# Templates that actually CALL `onepasswordRead` (as a template action, `{{ ... }}`)
+# are skipped -- they need `op` unlocked and would fail everywhere for an unrelated
+# reason. The match is deliberately restricted to inside `{{ }}`, not a bare
+# substring: a bare `grep -q onepasswordRead` also matches the token in a comment
+# or in prose describing the function, which silently removed a template from this
+# check entirely (a comment mentioning it cost 3 renders of coverage on
+# .chezmoi.toml.tmpl, with nothing reported).
 set -uo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
@@ -21,7 +26,7 @@ print(' '.join(re.findall(r'^  ([a-z][a-z0-9-]*):$', s, re.M)))")
 fail=0 n=0
 for h in $HOSTS; do
     for t in $(git ls-files | grep -E '\.tmpl$'); do
-        grep -q 'onepasswordRead' "$t" && continue
+        grep -qE '\{\{[^}]*onepasswordRead' "$t" && continue
         n=$((n + 1))
         if ! out=$(./tools/simulate-host "$h" execute-template < "$t" 2>&1 >/dev/null); then
             printf 'FAIL %-9s %s\n' "$h" "$t"

@@ -55,14 +55,14 @@ printf '%s\n' "$MISSING" | sed 's/^/  /'
 
 if [ "${PROMPT:-0}" = "1" ]; then
     if [ ! -t 0 ]; then
-        echo "Not a terminal -- skipping. Run 'just packages' to install." >&2
+        echo "Not a terminal -- skipping. Run 'just packages' (or ~/.local/scripts/install-packages on a first apply) to install." >&2
         exit 0
     fi
     printf 'Install these now? [y/N] '
     read -r reply || reply=n
     case "$reply" in
         [yY]*) ;;
-        *) echo "Skipped. Run 'just packages' when ready."; exit 0 ;;
+        *) echo "Skipped. Run 'just packages' (or ~/.local/scripts/install-packages on a first apply) when ready."; exit 0 ;;
     esac
 fi
 

@@ -20,29 +20,35 @@
         "darwin": {
           "type": "object",
           "description": "Homebrew declarations. Flat, not role-grouped.",
-          "additionalProperties": {
-            "type": "array",
-            "items": {
-              "oneOf": [
-                {"type": "string", "description": "Package name."},
-                {
-                  "type": "object",
-                  "description": "Package needing Homebrew's trust flag.",
-                  "required": ["name"],
-                  "additionalProperties": false,
-                  "properties": {
-                    "name": {"type": "string"},
-                    "trusted": {
-                      "type": "boolean",
-                      "description": "Emits ', trusted: true'. Required for taps and formulae from untrusted third-party taps."
-                    }
-                  }
-                }
-              ]
-            }
+          "additionalProperties": false,
+          "properties": {
+            "taps": {"type": "array", "items": {"$ref": "#/definitions/brewItem"}},
+            "brews": {"type": "array", "items": {"$ref": "#/definitions/brewItem"}},
+            "casks": {"type": "array", "items": {"$ref": "#/definitions/brewItem"}},
+            "go": {"type": "array", "items": {"$ref": "#/definitions/brewItem"}}
           }
         }
       }
+    }
+  },
+  "definitions": {
+    "brewItem": {
+      "oneOf": [
+        {"type": "string", "description": "Package name."},
+        {
+          "type": "object",
+          "description": "Package needing Homebrew's trust flag.",
+          "required": ["name"],
+          "additionalProperties": false,
+          "properties": {
+            "name": {"type": "string"},
+            "trusted": {
+              "type": "boolean",
+              "description": "Emits ', trusted: true'. Required for taps and formulae from untrusted third-party taps."
+            }
+          }
+        }
+      ]
     }
   }
 }

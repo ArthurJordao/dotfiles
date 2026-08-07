@@ -114,13 +114,14 @@ packages, via `run_onchange_10-install-packages`. It fires on this first apply,
 prints what's declared but not installed, and asks before installing — answer
 `y`. Later additions to `.chezmoidata/packages.yaml` re-fire it automatically on
 the next apply, so there's no separate step; if you decline the prompt or apply
-headlessly, `just packages` picks up the delta.
+headlessly, `just packages` picks up the delta. This same apply also runs
+`run_once_30-set-default-shell`, which changes your login shell to fish — log
+out and back in for it to take effect.
 
 This apply also runs `run_15-use-ssh-remote`, a plain `run_` script (it runs on
 every apply, not just the first) that checks whether the SSH keys it just wrote
 actually work and, if so, flips the source-dir remote from HTTPS to
-`git@github.com:ArthurJordao/dotfiles`. Log out and back in for the new login
-shell.
+`git@github.com:ArthurJordao/dotfiles`.
 
 ## Host configuration
 
@@ -285,9 +286,9 @@ in the source dir first. On the machine you author from, that rebases whatever y
 flight — reach for `apply` while you're iterating locally.
 
 `packages-check` and `packages-prune` only exist on macOS — Linux has no orphan-removal
-equivalent. On macOS, `upgrade` used to prune undeclared packages as part of upgrading, then just
-reported them; now it doesn't touch undeclared packages at all — run `packages-check` to report
-them or `packages-prune` yourself to remove anything.
+equivalent. On macOS, `upgrade` used to prune undeclared packages as part of upgrading; now it
+doesn't touch undeclared packages at all — use `packages-check` to report them or
+`packages-prune` to remove them.
 
 Both sign in to 1Password first if `op whoami` says you aren't, since applying reads
 `secrets.fish` and the SSH keys.
