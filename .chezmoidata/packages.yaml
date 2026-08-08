@@ -29,7 +29,6 @@ packages:
       - syncthing
     gui:
       - 1password
-      - alacritty
       - firefox
       - qbittorrent
     minecraft:
@@ -151,7 +150,6 @@ packages:
     casks:
       - 1password
       - aerospace
-      - alacritty
       - anki
       - claude
       - firefox
