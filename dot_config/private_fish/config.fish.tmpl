@@ -21,7 +21,7 @@ fish_add_path "$GOPATH/bin"
 test -n "$GOROOT" && fish_add_path "$GOROOT/bin"
 
 set -x EDITOR nvim
-set -x BAT_THEME ansi
+set -x BAT_THEME {{ $t.bat | quote }}
 command -q vivid && set -x LS_COLORS "$(vivid generate {{ $t.vivid }})"
 set -x COLORTERM truecolor
 

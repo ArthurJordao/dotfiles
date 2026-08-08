@@ -15,7 +15,7 @@
       },
       "additionalProperties": {
         "type": "object",
-        "required": ["palette", "vivid", "fish", "wezterm", "nvim"],
+        "required": ["palette", "vivid", "fish", "bat", "wezterm", "nvim"],
         "additionalProperties": false,
         "properties": {
           "palette": {
@@ -26,6 +26,10 @@
           "fish": {
             "type": "string",
             "description": "Must match a vendored .theme file, or fish falls back silently."
+          },
+          "bat": {
+            "type": "string",
+            "description": "A theme bat ships built in; see `bat --list-themes`. An unknown name warns and falls back to a dark default."
           },
           "wezterm": {
             "type": "string",

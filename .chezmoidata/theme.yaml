@@ -3,9 +3,11 @@
 # Switch the whole fleet by editing `active`, then `just apply` and restart the
 # terminal. Colors live in palettes.yaml (generated); this file only names things.
 #
-# Four consumers take a name because their upstream ports encode work 16 colors
-# cannot carry. Only FZF and lazygit are generated from `palette`; bat follows
-# the terminal via BAT_THEME=ansi and needs nothing here.
+# Five consumers take a name because their upstream ports encode work 16 colors
+# cannot carry. Only FZF and lazygit are generated from `palette`.
+#
+# `bat` must be a name bat ships built in (`bat --list-themes`) -- an unknown
+# name only warns, then falls back to a dark default.
 #
 # Adding a theme needs a palette (tools/fetch-palette) and a vendored fish
 # .theme. A name with no matching .theme file makes fish fall back silently.
@@ -17,6 +19,7 @@ theme:
     palette: catppuccin-latte
     vivid:   catppuccin-latte
     fish:    Catppuccin Latte
+    bat:     Catppuccin Latte
     wezterm: Catppuccin Latte
     nvim:
       plugin:      catppuccin/nvim
@@ -28,6 +31,7 @@ theme:
     palette: catppuccin-mocha
     vivid:   catppuccin-mocha
     fish:    Catppuccin Mocha
+    bat:     Catppuccin Mocha
     wezterm: Catppuccin Mocha
     nvim:
       plugin:      catppuccin/nvim
