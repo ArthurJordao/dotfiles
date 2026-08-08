@@ -1,0 +1,16 @@
+{{- $t := index .theme .theme.active -}}
+-- Generated from .chezmoidata/theme.yaml. Candidates are not pre-declared:
+-- the plugin itself comes from data, so only the active one is installed.
+return {
+  {
+    "{{ $t.nvim.plugin }}",
+    name = "{{ $t.nvim.name }}",
+    lazy = false,
+    priority = 1000,
+    opts = { {{ range $k, $v := $t.nvim.opts }}{{ $k }} = "{{ $v }}", {{ end }}},
+  },
+  {
+    "LazyVim/LazyVim",
+    opts = { colorscheme = "{{ $t.nvim.colorscheme }}" },
+  },
+}
