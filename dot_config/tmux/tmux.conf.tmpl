@@ -1,3 +1,4 @@
+{{- $t := index .theme .theme.active -}}
 # remap prefix from 'C-b' to 'C-j'
 # unbind C-b
 # set-option -g prefix C-j
@@ -58,6 +59,6 @@ set -g @plugin 'catppuccin/tmux'
 set -g @plugin 'sainnhe/tmux-fzf'
 set -g @plugin 'tmux-plugins/tpm'
 set -g @plugin 'tmux-plugins/tmux-sensible'
-set -g @catppuccin_flavour 'latte'
+set -g @catppuccin_flavour '{{ $t.tmux }}'
 
 run '~/.tmux/plugins/tpm/tpm'
