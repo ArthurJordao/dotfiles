@@ -56,6 +56,12 @@ Silent failures worth knowing:
   0700/0600, and is right only where the target really is 0700. `dot_local/state/private_syncthing/`
   needs it (syncthing sets 0700 on a directory holding `key.pem`, and without it chezmoi reports
   "has changed since chezmoi last wrote it" every apply); a flatpak data dir does not.
+- **`exact_` does not recurse.** Each directory level needs its own prefix — `exact_nvim/exact_lua/
+  exact_plugins/`. A level without it silently keeps stray files. Files matching `.chezmoiignore`
+  are exempt from `exact_` deletion.
+- **chezmoi ignores dot-prefixed files in source state**, so a `.neoconf.json` inside a managed
+  directory never deploys — it must be `dot_neoconf.json`. Same rule that lets `.nvim-state/` hold
+  files chezmoi must not manage, and that makes `.install-password-manager.sh` a hook, not a target.
 - **systemd-resolved sends private reverse lookups to mDNS and waits out the timeout** — a PTR for
   a LAN address cost mars a flat 7.7s. Fixed with `nmcli connection modify ap-not-found
   connection.llmnr 0 connection.mdns 0`. mDNS was the culprit, not LLMNR. Safe because
@@ -476,8 +482,11 @@ tools/simulate-host mercury execute-template < dot_local/state/private_syncthing
 - The user runs `chezmoi apply` themselves — don't run it for them.
 - **Keep comments short.** State the constraint, not how it was discovered, what it looked like
   when broken, or what an earlier version got wrong. One or two lines is usually enough.
-- `~/.config/nvim` is a **live symlink** into the repo (`dot_config/symlink_nvim.tmpl`); don't
-  break it. `/nvim` is ignored so chezmoi doesn't double-copy it.
+- **nvim is managed with `exact_` on every directory level** (`dot_config/exact_nvim/`).
+  `exact_` does not recurse — a level without the prefix silently stops propagating deletes.
+  `lazy-lock.json` and `lazyvim.json` are `symlink_` entries into `.nvim-state/`, which chezmoi
+  ignores as source state, so nvim's writes land in git. Both symlinks bake an absolute path from
+  `.chezmoi.sourceDir`: moving or re-cloning the repo dangles them until the next apply.
 - Configs are cross-platform by default. Gate only what *costs* something — packages, units,
   `/etc` writes, secret reads, `run_once_*` scripts. An unused config on the wrong host is inert.
 - The whole edge — Caddy, CoreDNS, cloudflared, `gaming-mode` — is generated from
