@@ -15,7 +15,7 @@
       },
       "additionalProperties": {
         "type": "object",
-        "required": ["palette", "vivid", "fish", "tmux", "wezterm", "nvim"],
+        "required": ["palette", "vivid", "fish", "wezterm", "nvim"],
         "additionalProperties": false,
         "properties": {
           "palette": {
@@ -27,7 +27,6 @@
             "type": "string",
             "description": "Must match a vendored .theme file, or fish falls back silently."
           },
-          "tmux": {"type": "string"},
           "wezterm": {
             "type": "string",
             "description": "A wezterm built-in color scheme name."

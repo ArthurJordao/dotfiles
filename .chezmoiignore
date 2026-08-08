@@ -17,7 +17,6 @@ bin/
 tools/
 etc/
 .config/fish/fish_variables
-.config/tmux/plugins/**
 .ssh/known_hosts*
 .ssh/agent/
 

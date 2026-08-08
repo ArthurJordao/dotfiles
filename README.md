@@ -278,7 +278,6 @@ just packages        # Install this host's declared packages, no prompt
 just packages-check  # macOS only: report installed packages that aren't declared
 just packages-prune  # macOS only: remove installed packages that aren't declared
 just upgrade         # Full system upgrade, then install declared packages (macOS: installs declared first, then upgrades)
-just tpm-update      # Update tmux plugins
 ```
 
 `apply` and `update` differ by exactly one thing: `update` runs `git pull --autostash --rebase`
