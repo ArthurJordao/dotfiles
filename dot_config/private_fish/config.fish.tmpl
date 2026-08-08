@@ -1,3 +1,5 @@
+{{- $t := index .theme .theme.active -}}
+{{- $p := index .palettes $t.palette -}}
 set -g fish_greeting
 {{ if eq .chezmoi.os "darwin" -}}
 fish_add_path "/opt/homebrew/bin"
@@ -19,17 +21,19 @@ fish_add_path "$GOPATH/bin"
 test -n "$GOROOT" && fish_add_path "$GOROOT/bin"
 
 set -x EDITOR nvim
-set -x BAT_THEME "Catppuccin-latte"
-command -q vivid && set -x LS_COLORS "$(vivid generate catppuccin-latte)"
+set -x BAT_THEME ansi
+command -q vivid && set -x LS_COLORS "$(vivid generate {{ $t.vivid }})"
 set -x COLORTERM truecolor
 
 command -q direnv && direnv hook fish | source
-fish_config theme choose "Catppuccin Latte"
+fish_config theme choose {{ $t.fish | quote }}
 command -q fzf_configure_bindings && fzf_configure_bindings --processes=\cb --directory=\cf --git_log=\ct --git_status=\cs
-set -Ux FZF_DEFAULT_OPTS "\
---color=bg+:#ccd0da,bg:#eff1f5,spinner:#dc8a78,hl:#d20f39 \
---color=fg:#4c4f69,header:#d20f39,info:#8839ef,pointer:#dc8a78 \
---color=marker:#dc8a78,fg+:#4c4f69,prompt:#8839ef,hl+:#d20f39"
+# -g, not -U: a universal variable persists in the chezmoi-ignored
+# fish_variables, so the old theme's colors survive a switch.
+set -gx FZF_DEFAULT_OPTS "\
+--color=bg+:{{ $p.base02 }},bg:{{ $p.base00 }},spinner:{{ $p.base06 }},hl:{{ $p.base08 }} \
+--color=fg:{{ $p.base05 }},header:{{ $p.base08 }},info:{{ $p.base0E }},pointer:{{ $p.base06 }} \
+--color=marker:{{ $p.base06 }},fg+:{{ $p.base05 }},prompt:{{ $p.base0E }},hl+:{{ $p.base08 }}"
 bind \e\[1\;2D backward-word
 bind \e\[1\;2C forward-word
 
