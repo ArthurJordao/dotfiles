@@ -30,15 +30,11 @@ packages:
       - 1password
       - firefox
       - qbittorrent
-      # wezterm.lua asks for "FiraCode Nerd Font"; without it wezterm falls back,
-      # and under non-100% scaling that has crashed it (wezterm#7333).
       - ttf-firacode-nerd
       - wezterm
     minecraft:
       - jdk21-openjdk
       - jdk25-openjdk
-      # The servers ARE tmux sessions (minecraft@.service), and minecraft-backup
-      # flushes saves through the tmux console. Not an interactive dependency.
       - tmux
     moonlight:
       - moonlight-qt
