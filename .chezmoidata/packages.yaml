@@ -31,7 +31,6 @@ packages:
       - firefox
       - qbittorrent
       - ttf-firacode-nerd
-      - wezterm
     minecraft:
       - jdk21-openjdk
       - jdk25-openjdk
