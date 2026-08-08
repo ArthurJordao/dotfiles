@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=../schemas/theme.schema.json
+#
+# Switch the whole fleet by editing `active`, then `just apply` and restart the
+# terminal. Colors live in palettes.yaml (generated); this file only names things.
+#
+# Five consumers take a name because their upstream ports encode work 16 colors
+# cannot carry. Only FZF and lazygit are generated from `palette`; bat follows
+# the terminal via BAT_THEME=ansi and needs nothing here.
+#
+# Adding a theme needs a palette (tools/fetch-palette) and a vendored fish
+# .theme. A name with no matching .theme file makes fish fall back silently.
+
+theme:
+  active: catppuccin-latte
+
+  catppuccin-latte:
+    palette: catppuccin-latte
+    vivid:   catppuccin-latte
+    fish:    Catppuccin Latte
+    tmux:    latte
+    wezterm: Catppuccin Latte
+    nvim:
+      plugin:      catppuccin/nvim
+      name:        catppuccin
+      colorscheme: catppuccin
+      opts:        {flavour: latte}
+
+  catppuccin-mocha:
+    palette: catppuccin-mocha
+    vivid:   catppuccin-mocha
+    fish:    Catppuccin Mocha
+    tmux:    mocha
+    wezterm: Catppuccin Mocha
+    nvim:
+      plugin:      catppuccin/nvim
+      name:        catppuccin
+      colorscheme: catppuccin
+      opts:        {flavour: mocha}

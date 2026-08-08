@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "theme",
+  "type": "object",
+  "required": ["theme"],
+  "properties": {
+    "theme": {
+      "type": "object",
+      "required": ["active"],
+      "properties": {
+        "active": {
+          "type": "string",
+          "description": "Key of the theme block below. The single switch."
+        }
+      },
+      "additionalProperties": {
+        "type": "object",
+        "required": ["palette", "vivid", "fish", "tmux", "wezterm", "nvim"],
+        "additionalProperties": false,
+        "properties": {
+          "palette": {
+            "type": "string",
+            "description": "Key into palettes.yaml. Drives FZF and lazygit."
+          },
+          "vivid": {"type": "string"},
+          "fish": {
+            "type": "string",
+            "description": "Must match a vendored .theme file, or fish falls back silently."
+          },
+          "tmux": {"type": "string"},
+          "wezterm": {
+            "type": "string",
+            "description": "A wezterm built-in color scheme name."
+          },
+          "nvim": {
+            "type": "object",
+            "required": ["plugin", "name", "colorscheme", "opts"],
+            "additionalProperties": false,
+            "properties": {
+              "plugin": {"type": "string"},
+              "name": {"type": "string"},
+              "colorscheme": {"type": "string"},
+              "opts": {
+                "type": "object",
+                "additionalProperties": {"type": "string"}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
