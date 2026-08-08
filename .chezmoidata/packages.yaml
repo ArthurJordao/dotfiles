@@ -30,6 +30,7 @@ packages:
       - 1password
       - firefox
       - qbittorrent
+      - wezterm
     minecraft:
       - jdk21-openjdk
       - jdk25-openjdk
