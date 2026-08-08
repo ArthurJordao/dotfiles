@@ -1,0 +1,26 @@
+{{- $t := index .theme .theme.active -}}
+{{- $p := index .palettes $t.palette -}}
+theme:
+  activeBorderColor:
+    - '{{ $p.base0D }}'
+    - bold
+  # base04, not subtext0: Catppuccin's subtext0 has no base16 slot.
+  inactiveBorderColor:
+    - '{{ $p.base04 }}'
+  optionsTextColor:
+    - '{{ $p.base0D }}'
+  selectedLineBgColor:
+    - '{{ $p.base02 }}'
+  cherryPickedCommitBgColor:
+    - '{{ $p.base03 }}'
+  cherryPickedCommitFgColor:
+    - '{{ $p.base0D }}'
+  unstagedChangesColor:
+    - '{{ $p.base08 }}'
+  defaultFgColor:
+    - '{{ $p.base05 }}'
+  searchingActiveBorderColor:
+    - '{{ $p.base0A }}'
+
+authorColors:
+  '*': '{{ $p.base07 }}'
