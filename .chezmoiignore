@@ -21,11 +21,6 @@ etc/
 .ssh/known_hosts*
 .ssh/agent/
 
-# ~/nvim — the symlink target lives in the repo (dot_config/symlink_nvim.tmpl).
-# No leading slash: newer chezmoi rejects it, and `nvim` doesn't match .config/nvim.
-nvim
-nvim/**
-
 # Axis 1: OS — things that only exist on a given platform.
 
 {{ if ne .chezmoi.os "darwin" }}
