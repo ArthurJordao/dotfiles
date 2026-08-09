@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Stand in for the `op` binary so a simulated render needs no 1Password session.
+#
+#   tools/mock-op item get --format json <item> --vault <vault>
+#
+# Wired in by tools/simulate-host as `[onepassword] command`. chezmoi puts
+# `--session <token>` BEFORE the subcommand, so scan argv rather than read $1.
+#
+# Field names are harvested from the templates themselves: over-inclusive on
+# purpose, since a spare field costs nothing and a missing one fails the render.
+# Every field needs a `section` -- onepasswordItemFields drops the ones without,
+# leaving an empty map and `no entry for key "value"` at every lookup.
+set -uo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
+
+for arg in "$@"; do
+    case "$arg" in
+        signin)
+            echo "mock-session"
+            exit 0 ;;
+        read)
+            echo "mock-secret"
+            exit 0 ;;
+        --version)
+            echo "0.0.0-mock"
+            exit 0 ;;
+        item)
+            grep -rhoE 'index \$[a-zA-Z]+ "[^"]+"' --include='*.tmpl' . \
+                | sed 's/.*"\(.*\)"/\1/' | sort -u \
+                | awk 'BEGIN { printf "{\"fields\":[" }
+                       { printf "%s{\"id\":\"%s\",\"label\":\"%s\",\"type\":\"STRING\",\"section\":{\"id\":\"mock\"},\"value\":\"mock:%s\"}", sep, $0, $0, $0; sep = "," }
+                       END { print "]}" }'
+            exit 0 ;;
+    esac
+done
+
+echo "mock-op: unmocked call: $*" >&2
+exit 1
