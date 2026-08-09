@@ -308,22 +308,9 @@ it on, so OS-gated branches need the real host.
 
 ## Secrets
 
-Secrets are managed via 1Password (vault `dotfiles`, read with `op` at apply-time).
-Items: `dotfiles-secrets`, `mars-secrets`, `ssh-ed25519`, `ssh-rsa` (Secure Notes) and
-`gpg-key` (Document).
-
-`.chezmoidata/secrets.yaml` names the vault and the items; the field names are not
-declared anywhere. Templates fetch an item once and index it, so adding a secret is a
-1Password edit plus an apply:
-
-```gotemplate
-{{- $op := onepasswordItemFields .secrets.items.mars .secrets.vault -}}
-SLSKD_USERNAME={{ (index $op "SLSKD_WEB_USERNAME").value }}
-```
-
-`secrets.fish.tmpl` goes further and ranges the whole item, so every field of
-`secrets.items.fish` becomes an exported shell var on every host. A field name absent
-from the item fails the apply rather than rendering empty.
+Secrets live in 1Password, read with `op` at apply-time. `.chezmoidata/secrets.yaml`
+names the vault and the items; field names aren't declared anywhere, so adding a secret
+is a 1Password edit plus an apply.
 
 ## Day-to-day
 
