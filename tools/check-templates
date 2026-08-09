@@ -12,11 +12,8 @@
 # doesn't silently drop a template from the check.
 set -uo pipefail
 
-cd "$(dirname "${BASH_SOURCE[0]}")/.."
-HOSTS=$(python3 -c "
-import re,sys
-s=open('.chezmoidata/hosts.yaml').read()
-print(' '.join(re.findall(r'^  ([a-z][a-z0-9-]*):$', s, re.M)))")
+cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
+HOSTS=$(./tools/hosts)
 
 fail=0 n=0
 for h in $HOSTS; do
@@ -32,7 +29,7 @@ for h in $HOSTS; do
 done
 
 if [ "$fail" -eq 0 ]; then
-    echo "ok: $n renders across $(echo $HOSTS | wc -w | tr -d ' ') hosts"
+    echo "ok: $n renders across $(echo "$HOSTS" | wc -w | tr -d ' ') hosts"
 else
     echo "FAILURES above" >&2
 fi
