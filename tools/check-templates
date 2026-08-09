@@ -7,9 +7,9 @@
 # path reference. `managed` only lists target paths, so a broken include inside
 # a run_onchange script passes it and blows up during a real apply.
 #
-# Templates that CALL `onepasswordRead` are skipped -- they need `op` unlocked.
-# The match is restricted to inside `{{ }}` so a mention in a comment doesn't
-# silently drop a template from the check.
+# Templates that CALL any `onepassword*` function are skipped -- they need `op`
+# unlocked. The match is restricted to inside `{{ }}` so a mention in a comment
+# doesn't silently drop a template from the check.
 set -uo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
@@ -21,7 +21,7 @@ print(' '.join(re.findall(r'^  ([a-z][a-z0-9-]*):$', s, re.M)))")
 fail=0 n=0
 for h in $HOSTS; do
     for t in $(git ls-files | grep -E '\.tmpl$'); do
-        grep -qE '\{\{[^}]*onepasswordRead' "$t" && continue
+        grep -qE '\{\{[^}]*onepassword' "$t" && continue
         n=$((n + 1))
         if ! out=$(./tools/simulate-host "$h" execute-template < "$t" 2>&1 >/dev/null); then
             printf 'FAIL %-9s %s\n' "$h" "$t"

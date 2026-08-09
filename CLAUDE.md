@@ -20,10 +20,10 @@ Hosts share this repo, gated by roles in `.chezmoidata/hosts.yaml`:
 ## Host gating: three axes
 
 `.chezmoidata/` is the only place hosts are named — `hosts.yaml` holds the per-host inventory,
-`syncthing.yaml` the shared emulation folders, `packages.yaml` the package declarations. chezmoi
-merges every file in that directory into one template data namespace, so templates just read
-`.hosts` / `.domain` / `.syncthing` / `.packages`. Gate on the axis that is the actual reason a
-file isn't universal:
+`syncthing.yaml` the shared emulation folders, `packages.yaml` the package declarations,
+`secrets.yaml` the 1Password vault and item names. chezmoi merges every file in that directory
+into one template data namespace, so templates just read `.hosts` / `.domain` / `.syncthing` /
+`.packages` / `.secrets`. Gate on the axis that is the actual reason a file isn't universal:
 
 | Axis | Mechanism | Use for |
 |---|---|---|
@@ -40,7 +40,7 @@ identity, not platform — `.chezmoi.os` stays local, so OS-gated branches need 
 **`managed` is not enough on its own.** It lists target paths, so a template whose `include` path
 went stale still passes it and only fails during a real apply on the host. `./tools/check-templates`
 renders *every* template for *every* host and is the check to run after moving or renaming any
-source file. It skips `onepasswordRead` templates, which need `op` unlocked.
+source file. It skips `onepassword*` templates, which need `op` unlocked.
 
 Silent failures worth knowing:
 - `dir/**` then `!dir/keep` in `.chezmoiignore` ignores everything. Negation needs single-star `dir/*`.
@@ -100,8 +100,16 @@ uid/gid 0 (see the music stack). Fixed facts:
 - Host user: `turisa` · LAN IP `192.168.15.23` · Tailscale IP `100.127.50.55`
 - Base domain: `arthurjordao.dev`; every service is exposed as `<service>.arthurjordao.dev`
 - External media/storage SSD mounted at `/mnt/x9pro`, declared as `hosts.mars.storage.external`
-- Secrets: 1Password item `mars-secrets` (vault `dotfiles`), pulled at apply-time via
-  `onepasswordRead "op://dotfiles/mars-secrets/<FIELD>"` in `.tmpl` files
+- Secrets: 1Password item named by `secrets.items.mars`, pulled at apply-time. The item is
+  fetched **once per file** and indexed, so the vault/item name appears in no template:
+
+  ```
+  {{- $op := onepasswordItemFields .secrets.items.mars .secrets.vault -}}
+  SLSKD_USERNAME={{ (index $op "SLSKD_WEB_USERNAME").value }}
+  ```
+
+  A field name that isn't in the item fails the apply (`nil pointer evaluating
+  interface {}.value`) rather than rendering empty.
 
 ## Three concerns per service
 
@@ -479,8 +487,8 @@ tools/simulate-host mercury execute-template < dot_local/state/private_syncthing
 # Adding a new service (checklist)
 
 1. `dot_config/containers/systemd/<svc>.container` (+ `<svc>.env.tmpl` if it needs secrets;
-   add the keys to the `mars-secrets` 1Password item in vault `dotfiles`). Name it
-   `.container.tmpl` if it publishes a proxied port, and write that port as
+   add the fields to the 1Password item `secrets.items.mars` names — nothing to declare in
+   the repo). Name it `.container.tmpl` if it publishes a proxied port, and write that port as
 
    ```
    PublishPort={{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "<name>") }}:<image port>
