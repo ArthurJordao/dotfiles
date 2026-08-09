@@ -15,7 +15,7 @@ HOSTS=$(./tools/hosts)
 
 fail=0 n=0
 for h in $HOSTS; do
-    for t in $(git ls-files | grep -E '\.tmpl$'); do
+    for t in $(git ls-files --cached --others --exclude-standard | grep -E '\.tmpl$'); do
         n=$((n + 1))
         if ! out=$(./tools/simulate-host "$h" execute-template < "$t" 2>&1 >/dev/null); then
             printf 'FAIL %-9s %s\n' "$h" "$t"
