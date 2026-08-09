@@ -11,8 +11,9 @@
 # Read-only: destDir is a throwaway temp dir, so nothing in $HOME is touched.
 #
 # LIMITS:
-#  - Overrides identity, never platform. .chezmoi.os / .chezmoi.osRelease stay
-#    those of the machine you run it on.
+#  - chezmoi's own .chezmoi.os / .chezmoi.osRelease still describe the local
+#    machine. Nothing reads them: platform is `os`/`distro` in hosts.yaml, so
+#    overriding the hostname overrides the platform too.
 #  - diff and apply render *.env.tmpl too, which needs `op` unlocked. Stick to
 #    `managed`.
 set -euo pipefail

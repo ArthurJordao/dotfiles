@@ -1,4 +1,3 @@
-{{ if or (eq .chezmoi.os "darwin") (eq .chezmoi.os "linux") -}}
 #!/bin/bash
 set -euo pipefail
 
@@ -22,4 +21,3 @@ if [ "$(readlink -f "$SHELL")" != "$(readlink -f "$FISH")" ]; then
 else
     echo "Login shell already $FISH"
 fi
-{{ end -}}

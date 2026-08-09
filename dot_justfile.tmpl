@@ -12,7 +12,7 @@ update:
     op whoami >/dev/null 2>&1 || eval "$(op signin --account my.1password.com)"
     chezmoi update
 
-{{ if eq .chezmoi.os "darwin" -}}
+{{ if eq (index .hosts .hostname).os "darwin" -}}
 # Install declared packages
 packages:
     brew bundle --file ~/Brewfile

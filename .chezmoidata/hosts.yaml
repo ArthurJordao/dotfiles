@@ -12,6 +12,10 @@
 #   edge       Caddy, CoreDNS, cloudflared, /etc deploy
 #   ddns       cloudflare-ddns service+timer
 #
+# `os` and `distro` are what a template reads instead of .chezmoi.os — chezmoi's
+# own value cannot be overridden, so simulate-host could not render another
+# host's platform. `distro` is linux-only and picks the package family.
+#
 # quadlets/units/endpoints generate the Caddy, CoreDNS, cloudflared and
 # gaming-mode configs. They are independent lists and nothing errors when they
 # disagree. `syncthing.folders` is a fourth such list.
@@ -24,6 +28,8 @@ timezone: America/Sao_Paulo
 hosts:
   mars:
     roles: [server, podman, gui, gaming, minecraft, sunshine, emulation, edge, ddns]
+    os: linux
+    distro: arch
     user: turisa
     ip:
       lan: 192.168.15.23
@@ -75,6 +81,8 @@ hosts:
 
   mercury:
     roles: [gui, gaming, moonlight, emulation]
+    os: linux
+    distro: arch
     user: arthur
     ip:
       lan: 192.168.15.28
@@ -86,6 +94,7 @@ hosts:
 
   neptune:
     roles: [gui]
+    os: darwin
     user: arthurjordao
     ip:
       lan: 192.168.15.20
