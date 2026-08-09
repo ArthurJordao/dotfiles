@@ -9,7 +9,7 @@ Environment=TS3SERVER_LICENSE=accept
 PublishPort=9987:9987/udp
 PublishPort=10011:10011
 PublishPort=30033:30033
-Volume=/home/turisa/teamspeak3/data:/var/ts3server:Z
+Volume=%h/teamspeak3/data:/var/ts3server:Z
 AutoUpdate=registry
 
 [Service]

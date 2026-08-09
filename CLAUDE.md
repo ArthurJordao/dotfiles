@@ -113,6 +113,8 @@ uid/gid 0 (see the music stack). Fixed facts:
   `shelfmark.container`, `teamspeak3.container`); subdirs for service groups that share a network/pod
   (`music/` = slskd + navidrome + soulsync on `music.network`; `immich/` = a pod of
   server/db/valkey/ml plus the top-level `immich.pod`).
+- **Home paths use systemd's `%h`, never `/home/turisa`** — both quadlets and hand-written user
+  units. One less host fact baked into a file.
 - **A quadlet with a proxied port is a `.tmpl`, and its `PublishPort` host side is generated.**
   `{{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "books") }}:8083` reads the port
   off that endpoint in `.chezmoidata/hosts.yaml`, so Caddy and podman cannot disagree. Only the

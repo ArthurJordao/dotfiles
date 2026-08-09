@@ -4,8 +4,8 @@ After=network-online.target
 
 [Service]
 Type=oneshot
-WorkingDirectory=/home/turisa/cloudflare-ddns
-ExecStart=/home/turisa/cloudflare-ddns/start-sync.sh
+WorkingDirectory=%h/cloudflare-ddns
+ExecStart=%h/cloudflare-ddns/start-sync.sh
 
 [Install]
 WantedBy=default.target
