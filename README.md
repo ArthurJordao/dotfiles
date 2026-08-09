@@ -135,7 +135,7 @@ of which file each came from.
 
 | File | Holds |
 |---|---|
-| `hosts.yaml` | `domain`, `timezone`, and the per-host inventory: roles, user, ip, storage, quadlets, units, endpoints |
+| `hosts.yaml` | `domain`, `timezone`, and the per-host inventory: roles, os, distro, user, ip, storage, quadlets, units, endpoints |
 | `syncthing.yaml` | `syncthing.folders` — the shared emulation library, not owned by any one host |
 | `packages.yaml` | `packages` — `arch`, grouped by `common` plus one key per role; `darwin`, flat |
 | `theme.yaml` | `theme` — `active` switches the whole fleet, plus the per-consumer theme names |
@@ -268,6 +268,7 @@ Only `name` is required. `<name>` is prefixed onto the `domain` key.
 | `scheme` | `https` when the upstream itself speaks TLS |
 | `tls_insecure` | `true` skips verification of the upstream's certificate |
 | `log` | `false` disables the JSON access log |
+| `served_by` | names the non-container service on that port (`dns` → coredns). Without it, `check-consistency` requires a quadlet to publish the port |
 
 Every host with an `ip` also gets `<hostname>.arthurjordao.dev` for free, resolving
 to `ip.lan` for LAN clients and `ip.tailscale` for tailnet clients.
@@ -303,8 +304,34 @@ tools/simulate-host mars execute-template < etc/cloudflared/config.yml.tmpl
 tools/simulate-host mars execute-template < dot_local/scripts/executable_gaming-mode.tmpl
 ```
 
-It overrides identity, not platform: `.chezmoi.os` stays that of the machine you run
-it on, so OS-gated branches need the real host.
+Platform comes from the inventory too: each host declares `os` (and `distro` on Linux),
+and templates read those rather than chezmoi's own `.chezmoi.os`, which always describes
+the machine running the render. So overriding the hostname overrides the platform with
+it, and a Mac renders mars exactly as mars would.
+
+1Password calls go to `tools/mock-op` and render `mock:<FIELD>` instead of a real
+secret, so no `op` session is needed. Pass `--real-op` for actual values.
+
+### Checks
+
+```bash
+just check     # everything below, in one pass
+```
+
+| | Checks |
+|---|---|
+| `tools/check-templates` | renders every template for every host |
+| `tools/check-schemas` | each `.chezmoidata` file against the schema named in its own header |
+| `tools/check-consistency` | quadlets, units, endpoints, syncthing folders and package groups against each other |
+| `tools/check-shell` | shellcheck, rendering `.tmpl` scripts per host first |
+
+They need `shellcheck` and `check-jsonschema`, both declared in `packages.yaml`. The same
+`tools/check` runs in GitHub Actions on every push, with no secrets.
+
+The consistency check is the one worth knowing about: `quadlets`, `units` and `endpoints`
+are independent lists, and before it existed nothing errored when they disagreed. A quadlet
+with no `units` entry kept running through gaming mode; a `units` entry with no quadlet
+named a unit that would never exist; an endpoint with no quadlet was a 502.
 
 ## Secrets
 
@@ -317,6 +344,7 @@ is a 1Password edit plus an apply.
 ```bash
 just apply           # Apply dotfiles from the local source dir
 just update          # Pull from the remote first, then apply (= chezmoi update)
+just check           # Every repo check: templates, schemas, consistency, shellcheck
 just packages        # Install this host's declared packages, no prompt
 just packages-check  # macOS only: report installed packages that aren't declared
 just packages-prune  # macOS only: remove installed packages that aren't declared
