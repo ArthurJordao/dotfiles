@@ -4,11 +4,12 @@ set -euo pipefail
 # config.xml: {{ include "dot_local/state/private_syncthing/modify_config.xml.tmpl" | sha256sum }}
 #
 # Hash the data too: editing .chezmoidata/syncthing.yaml changes the output
-# while leaving the template byte-identical. Same as 70-deploy-etc.
+# while leaving the template byte-identical. The only script that needs this:
+# the /etc bodies are inlined into 70-deploy-etc's own bytes.
 # data:       {{ dict "syncthing" .syncthing "hosts" .hosts | toJson | sha256sum }}
 
-# Syncthing rereads config.xml only on start. chezmoi applies targets in
-# lexicographic order, so `.local/state/...` lands before this script runs.
+# Syncthing rereads config.xml only on start. `after_` puts this script past
+# every file update, so `.local/state/...` has landed by now.
 # In-flight transfers resume after the restart.
 echo "Restarting syncthing (config changed)..."
 systemctl --user restart syncthing.service

@@ -76,6 +76,10 @@ Silent failures worth knowing:
 - **`exact_` does not recurse.** Each directory level needs its own prefix — `exact_nvim/exact_lua/
   exact_plugins/`. A level without it silently keeps stray files. Files matching `.chezmoiignore`
   are exempt from `exact_` deletion.
+- **A script in `.chezmoiscripts/` without `after_` runs before every file is deployed.** That
+  directory name sorts ahead of `.config`, `.local`, `Brewfile` and `Pictures`, and scripts are
+  ordered against target paths. `before_`/`after_` override the positional order; every script here
+  is `after_`.
 - **chezmoi ignores dot-prefixed files in source state**, so a `.neoconf.json` inside a managed
   directory never deploys — it must be `dot_neoconf.json`. Same rule that lets `.nvim-state/` hold
   files chezmoi must not manage, and that makes `.install-password-manager.sh` a hook, not a target.
@@ -192,8 +196,8 @@ from the public internet, add it to the **Cloudflare Tunnel** instead of opening
 
 - `cloudflared` runs as a **system** unit (`/etc/systemd/system/cloudflared.service`) using a
   named tunnel; its config is generated from `.chezmoitemplates/etc/cloudflared/config.yml` and
-  deployed to `/etc/cloudflared/config.yml` by `run_onchange_70-deploy-etc.sh.tmpl`. The credentials
-  `.json` lives only on mars (never in the repo).
+  deployed to `/etc/cloudflared/config.yml` by `run_onchange_after_70-deploy-etc.sh.tmpl`. The
+  credentials `.json` lives only on mars (never in the repo).
 - To expose a service: set `public: true` on its endpoint in `.chezmoidata/hosts.yaml` — that emits the
   `ingress:` rule above the `http_status:404` catch-all. Then create the public proxied CNAME once
   with `cloudflared tunnel route dns <tunnel-id> <hostname>`. `chezmoi apply` redeploys the config
@@ -288,8 +292,8 @@ endpoints in declaration order within a host.
 
 ## Deploy flow
 
-**`run_onchange_70-deploy-etc.sh.tmpl`** carries the Caddyfile, Corefile, cloudflared config and
-`caddy.env` **inline**, one quoted heredoc each via `includeTemplate`, then installs them into
+**`run_onchange_after_70-deploy-etc.sh.tmpl`** carries the Caddyfile, Corefile, cloudflared config
+and `caddy.env` **inline**, one quoted heredoc each via `includeTemplate`, then installs them into
 `/etc` with `sudo` and reloads caddy / restarts coredns / restarts cloudflared. Each body is
 written to a staging file before `install`, because `sudo tee` truncates the live config first.
 The quadlet files under `dot_config/` deploy normally to `~/.config/...`.
@@ -302,14 +306,18 @@ the script's own bytes, `run_onchange` re-fires exactly when the output changes.
 hash here; `trimSuffix "\n"` on each `includeTemplate` keeps the heredoc terminator on its own
 line.
 
-`run_*` scripts execute in alphabetical target order; the numeric prefix states it explicitly.
+All nine scripts live in **`.chezmoiscripts/`** and every one carries the **`after_`** attribute, so
+they run once every file has been deployed and the numeric prefix orders only the scripts among
+themselves. Keep both properties on any new script: without `after_`, `.chezmoiscripts` sorts ahead
+of `.config`, `.local`, `Brewfile` and `Pictures`, and the script runs before anything lands.
 Anything needing a package goes after 10; gaps of 10 leave room to insert.
 
 | | Script | Needs |
 |---|---|---|
 | 10 | `install-packages` | — |
-| 15 | `use-ssh-remote` | SSH keys deployed |
+| 15 | `use-ssh-remote` | — |
 | 30 | `set-default-shell` | `fish` |
+| 35 | `reset-bat` | — |
 | 40 | `setup-gpg-key` | `gpg`, `op` |
 | 50 | `enable-systemd-units` | units deployed |
 | 60 | `set-wallpaper` | `Pictures/` deployed |
@@ -326,17 +334,18 @@ chezmoi's template machinery exists, so it uses `uname`) and deliberately **dot-
 ignores dotfiles as source state; without the dot it would manage the script as a target). Either
 change breaks it silently.
 
-**`run_once_15-use-ssh-remote.sh.tmpl`** flips the source-dir remote from the bootstrap HTTPS clone
-to SSH.
+**`run_once_after_15-use-ssh-remote.sh.tmpl`** flips the source-dir remote from the bootstrap HTTPS
+clone to SSH.
 
-`run_onchange_10-install-packages.sh.tmpl` renders the package names into its own body, so adding
-a role's key to `.chezmoidata/packages.yaml` changes that script's hash, and `10-` sorts before
-`50-enable-systemd-units` — a new role's package installs in the *same* apply that enables its
-unit. The catch: decline the install prompt (see "Packages"), or run headless with no TTY, and
+`run_onchange_after_10-install-packages.sh.tmpl` renders the package names into its own body, so
+adding a role's key to `.chezmoidata/packages.yaml` changes that script's hash, and `10-` sorts
+before `50-enable-systemd-units` — a new role's package installs in the *same* apply that enables
+its unit. The catch: decline the install prompt (see "Packages"), or run headless with no TTY, and
 step 50 still fails for lack of the package.
 
-`run_once_50-enable-systemd-units.sh.tmpl` enables only the hand-written units, gated by the role
-that owns each (`ddns`, `podman`, `minecraft`) — quadlet services are generated and can't be enabled.
+`run_once_after_50-enable-systemd-units.sh.tmpl` enables only the hand-written units, gated by the
+role that owns each (`ddns`, `podman`, `minecraft`) — quadlet services are generated and can't be
+enabled.
 
 Note `run_once_` state is keyed on content hash (renaming is free); `run_onchange_` is keyed on
 name (renaming re-runs it).
@@ -350,8 +359,8 @@ nothing, which is not an error — but guard every lookup with `hasKey`, since u
 `darwin` key is flat, and each entry is a bare string or `{name, trusted}` where Homebrew needs
 the trust flag — losing one makes `brew bundle cleanup --force` wipe `trust.json`.
 
-**The names render *into* `run_onchange_10-install-packages.sh.tmpl`** (both the Linux body and
-the darwin branch), so editing the YAML changes the rendered script's own hash and the hook
+**The names render *into* `run_onchange_after_10-install-packages.sh.tmpl`** (both the Linux body
+and the darwin branch), so editing the YAML changes the rendered script's own hash and the hook
 re-fires on the next apply. No `sha256sum` fingerprint on the data is needed — do not add one.
 
 `chezmoi apply` prints only the delta — declared minus installed — and **asks before
@@ -374,8 +383,8 @@ above.
 re-dump would be overwritten on the next apply and would destroy every `trusted` flag. Add
 packages to the YAML by hand. `.chezmoitemplates/brewfile` is the shared body, rendered by
 `Brewfile.tmpl` (deploys `~/Brewfile`) and separately by the darwin branch of
-`run_onchange_10-install-packages.sh.tmpl`, which renders its own copy to a temp file — the
-numbered script sorts before `Brewfile`, so `~/Brewfile` isn't on disk yet the first time it runs.
+`run_onchange_after_10-install-packages.sh.tmpl`, which renders its own copy to a temp file so it
+depends on no target file.
 
 The shared body for Linux is `.chezmoitemplates/install-packages.sh`, included by both the hook
 and `dot_local/scripts/executable_install-packages.tmpl` — what `just packages` runs, with no
@@ -393,8 +402,8 @@ just packages-prune  # macOS only: remove installed-but-undeclared
 just upgrade         # full system upgrade, then install declared (macOS: installs declared first, then upgrades)
 ```
 
-`run_onchange_70-deploy-etc.sh.tmpl` is gated on the **`edge`** role, so moving `edge` between hosts
-in `.chezmoidata/hosts.yaml` relocates the whole Caddy/CoreDNS/cloudflared edge.
+`run_onchange_after_70-deploy-etc.sh.tmpl` is gated on the **`edge`** role, so moving `edge` between
+hosts in `.chezmoidata/hosts.yaml` relocates the whole Caddy/CoreDNS/cloudflared edge.
 
 ## Other mars pieces
 
@@ -505,8 +514,8 @@ themselves never leave the host.
 
 ## Changing the folder list
 
-`run_onchange_80-restart-syncthing.sh.tmpl` restarts the unit. Its trigger hashes the **data** as
-well as the template, since a `.chezmoidata/syncthing.yaml` edit changes the output while leaving
+`run_onchange_after_80-restart-syncthing.sh.tmpl` restarts the unit. Its trigger hashes the **data**
+as well as the template, since a `.chezmoidata/syncthing.yaml` edit changes the output while leaving
 every template byte identical. This is the only script that still needs the trick — the config it
 watches is a `modify_` script whose output depends on the live file on disk, so unlike the `/etc`
 bodies it cannot be inlined here.
@@ -570,6 +579,6 @@ tools/simulate-host mercury execute-template < dot_local/state/private_syncthing
   `dot_config/systemd/user/minecraft@.service` or `private_dot_ssh/private_config`. The `.tmpl`
   files are the only source; a static sibling would be silently ignored and drift forever. Same
   for the four bodies in `.chezmoitemplates/etc/` — a sibling under `etc/` would deploy nowhere.
-- On a fresh Linux host, `run_once_30-set-default-shell.sh` needs `fish` present. It's in
+- On a fresh Linux host, `run_once_after_30-set-default-shell.sh` needs `fish` present. It's in
   the `common` group of `packages.arch`, but if the shell change is skipped on first apply (the
   install prompt declined, or packages not installed yet), just run `chezmoi apply` again.

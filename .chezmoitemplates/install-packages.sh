@@ -1,4 +1,4 @@
-{{- /* Shared by run_onchange_10-install-packages.sh.tmpl and
+{{- /* Shared by run_onchange_after_10-install-packages.sh.tmpl and
        dot_local/scripts/executable_install-packages.tmpl.
        Callers add the shebang. Set PROMPT=1 to ask before installing.
        Linux only: .local/scripts/install-packages is not deployed on darwin,

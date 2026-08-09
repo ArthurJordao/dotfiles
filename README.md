@@ -110,16 +110,17 @@ chezmoi apply --force
 ```
 
 This writes the SSH keys from 1Password and installs this host's declared
-packages, via `run_onchange_10-install-packages`. It fires on this first apply,
-prints what's declared but not installed, and asks before installing — answer
-`y`. Later additions to `.chezmoidata/packages.yaml` re-fire it automatically on
+packages, via `run_onchange_after_10-install-packages`. It fires on this first
+apply, prints what's declared but not installed, and asks before installing —
+answer `y`. Later additions to `.chezmoidata/packages.yaml` re-fire it automatically on
 the next apply, so there's no separate step; if you decline the prompt or apply
 headlessly, `just packages` picks up the delta. This same apply also runs
-`run_once_30-set-default-shell`, which changes your login shell to fish — log
-out and back in for it to take effect.
+`run_once_after_30-set-default-shell`, which changes your login shell to fish —
+log out and back in for it to take effect.
 
-This apply also runs `run_once_15-use-ssh-remote`, which flips the source-dir
-remote from the bootstrap HTTPS clone to `git@github.com:ArthurJordao/dotfiles`.
+This apply also runs `run_once_after_15-use-ssh-remote`, which flips the
+source-dir remote from the bootstrap HTTPS clone to
+`git@github.com:ArthurJordao/dotfiles`.
 
 ## Host configuration
 
@@ -238,7 +239,7 @@ syncthing device-id
 
 Put that value in the host's `syncthing_id` in `.chezmoidata/hosts.yaml`, push, and
 `chezmoi apply` again on both hosts. The second apply renders the full folder set and
-`run_onchange_80-restart-syncthing` restarts the service.
+`run_onchange_after_80-restart-syncthing` restarts the service.
 
 An empty `syncthing_id` is not an error — it makes the template omit folders and
 devices entirely rather than emit half a config.
@@ -306,7 +307,7 @@ tools/simulate-host mars execute-template < dot_local/scripts/executable_gaming-
 
 `render-edge` exists because a `.chezmoitemplates` entry has no `.tmpl` to redirect
 into `simulate-host`; it feeds it the `includeTemplate` call instead. Rendering
-`run_onchange_70-deploy-etc.sh.tmpl` shows all four at once, in install order.
+`run_onchange_after_70-deploy-etc.sh.tmpl` shows all four at once, in install order.
 
 Platform comes from the inventory too: each host declares `os` (and `distro` on Linux),
 and templates read those rather than chezmoi's own `.chezmoi.os`, which always describes

@@ -6,8 +6,9 @@
 #   tools/render-edge --real-op mars caddy/caddy.env
 #
 # Their bodies live in .chezmoitemplates/etc/ and are inlined into
-# run_onchange_70-deploy-etc.sh.tmpl, so there is no `.tmpl` to redirect into
-# simulate-host. This feeds it the includeTemplate call instead.
+# .chezmoiscripts/run_onchange_after_70-deploy-etc.sh.tmpl, so there is no
+# `.tmpl` to redirect into simulate-host. This feeds it the includeTemplate
+# call instead.
 #
 # 1Password calls go to tools/mock-op unless --real-op is passed, same as
 # simulate-host.
