@@ -1,4 +1,4 @@
-{{ if eq .chezmoi.os "darwin" -}}
+{{ if eq (index .hosts .hostname).os "darwin" -}}
 #!/bin/bash
 set -euo pipefail
 osascript -e "tell application \"System Events\" to tell every desktop to set picture to \"$HOME/Pictures/wallpaper.png\" as POSIX file"

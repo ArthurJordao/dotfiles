@@ -4,17 +4,12 @@
        Linux only: .local/scripts/install-packages is not deployed on darwin,
        so the brew path lives inline in the run_onchange script instead. */ -}}
 {{- $roles := (index .hosts .hostname).roles -}}
-{{- $id := (index .chezmoi.osRelease "id" | default "") -}}
-{{- $like := (index .chezmoi.osRelease "idLike" | default "") -}}
-{{- $family := "" -}}
-{{- if or (eq $id "arch") (eq $id "cachyos") (contains "arch" $like) -}}
-{{-   $family = "arch" -}}
-{{- else if or (eq $id "debian") (eq $id "ubuntu") (contains "debian" $like) -}}
-{{-   $family = "debian" -}}
-{{- end -}}
+{{- /* `index`, not `.distro`: a darwin host has no such key, and a bare field
+       lookup errors under missingkey=error where index yields nil. */ -}}
+{{- $family := (index (index .hosts .hostname) "distro" | default "") -}}
 set -euo pipefail
 {{ if eq $family "" -}}
-echo "Unsupported distro: id={{ $id }} id_like={{ $like }}" >&2
+echo "No 'distro' declared for {{ .hostname }} in .chezmoidata/hosts.yaml" >&2
 exit 1
 {{ else if not (hasKey .packages $family) -}}
 echo "No packages declared for family {{ $family }} in .chezmoidata/packages.yaml" >&2

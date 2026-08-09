@@ -1,0 +1,18 @@
+#!/bin/bash
+# Switches the source-dir remote from the bootstrap HTTPS clone to SSH.
+set -euo pipefail
+
+SRC={{ .chezmoi.sourceDir | quote }}
+
+[ -d "$SRC/.git" ] || exit 0
+
+# `config --get`, not `remote get-url`: the latter applies the insteadOf
+# rewrite and reports an HTTPS remote as ssh://.
+url="$(git -C "$SRC" config --get remote.origin.url || true)"
+case "$url" in
+    https://github.com/ArthurJordao/dotfiles*) ;;   # only ever rewrite THIS repo
+    *) exit 0 ;;                # already SSH, a foreign remote, or no origin
+esac
+
+git -C "$SRC" remote set-url origin git@github.com:ArthurJordao/dotfiles
+echo "Switched the source-dir remote to SSH."

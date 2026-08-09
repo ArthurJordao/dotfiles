@@ -7,21 +7,15 @@
 # path reference. `managed` only lists target paths, so a broken include inside
 # a run_onchange script passes it and blows up during a real apply.
 #
-# Templates that CALL any `onepassword*` function are skipped -- they need `op`
-# unlocked. The match is restricted to inside `{{ }}` so a mention in a comment
-# doesn't silently drop a template from the check.
+# 1Password calls go to tools/mock-op, so no template has to be skipped.
 set -uo pipefail
 
-cd "$(dirname "${BASH_SOURCE[0]}")/.."
-HOSTS=$(python3 -c "
-import re,sys
-s=open('.chezmoidata/hosts.yaml').read()
-print(' '.join(re.findall(r'^  ([a-z][a-z0-9-]*):$', s, re.M)))")
+cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
+HOSTS=$(./tools/hosts)
 
 fail=0 n=0
 for h in $HOSTS; do
-    for t in $(git ls-files | grep -E '\.tmpl$'); do
-        grep -qE '\{\{[^}]*onepassword' "$t" && continue
+    for t in $(git ls-files --cached --others --exclude-standard | grep -E '\.tmpl$'); do
         n=$((n + 1))
         if ! out=$(./tools/simulate-host "$h" execute-template < "$t" 2>&1 >/dev/null); then
             printf 'FAIL %-9s %s\n' "$h" "$t"
@@ -32,7 +26,7 @@ for h in $HOSTS; do
 done
 
 if [ "$fail" -eq 0 ]; then
-    echo "ok: $n renders across $(echo $HOSTS | wc -w | tr -d ' ') hosts"
+    echo "ok: $n renders across $(echo "$HOSTS" | wc -w | tr -d ' ') hosts"
 else
     echo "FAILURES above" >&2
 fi

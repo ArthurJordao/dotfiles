@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# Lint every shell script in the repo, templated ones included.
+#
+#   tools/check-shell
+#
+# The line above deliberately does not open with the word shellcheck: a comment
+# starting `# shellcheck ` is parsed as a directive, and an unparseable one is
+# an error.
+#
+# A `.tmpl` script only shellchecks as the shell it becomes, so each is rendered
+# per host first. Empty renders (a run_ script gated off for that host) are
+# skipped, and identical renders across hosts are reported once. Render failures
+# are check-templates' job and are ignored here.
+set -uo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
+
+if ! command -v shellcheck >/dev/null 2>&1; then
+    echo "shellcheck not installed. Run 'just packages'." >&2
+    exit 1
+fi
+
+RENDER="$(mktemp -d)"
+HOSTS="$(./tools/hosts)"
+fail=0 n=0 seen=""
+
+is_shell() {
+    head -1 "$1" 2>/dev/null | grep -qE '^#!(/usr/bin/env +|.*/)(ba)?sh( |$)'
+}
+
+check() { # $1 = file to check, $2 = label to report it as
+    local out
+    n=$((n + 1))
+    if ! out=$(shellcheck "$1" 2>&1); then
+        printf 'FAIL %s\n' "$2"
+        printf '%s\n' "$out" | sed 's/^/     /'
+        fail=1
+    fi
+}
+
+# --others: a script still untracked is exactly the one you want linted.
+for f in $(git ls-files --cached --others --exclude-standard); do
+    case "$f" in *.tmpl) continue ;; esac
+    [ -f "$f" ] || continue
+    is_shell "$f" && check "$f" "$f"
+done
+
+for f in $(git ls-files --cached --others --exclude-standard '*.tmpl'); do
+    for h in $HOSTS; do
+        out="$RENDER/$(printf '%s' "${f%.tmpl}" | tr / _).$h"
+        ./tools/simulate-host "$h" execute-template < "$f" > "$out" 2>/dev/null || { rm -f "$out"; continue; }
+        [ -s "$out" ] || { rm -f "$out"; continue; }
+        is_shell "$out" || { rm -f "$out"; continue; }
+        sum=$(shasum "$out" | cut -d' ' -f1)
+        case "$seen" in
+            *"$sum"*) rm -f "$out"; continue ;;
+        esac
+        seen="$seen $sum"
+        check "$out" "$f [$h]"
+    done
+done
+
+if [ "$fail" -eq 0 ]; then
+    rm -rf "$RENDER"
+    echo "ok: $n shell scripts clean"
+else
+    echo "renders kept in $RENDER (its line numbers are the ones above)" >&2
+fi
+exit "$fail"

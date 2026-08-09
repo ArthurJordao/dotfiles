@@ -22,7 +22,7 @@ etc/
 
 # Axis 1: OS — things that only exist on a given platform.
 
-{{ if ne .chezmoi.os "darwin" }}
+{{ if ne $me.os "darwin" }}
 Brewfile
 Pictures
 Pictures/**
@@ -64,7 +64,7 @@ Emulation/**
 .local/scripts/emu-sync-check
 .local/scripts/emu-merge-gamelists
 {{ end }}
-{{ if ne .chezmoi.os "linux" }}
+{{ if ne $me.os "linux" }}
 .local/scripts/install-packages
 {{ end }}
 

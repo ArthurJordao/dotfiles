@@ -1,7 +1,8 @@
+{{- $me := index .hosts .hostname -}}
 {{- $t := index .theme .theme.active -}}
 {{- $p := index .palettes $t.palette -}}
 set -g fish_greeting
-{{ if eq .chezmoi.os "darwin" -}}
+{{ if eq $me.os "darwin" -}}
 fish_add_path "/opt/homebrew/bin"
 {{ end -}}
 fish_add_path "$HOME/.local/bin"
@@ -12,7 +13,7 @@ fish_add_path "$HOME/.bun/bin"
 
 set -x GPG_TTY $(tty)
 set -x GOPATH "$HOME/go"
-{{ if eq .chezmoi.os "darwin" -}}
+{{ if eq $me.os "darwin" -}}
 set -x GOROOT "$(/opt/homebrew/bin/brew --prefix golang)/libexec"
 {{ else -}}
 command -q go && set -x GOROOT (go env GOROOT)

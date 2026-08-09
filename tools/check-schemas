@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Validate every .chezmoidata file against the schema its own header names.
+#
+#   tools/check-schemas
+#
+# The mapping comes from each file's `# yaml-language-server:` line -- the same
+# one the editor reads -- so a new data file is covered the day it is added. A
+# data file with no such line is a failure.
+set -uo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
+
+if ! command -v check-jsonschema >/dev/null 2>&1; then
+    echo "check-jsonschema not installed. Run 'just packages'." >&2
+    exit 1
+fi
+
+fail=0 n=0
+for f in .chezmoidata/*.yaml; do
+    # shellcheck disable=SC2016  # $schema is literal text in the header, not an expansion
+    schema=$(sed -n 's|^# yaml-language-server: \$schema=||p' "$f" | head -1)
+    if [ -z "$schema" ]; then
+        # shellcheck disable=SC2016
+        printf 'FAIL %s\n     no `# yaml-language-server: $schema=` header\n' "$f"
+        fail=1
+        continue
+    fi
+    # The header path is relative to the data file.
+    if ! out=$(check-jsonschema --schemafile "$(dirname "$f")/$schema" "$f" 2>&1); then
+        printf 'FAIL %s\n' "$f"
+        printf '%s\n' "$out" | sed 's/^/     /'
+        fail=1
+        continue
+    fi
+    n=$((n + 1))
+done
+
+if [ "$fail" -eq 0 ]; then
+    echo "ok: $n data files match their schemas"
+else
+    echo "FAILURES above" >&2
+fi
+exit "$fail"

@@ -25,6 +25,7 @@ missing=0
 for entry in "${FOLDERS[@]}"; do
     IFS='|' read -r id path mode <<< "$entry"
     if [ -d "$HOME/$path" ]; then
+        # shellcheck disable=SC2088  # display text, not a path being opened
         printf '  %-22s %-10s %s%s%s\n' "$id" "$mode" "$DIM" "~/$path" "$OFF"
     else
         bad "  $id: ~/$path does not exist — syncthing will not create it"
@@ -40,7 +41,7 @@ for entry in "${FOLDERS[@]}"; do
     IFS='|' read -r id path mode <<< "$entry"
     [ -d "$HOME/$path" ] || continue
     while IFS= read -r f; do
-        bad "  $id: ${f#$HOME/}"
+        bad "  $id: ${f#"$HOME"/}"
         found=$((found + 1))
     done < <(find "$HOME/$path" -name '*.sync-conflict-*' -type f 2>/dev/null)
 done
@@ -75,7 +76,7 @@ covered() {
         case "$pat" in ''|'//'*|'!'*) continue ;; esac
         ci=0
         case "$pat" in '(?i)'*) ci=1; pat="${pat#'(?i)'}" ;; esac
-        (( ci )) && shopt -s nocasematch || shopt -u nocasematch
+        if (( ci )); then shopt -s nocasematch; else shopt -u nocasematch; fi
         local hit=1
         case "$pat" in
             /*)
@@ -107,7 +108,7 @@ elif [ ! -f "$IGN" ]; then
 else
     found=0; total=0
     while IFS= read -r f; do
-        rel="${f#$ROMS/}"
+        rel="${f#"$ROMS"/}"
         total=$((total + 1))
         covered "$rel" || { note "  $rel"; found=$((found + 1)); }
     done < <(find "$ROMS" \( -iname '*.exe' -o -iname '*.dll' -o -iname '*.AppImage' \

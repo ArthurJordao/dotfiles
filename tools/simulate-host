@@ -4,6 +4,7 @@
 #   tools/simulate-host mars                    # list managed files for mars
 #   tools/simulate-host pluto managed           # same, explicit
 #   tools/simulate-host mercury execute-template < some.tmpl
+#   tools/simulate-host --real-op mars execute-template < some.env.tmpl
 #
 # Overrides the `hostname` config data key, which every host-aware template
 # reads instead of the builtin .chezmoi.hostname (that one can't be overridden).
@@ -11,13 +12,20 @@
 # Read-only: destDir is a throwaway temp dir, so nothing in $HOME is touched.
 #
 # LIMITS:
-#  - Overrides identity, never platform. .chezmoi.os / .chezmoi.osRelease stay
-#    those of the machine you run it on.
-#  - diff and apply render *.env.tmpl too, which needs `op` unlocked. Stick to
-#    `managed`.
+#  - chezmoi's own .chezmoi.os / .chezmoi.osRelease still describe the local
+#    machine. Nothing reads them: platform is `os`/`distro` in hosts.yaml, so
+#    overriding the hostname overrides the platform too.
+#  - 1Password calls go to tools/mock-op, which renders `mock:<FIELD>` instead
+#    of a real secret. Pass --real-op for actual values.
 set -euo pipefail
 
-HOST="${1:?usage: simulate-host <hostname> [chezmoi args...]}"
+MOCK_OP=1
+if [ "${1:-}" = "--real-op" ]; then
+    MOCK_OP=0
+    shift
+fi
+
+HOST="${1:?usage: simulate-host [--real-op] <hostname> [chezmoi args...]}"
 shift
 
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -31,6 +39,13 @@ destDir = "$WORK/home"
 [data]
   hostname = "$HOST"
 EOF
+
+if [ "$MOCK_OP" -eq 1 ]; then
+    cat >> "$WORK/config.toml" <<EOF
+[onepassword]
+  command = "$SRC/tools/mock-op"
+EOF
+fi
 
 if [ "$#" -eq 0 ]; then
     set -- managed

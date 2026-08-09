@@ -27,26 +27,43 @@ into one template data namespace, so templates just read `.hosts` / `.domain` / 
 
 | Axis | Mechanism | Use for |
 |---|---|---|
-| **OS** | `.chezmoi.os`, `.chezmoi.osRelease` | platform-only things: aerospace, Brewfile, `brew`/`paru`/`apt` |
+| **OS** | `$me.os`, `$me.distro` | platform-only things: aerospace, Brewfile, `brew`/`paru`/`apt` |
 | **Role** | `has "edge" $roles` | purpose — vocabulary is listed in `.chezmoidata/hosts.yaml` |
 | **Placement** | `quadlets` list | podman quadlets — one instance in the fleet |
 
 Roles compose: `gaming-mode` uses `and (has "server") (has "gaming")`. Never put OS/distro in
-`roles`.
+`roles` — they are their own fields.
 
-`./tools/simulate-host <host> managed` renders any host's output from any machine. It overrides
-identity, not platform — `.chezmoi.os` stays local, so OS-gated branches need the real host.
+**Read `os`/`distro` from the host, never `.chezmoi.os`.** chezmoi's own value describes the
+machine running the render and cannot be overridden, which is exactly what made `simulate-host`
+half-blind. Every host declares `os` (and `distro` on Linux), so overriding the hostname overrides
+the platform too and `./tools/simulate-host <host> managed` renders any host correctly from any
+machine. 1Password calls go to `tools/mock-op` and render `mock:<FIELD>`; pass `--real-op` for
+actual values.
 
 **`managed` is not enough on its own.** It lists target paths, so a template whose `include` path
-went stale still passes it and only fails during a real apply on the host. `./tools/check-templates`
-renders *every* template for *every* host and is the check to run after moving or renaming any
-source file. It skips `onepassword*` templates, which need `op` unlocked.
+went stale still passes it and only fails during a real apply on the host. `just check` runs
+everything and is what to run after moving or renaming any source file:
+
+| | Checks |
+|---|---|
+| `tools/check-templates` | renders every template for every host — nothing is skipped |
+| `tools/check-schemas` | each `.chezmoidata` file against the schema its own header names |
+| `tools/check-consistency` | the quadlets/units/endpoints/folders/packages cross-references |
+| `tools/check-shell` | shellcheck, rendering `.tmpl` scripts per host first |
+
+CI runs the same `tools/check` on every push. It needs no secrets.
 
 Silent failures worth knowing:
 - `dir/**` then `!dir/keep` in `.chezmoiignore` ignores everything. Negation needs single-star `dir/*`.
 - A `.container` whose prefix is not in a host's `quadlets` deploys nowhere, no error.
-- `.chezmoi.osRelease.idLike` errors under `missingkey=error` when `ID_LIKE` is absent (plain Arch),
-  and `| default` can't rescue it. Use `index .chezmoi.osRelease "idLike"`.
+- **A bare field lookup on a key that may be absent errors under `missingkey=error`, and
+  `| default` can't rescue it.** `index` yields nil there instead: a darwin host has no `distro`,
+  so `.chezmoitemplates/install-packages.sh` reads `index (index .hosts .hostname) "distro"`.
+- **`onepasswordItemFields` drops any field with no `section`.** It returns an empty map and every
+  lookup fails with `no entry for key "value"` — the trap to know when touching `tools/mock-op`.
+- A comment opening `# shellcheck ` is parsed as a **directive**, not prose, and an unparseable
+  one is an error. Relevant to any script whose subject is shellcheck itself.
 - A Go template comment can't be indented inside its own action: `{{- /* x */ -}}` parses,
   `{{-   /* x */ -}}` is `unexpected "/" in command`. A parse error in **any** `.chezmoitemplates`
   file fails *every* template call, so the reported filename may not be the one you ran.
@@ -209,6 +226,8 @@ service is not one entry, it's a line in each list that concerns it:
 
 ```yaml
 mars:
+  os: linux
+  distro: arch                    # linux only; picks the package family
   ip: {lan: 192.168.15.23, tailscale: 100.127.50.55}
   quadlets: [calibre-web-automated, immich, music, shelfmark, teamspeak3]
   units: [immich-pod, immich-db, immich-valkey, immich-ml, immich-server,
@@ -216,7 +235,7 @@ mars:
           shelfmark, teamspeak3, minecraft@vanilla, minecraft@atm10-tts]
   endpoints:
     - {name: books, port: 8083, public: true}
-    - {name: dns, port: 8053, scheme: https, tls_insecure: true, log: false}
+    - {name: dns, port: 8053, scheme: https, tls_insecure: true, log: false, served_by: coredns}
     - {name: minecraft}           # no port -> DNS record only
 ```
 
@@ -234,7 +253,11 @@ dependents but start only to dependencies — stopping `immich-pod` takes the co
 starting it alone brings up an empty pod.
 
 Endpoint fields: `name` (required), `port` (omit ⇒ DNS-only, no Caddy block, no tunnel),
-`public`, `scheme`, `tls_insecure`, `log`.
+`public`, `scheme`, `tls_insecure`, `log`, `served_by`.
+
+`served_by` names the non-container service listening on that port — `dns` → coredns, `sunshine` →
+the package. Without it, `check-consistency` requires one of that host's quadlets to publish the
+port, so the field is what separates "intentionally not a container" from "forgot the quadlet".
 
 Each template reads `.hosts` directly — there is no shared helper. The Corefile also emits
 `<hostname>.<domain>` for every host with an `ip`, which is why `mars`/`mercury`/`neptune` resolve
@@ -289,15 +312,14 @@ Pre-installed prerequisites: `chezmoi` and `git`. `1password-cli` is **not** one
 itself via the `hooks.read-source-state.pre` hook (`.install-password-manager.sh`) the first time
 source state is read, before any template needing `op` runs.
 
-Two top-level files drive the bootstrap and have no `run_*` slot of their own:
+**`.install-password-manager.sh`** drives the bootstrap and has no `run_*` slot of its own — it is
+the `hooks.read-source-state.pre` hook itself. Deliberately **not** a `.tmpl` (hooks run before
+chezmoi's template machinery exists, so it uses `uname`) and deliberately **dot-prefixed** (chezmoi
+ignores dotfiles as source state; without the dot it would manage the script as a target). Either
+change breaks it silently.
 
-- **`.install-password-manager.sh`** — the `hooks.read-source-state.pre` hook itself. Deliberately
-  **not** a `.tmpl` (hooks run before chezmoi's template machinery exists, so it uses `uname`) and
-  deliberately **dot-prefixed** (chezmoi ignores dotfiles as source state; without the dot it would
-  manage the script as a target). Either change breaks it silently.
-- **`run_15-use-ssh-remote.sh.tmpl`** — flips the source-dir remote from HTTPS to SSH once the keys
-  this same apply just wrote actually work. Deliberately a plain `run_`: a `run_onchange_` keyed on
-  the remote URL would never retry a flip that got skipped once.
+**`run_once_15-use-ssh-remote.sh.tmpl`** flips the source-dir remote from the bootstrap HTTPS clone
+to SSH.
 
 `run_onchange_10-install-packages.sh.tmpl` renders the package names into its own body, so adding
 a role's key to `.chezmoidata/packages.yaml` changes that script's hash, and `10-` sorts before
@@ -356,6 +378,7 @@ first, which also avoids the 404s `paru -S` hits against a stale DB. No `cleanup
 Linux — that would mean pacman orphan removal, which isn't implemented.
 
 ```
+just check           # every repo check: templates, schemas, consistency, shellcheck
 just packages        # install this host's declared packages, no prompt
 just packages-check  # macOS only: report installed-but-undeclared, removes nothing
 just packages-prune  # macOS only: remove installed-but-undeclared
@@ -509,8 +532,9 @@ tools/simulate-host mercury execute-template < dot_local/state/private_syncthing
    `endpoints` takes one entry per hostname — a service can have none (`teamspeak3`) or
    several (`music` → music/slskd/soulsync), and the name need not match the quadlet
    (`calibre-web-automated` → `books`). That endpoint name is also what step 1 looks up.
-3. Verify before applying: `./tools/simulate-host <host> managed | grep <svc>` for the quadlet,
-   then the three `execute-template` commands above for the edge.
+3. Verify before applying: `just check` catches a missed list (step 2 is exactly what
+   `check-consistency` cross-references). Then `./tools/simulate-host <host> managed | grep <svc>`
+   for the quadlet and the three `execute-template` commands above to read the edge output.
 4. **(Optional — public internet access)** `public: true` on the endpoint, then on mars run
    `cloudflared tunnel route dns <tunnel-id> <svc>.arthurjordao.dev` once to create the CNAME.
    Do NOT use the dashboard (see the exposure section above).
@@ -535,6 +559,6 @@ tools/simulate-host mercury execute-template < dot_local/state/private_syncthing
   `etc/cloudflared/config.yml`, `dot_local/scripts/executable_gaming-mode`,
   `dot_config/systemd/user/minecraft@.service` or `private_dot_ssh/private_config`. The `.tmpl`
   files are the only source; a static sibling would be silently ignored and drift forever.
-- On a fresh Linux host, `run_once_30-set-default-shell.sh.tmpl` needs `fish` present. It's in
+- On a fresh Linux host, `run_once_30-set-default-shell.sh` needs `fish` present. It's in
   the `common` group of `packages.arch`, but if the shell change is skipped on first apply (the
   install prompt declined, or packages not installed yet), just run `chezmoi apply` again.

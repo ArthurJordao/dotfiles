@@ -1,4 +1,4 @@
-{{ if eq .chezmoi.os "darwin" -}}
+{{ if eq (index .hosts .hostname).os "darwin" -}}
 #!/bin/bash
 set -euo pipefail
 
@@ -25,7 +25,7 @@ case "$reply" in
     [yY]*) brew bundle install --file "$BREWFILE" --no-upgrade ;;
     *) echo "Skipped. Run 'just packages' when ready." ;;
 esac
-{{ else if eq .chezmoi.os "linux" -}}
+{{ else if eq (index .hosts .hostname).os "linux" -}}
 #!/bin/bash
 PROMPT=1
 {{ template "install-packages.sh" . }}

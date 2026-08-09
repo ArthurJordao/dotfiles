@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Print every host in .chezmoidata/hosts.yaml, one per line.
+#
+#   tools/hosts
+#
+# The hostname passed to simulate-host is a placeholder: this template reads
+# .hosts only, never .hostname.
+set -euo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
+printf '%s' '{{ range (keys .hosts | sortAlpha) }}{{ . }}
+{{ end }}' | ./tools/simulate-host _list execute-template

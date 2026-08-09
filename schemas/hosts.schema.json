@@ -39,8 +39,24 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "roles"
+        "roles",
+        "os"
       ],
+      "if": {
+        "properties": {
+          "os": {
+            "const": "linux"
+          }
+        },
+        "required": [
+          "os"
+        ]
+      },
+      "then": {
+        "required": [
+          "distro"
+        ]
+      },
       "properties": {
         "roles": {
           "type": "array",
@@ -91,6 +107,34 @@
               }
             ]
           }
+        },
+        "os": {
+          "type": "string",
+          "description": "Platform this host runs. Read by templates instead of .chezmoi.os, which cannot be overridden — so simulate-host renders another host's platform correctly.",
+          "oneOf": [
+            {
+              "const": "linux",
+              "description": "Needs `distro` too."
+            },
+            {
+              "const": "darwin",
+              "description": "Packages come from the Brewfile, which is not distro-keyed."
+            }
+          ]
+        },
+        "distro": {
+          "type": "string",
+          "description": "Package family. Linux only — picks the group under `packages` and the installer (paru / apt).",
+          "oneOf": [
+            {
+              "const": "arch",
+              "description": "Arch and its derivatives, CachyOS included."
+            },
+            {
+              "const": "debian",
+              "description": "Debian and Ubuntu."
+            }
+          ]
         },
         "user": {
           "type": "string",
@@ -215,6 +259,11 @@
               "description": "Upstream speaks TLS — usually wants tls_insecure too."
             }
           ]
+        },
+        "served_by": {
+          "type": "string",
+          "description": "Non-container service listening on this port. Absent means a quadlet must publish it, which is what tools/check-consistency enforces.",
+          "minLength": 1
         },
         "tls_insecure": {
           "type": "boolean",

@@ -1,0 +1,26 @@
+name: check
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # shellcheck, pipx and python3 are preinstalled on the runner.
+      - name: Install chezmoi
+        run: |
+          sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install check-jsonschema
+        run: pipx install check-jsonschema
+
+      # No secrets: simulate-host writes its own config rather than rendering
+      # .chezmoi.toml.tmpl, so the read-source-state hook is never configured,
+      # and every 1Password call goes to tools/mock-op.
+      - name: Run checks
+        run: tools/check
