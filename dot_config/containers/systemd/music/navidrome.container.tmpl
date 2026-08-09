@@ -8,7 +8,8 @@ Image=docker.io/deluan/navidrome:latest
 ContainerName=navidrome
 AutoUpdate=registry
 Network=music.network
-PublishPort=4533:4533
+# Navidrome is served as `music`, not under its own name.
+PublishPort={{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "music") }}:4533
 
 Environment=ND_MUSICFOLDER=/music
 Environment=ND_DATAFOLDER=/data

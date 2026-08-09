@@ -164,7 +164,7 @@ Caddy, CoreDNS, the Cloudflare Tunnel, `gaming-mode` and `~/.ssh/config` are all
 |---|---|---|
 | `quadlets` | which container files deploy | quadlet filename *prefixes*, matched `<prefix>*` |
 | `units` | `gaming-mode` | systemd user units, **without** `.service` |
-| `endpoints` | Caddy, CoreDNS, cloudflared, `~/.ssh/config` | hostnames to serve and resolve |
+| `endpoints` | Caddy, CoreDNS, cloudflared, `~/.ssh/config`, quadlet `PublishPort` | hostnames to serve and resolve |
 
 `~/.ssh/config` also reads the scalar `user`: one `Host` block per host, aliased by
 short name, `.local`, `<host>.<domain>`, both IPs and every endpoint pointing at it.
@@ -183,6 +183,17 @@ three endpoints; `minecraft@vanilla` is a unit with no quadlet.
 `units` must name *every* unit to restore, not just a pod. `Requires=` propagates
 stop to dependents but start only to dependencies, so stopping `immich-pod` takes
 its containers down while starting it alone brings up an empty pod.
+
+The port is the exception — it can't drift. A quadlet that publishes a proxied port
+is a `.container.tmpl` whose `PublishPort` host side is generated from the endpoint:
+
+```
+PublishPort={{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "books") }}:8083
+```
+
+The container side stays literal; it's the image's own port, not something the
+reverse proxy has an opinion about. An endpoint name that doesn't exist fails the
+apply rather than yielding a 502 later.
 
 ### Adding an emulation host
 
@@ -244,8 +255,8 @@ meaning on hover. It catches the mistakes that otherwise fail *silently*: a miss
 `tls-insecure` reads as absent and quietly disables the flag, `endpoint:` instead of
 `endpoints:` yields no endpoints at all, and a typo'd role is inert by design.
 
-It validates structure only. It cannot know that a quadlet is missing from `units`,
-that a port is wrong, or that an IP points at the wrong machine.
+It validates structure only. It cannot know that a quadlet is missing from `units`
+or that an IP points at the wrong machine.
 
 Adding a field to a template means adding it to the schema too, or valid data starts
 getting rejected.

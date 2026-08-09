@@ -113,6 +113,13 @@ uid/gid 0 (see the music stack). Fixed facts:
   `open-webui.container`, `teamspeak3.container`); subdirs for service groups that share a network/pod
   (`music/` = slskd + navidrome + soulsync on `music.network`; `immich/` = a pod of
   server/db/valkey/ml plus the top-level `immich.pod`).
+- **A quadlet with a proxied port is a `.tmpl`, and its `PublishPort` host side is generated.**
+  `{{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "books") }}:8083` reads the port
+  off that endpoint in `.chezmoidata/hosts.yaml`, so Caddy and podman cannot disagree. Only the
+  host side — the container side is the image's own port and stays literal. The lookup is
+  fleet-wide (endpoint names are DNS names in one zone), so the file renders identically on hosts
+  that don't deploy it; an unknown endpoint name fails the apply. Ports with no endpoint stay
+  literal too: slskd's Soulseek peer port, all three of teamspeak3's.
 - Secrets go in a sibling `<service>.env.tmpl` referenced via `EnvironmentFile=`. **Do not
   use `| quote`** in these — podman's `--env-file` keeps literal quotes. `%h` expands to the
   home dir inside unit files.
@@ -179,7 +186,7 @@ service is not one entry, it's a line in each list that concerns it:
 |---|---|---|
 | `quadlets` | `.chezmoiignore` | quadlet filename **prefixes**, matched `<prefix>*` |
 | `units` | `gaming-mode` `CANDIDATES` | systemd user units, **no** `.service` suffix |
-| `endpoints` | Caddy, CoreDNS, cloudflared, `~/.ssh/config` | hostnames to serve and resolve |
+| `endpoints` | Caddy, CoreDNS, cloudflared, `~/.ssh/config`, quadlet `PublishPort` | hostnames to serve and resolve |
 
 ```yaml
 mars:
@@ -196,7 +203,8 @@ mars:
 
 **The three lists are independent, and that is the one thing that can drift.** A quadlet with no
 `units` entry keeps running through gaming mode; a `units` entry with no quadlet names a unit that
-will never exist; an endpoint with no quadlet is a 502. None of it errors.
+will never exist; an endpoint with no quadlet is a 502. None of it errors. The one pair that
+*can't* drift is the port: the quadlet reads it from the endpoint.
 
 They don't line up 1:1: `immich` is one quadlet, five units, one endpoint; `music` is one quadlet,
 three units, three endpoints; `teamspeak3` has no endpoint; `minecraft@*` are units with no
@@ -460,7 +468,12 @@ tools/simulate-host mercury execute-template < dot_local/state/private_syncthing
 # Adding a new service (checklist)
 
 1. `dot_config/containers/systemd/<svc>.container` (+ `<svc>.env.tmpl` if it needs secrets;
-   add the keys to the `mars-secrets` 1Password item in vault `dotfiles`).
+   add the keys to the `mars-secrets` 1Password item in vault `dotfiles`). Name it
+   `.container.tmpl` if it publishes a proxied port, and write that port as
+
+   ```
+   PublishPort={{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "<name>") }}:<image port>
+   ```
 2. **Walk all three lists** in that host's entry in `.chezmoidata/hosts.yaml`. Nothing errors if you
    miss one — see the drift warning above.
 
@@ -473,7 +486,7 @@ tools/simulate-host mercury execute-template < dot_local/state/private_syncthing
    `units` takes every unit the container files generate, not just one per quadlet.
    `endpoints` takes one entry per hostname — a service can have none (`teamspeak3`) or
    several (`music` → music/slskd/soulsync), and the name need not match the quadlet
-   (`calibre-web-automated` → `books`).
+   (`calibre-web-automated` → `books`). That endpoint name is also what step 1 looks up.
 3. Verify before applying: `./tools/simulate-host <host> managed | grep <svc>` for the quadlet,
    then the three `execute-template` commands above for the edge.
 4. **(Optional — public internet access)** `public: true` on the endpoint, then on mars run

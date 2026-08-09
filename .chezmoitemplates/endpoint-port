@@ -1,0 +1,24 @@
+{{- /* Host-side port of a named endpoint, from .chezmoidata/hosts.yaml.
+
+       Looked up across the whole fleet rather than the rendering host: an
+       endpoint name is a DNS name in one zone, so it identifies exactly one
+       service wherever that service is placed. That also keeps a quadlet
+       rendering identically on hosts that don't deploy it.
+
+         PublishPort={{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "books") }}:8083
+
+       Only the host side belongs here; the container side is the image's own
+       port and stays literal. */ -}}
+{{- $want := .endpoint -}}
+{{- $port := "" -}}
+{{- range $host := .hosts -}}
+{{- range (index $host "endpoints" | default list) -}}
+{{- if and (eq .name $want) (hasKey . "port") -}}
+{{- $port = printf "%v" .port -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- if eq $port "" -}}
+{{- fail (printf "endpoint-port: no endpoint named %q with a port in .chezmoidata/hosts.yaml" $want) -}}
+{{- end -}}
+{{- $port -}}

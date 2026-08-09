@@ -6,7 +6,8 @@ After=network-online.target
 [Container]
 Image=ghcr.io/crocodilestick/calibre-web-automated:latest
 AutoUpdate=registry
-PublishPort=8083:8083
+# CWA is served as `books`, not under its own name.
+PublishPort={{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "books") }}:8083
 
 # Run as uid/gid 0, which maps to the host user (turisa) under rootless
 # podman, so CWA can write the Calibre library and ingest dirs on /mnt/x9pro.

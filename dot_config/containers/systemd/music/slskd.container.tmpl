@@ -8,7 +8,8 @@ Image=docker.io/slskd/slskd:latest
 ContainerName=slskd
 AutoUpdate=registry
 Network=music.network
-PublishPort=5030:5030
+PublishPort={{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "slskd") }}:5030
+# Soulseek peer traffic, not proxied — no endpoint to read it from.
 PublishPort=50300:50300
 
 Environment=SLSKD_DOWNLOADS_DIR=/downloads
