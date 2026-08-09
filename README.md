@@ -290,17 +290,23 @@ getting rejected.
 
 ### Reviewing a change
 
-`etc/` is never copied to `$HOME`; the configs are rendered into `/etc` during
-`apply`. To see what a change produces without applying it — from any machine, for
-any host:
+The `/etc` configs are never copied to `$HOME` — their bodies live in
+`.chezmoitemplates/etc/` and are inlined into the deploy script, which installs them
+into `/etc` during `apply`. To see what a change produces without applying it — from
+any machine, for any host:
 
 ```bash
 tools/simulate-host mars managed                  # files that would deploy
-tools/simulate-host mars execute-template < etc/caddy/Caddyfile.tmpl
-tools/simulate-host mars execute-template < etc/coredns/Corefile.tmpl
-tools/simulate-host mars execute-template < etc/cloudflared/config.yml.tmpl
+tools/render-edge --list                          # the /etc bodies
+tools/render-edge mars caddy/Caddyfile
+tools/render-edge mars coredns/Corefile
+tools/render-edge mars cloudflared/config.yml
 tools/simulate-host mars execute-template < dot_local/scripts/executable_gaming-mode.tmpl
 ```
+
+`render-edge` exists because a `.chezmoitemplates` entry has no `.tmpl` to redirect
+into `simulate-host`; it feeds it the `includeTemplate` call instead. Rendering
+`run_onchange_70-deploy-etc.sh.tmpl` shows all four at once, in install order.
 
 Platform comes from the inventory too: each host declares `os` (and `distro` on Linux),
 and templates read those rather than chezmoi's own `.chezmoi.os`, which always describes

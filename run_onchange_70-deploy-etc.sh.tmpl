@@ -1,34 +1,42 @@
 {{ if has "edge" (index .hosts .hostname).roles -}}
 #!/bin/bash
 set -euo pipefail
-# Caddyfile:   {{ include "etc/caddy/Caddyfile.tmpl" | sha256sum }}
-# caddy.env:   {{ include "etc/caddy/caddy.env.tmpl" | sha256sum }}
-# Corefile:    {{ include "etc/coredns/Corefile.tmpl" | sha256sum }}
-# cloudflared: {{ include "etc/cloudflared/config.yml.tmpl" | sha256sum }}
-#
-# Hash the data too: an edit there changes the output while leaving every
-# template byte-identical.
-# data:        {{ dict "hosts" .hosts "domain" .domain | toJson | sha256sum }}
 
-SRC="{{ .chezmoi.sourceDir }}"
+# The configs are inlined below rather than rendered by a nested
+# `chezmoi execute-template`: that child run gets no --config and its own op
+# session, which breaks simulate-host and any headless apply. Inlining also
+# makes this script's own bytes the run_onchange trigger.
 
 echo "Deploying /etc/ configs..."
 
 STAGE="$(mktemp -d)"
 trap 'rm -rf "$STAGE"' EXIT
 
-# Stage before installing: `sudo tee` would truncate the live config before a
-# failing template produced a byte.
-render() {
-    # $1 = source template, $2 = destination, $3 = mode
-    chezmoi execute-template < "$SRC/$1" > "$STAGE/out"
-    sudo install -m "$3" -o root -g root "$STAGE/out" "$2"
+# Stage before installing: `sudo tee` would truncate the live config first.
+install_edge() {
+    # $1 = destination, $2 = mode
+    sudo install -m "$2" -o root -g root "$STAGE/out" "$1"
 }
 
-render etc/caddy/Caddyfile.tmpl        /etc/caddy/Caddyfile     644
-render etc/caddy/caddy.env.tmpl        /etc/caddy/caddy.env     600
-render etc/coredns/Corefile.tmpl       /etc/coredns/Corefile    644
-render etc/cloudflared/config.yml.tmpl /etc/cloudflared/config.yml 644
+cat > "$STAGE/out" <<'EDGE_EOF'
+{{ includeTemplate "etc/caddy/Caddyfile" . | trimSuffix "\n" }}
+EDGE_EOF
+install_edge /etc/caddy/Caddyfile 644
+
+cat > "$STAGE/out" <<'EDGE_EOF'
+{{ includeTemplate "etc/caddy/caddy.env" . | trimSuffix "\n" }}
+EDGE_EOF
+install_edge /etc/caddy/caddy.env 600
+
+cat > "$STAGE/out" <<'EDGE_EOF'
+{{ includeTemplate "etc/coredns/Corefile" . | trimSuffix "\n" }}
+EDGE_EOF
+install_edge /etc/coredns/Corefile 644
+
+cat > "$STAGE/out" <<'EDGE_EOF'
+{{ includeTemplate "etc/cloudflared/config.yml" . | trimSuffix "\n" }}
+EDGE_EOF
+install_edge /etc/cloudflared/config.yml 644
 
 echo "Reloading services..."
 sudo systemctl reload caddy || true

@@ -47,7 +47,7 @@ everything and is what to run after moving or renaming any source file:
 
 | | Checks |
 |---|---|
-| `tools/check-templates` | renders every template for every host — nothing is skipped |
+| `tools/check-templates` | renders every template for every host, `.chezmoitemplates/etc/` included |
 | `tools/check-schemas` | each `.chezmoidata` file against the schema its own header names |
 | `tools/check-consistency` | the quadlets/units/endpoints/folders/packages cross-references |
 | `tools/check-shell` | shellcheck, rendering `.tmpl` scripts per host first |
@@ -168,17 +168,17 @@ uid/gid 0 (see the music stack). Fixed facts:
 records, and (with `public: true`) the tunnel rule all fall out of it. See "The generated
 edge" below.
 
-**2. Reverse proxy (Caddy)** — `etc/caddy/Caddyfile.tmpl`
+**2. Reverse proxy (Caddy)** — `.chezmoitemplates/etc/caddy/Caddyfile`
 
 - One block per endpoint: `<name>.arthurjordao.dev { reverse_proxy 127.0.0.1:<port> ... }` with
   TLS via the Cloudflare DNS challenge (`dns cloudflare {env.CF_API_TOKEN}`) and a JSON access
-  log. `CF_API_TOKEN` comes from `etc/caddy/caddy.env.tmpl`.
+  log. `CF_API_TOKEN` comes from `.chezmoitemplates/etc/caddy/caddy.env`.
 - **Always `127.0.0.1`, never `localhost`.** `localhost` resolves to `::1` first, and rootless
   containers on the default network use **pasta**, which forwards IPv4 only — the connection is
   accepted then dropped, and Caddy returns a **502** without falling back. The template emits
   `127.0.0.1` whenever the serving host *is* the edge host, so this is structural.
 
-**3. DNS (CoreDNS, split-horizon)** — `etc/coredns/Corefile.tmpl`
+**3. DNS (CoreDNS, split-horizon)** — `.chezmoitemplates/etc/coredns/Corefile`
 
 - Every endpoint lands in **both** the `(local_hosts)` block (its host's `ip.lan`) and the
   `(tailscale_hosts)` block (its host's `ip.tailscale`). LAN clients and Tailscale clients each
@@ -191,8 +191,8 @@ Most services are internal-only (the above three concerns cover LAN/Tailscale). 
 from the public internet, add it to the **Cloudflare Tunnel** instead of opening router ports.
 
 - `cloudflared` runs as a **system** unit (`/etc/systemd/system/cloudflared.service`) using a
-  named tunnel; its config is generated from `etc/cloudflared/config.yml.tmpl` and deployed to
-  `/etc/cloudflared/config.yml` by `run_onchange_70-deploy-etc.sh.tmpl`. The tunnel's credentials
+  named tunnel; its config is generated from `.chezmoitemplates/etc/cloudflared/config.yml` and
+  deployed to `/etc/cloudflared/config.yml` by `run_onchange_70-deploy-etc.sh.tmpl`. The credentials
   `.json` lives only on mars (never in the repo).
 - To expose a service: set `public: true` on its endpoint in `.chezmoidata/hosts.yaml` — that emits the
   `ingress:` rule above the `http_status:404` catch-all. Then create the public proxied CNAME once
@@ -210,8 +210,8 @@ from the public internet, add it to the **Cloudflare Tunnel** instead of opening
 ## The generated edge
 
 The Caddyfile, Corefile and cloudflared config are **templates rendered from
-`.chezmoidata/`**. There is no hand-written copy of any of them; editing `/etc` or trying to
-edit a non-`.tmpl` `etc/caddy/Caddyfile` is editing a file that doesn't exist.
+`.chezmoidata/`**, living in `.chezmoitemplates/etc/`. There is no hand-written copy of any of
+them; editing `/etc` is editing a file that gets overwritten on the next apply.
 
 The data model, per host:
 
@@ -272,27 +272,35 @@ is inert, not skipped.
 Inspect any of them without applying — this is the way to review a change:
 
 ```
-tools/simulate-host mars execute-template < etc/caddy/Caddyfile.tmpl
-tools/simulate-host mars execute-template < etc/coredns/Corefile.tmpl
-tools/simulate-host mars execute-template < etc/cloudflared/config.yml.tmpl
+tools/render-edge --list
+tools/render-edge mars caddy/Caddyfile
+tools/render-edge mars coredns/Corefile
+tools/render-edge mars cloudflared/config.yml
 tools/simulate-host mars execute-template < dot_local/scripts/executable_gaming-mode.tmpl
 ```
+
+The `/etc` bodies live in `.chezmoitemplates/etc/`, so they have no `.tmpl` to redirect into
+`simulate-host`; `tools/render-edge` feeds it the `includeTemplate` call instead. To see all four
+in the order they install, render the deploy script itself.
 
 Ordering is deterministic: Go ranges maps in sorted key order, so hosts come out alphabetically,
 endpoints in declaration order within a host.
 
 ## Deploy flow
 
-`etc/` is in `.chezmoiignore` (never copied to `$HOME`); instead
-**`run_onchange_70-deploy-etc.sh.tmpl`** renders the Caddyfile, Corefile, cloudflared config and
-`caddy.env` from their templates, installs them into `/etc` with `sudo`, and reloads caddy /
-restarts coredns / restarts cloudflared. Each render goes to a staging file before `install`, so a
-failing template can't truncate a live config. The quadlet files under `dot_config/` deploy
-normally to `~/.config/...`.
+**`run_onchange_70-deploy-etc.sh.tmpl`** carries the Caddyfile, Corefile, cloudflared config and
+`caddy.env` **inline**, one quoted heredoc each via `includeTemplate`, then installs them into
+`/etc` with `sudo` and reloads caddy / restarts coredns / restarts cloudflared. Each body is
+written to a staging file before `install`, because `sudo tee` truncates the live config first.
+The quadlet files under `dot_config/` deploy normally to `~/.config/...`.
 
-**Its re-run trigger hashes the data, not just the template text** — a `.chezmoidata/` edit changes
-the *output* while the template bytes stay identical, so the header also carries a `# data:` hash
-of `.hosts` + `.domain`. Keep that line if you touch the script.
+**Inlining is what makes it correct, and it needs no hash header.** Shelling out to a nested
+`chezmoi execute-template` gave the child its own `op` session and no `--config` — so an apply
+needed an interactive 1Password unlock and `simulate-host` rendered these four with the *local*
+hostname, silently. Rendering in the main pass fixes both, and since the configs are now part of
+the script's own bytes, `run_onchange` re-fires exactly when the output changes. Add no `# data:`
+hash here; `trimSuffix "\n"` on each `includeTemplate` keeps the heredoc terminator on its own
+line.
 
 `run_*` scripts execute in alphabetical target order; the numeric prefix states it explicitly.
 Anything needing a package goes after 10; gaps of 10 leave room to insert.
@@ -498,7 +506,10 @@ themselves never leave the host.
 ## Changing the folder list
 
 `run_onchange_80-restart-syncthing.sh.tmpl` restarts the unit. Its trigger hashes the **data** as
-well as the template, for the same reason `70-deploy-etc` does.
+well as the template, since a `.chezmoidata/syncthing.yaml` edit changes the output while leaving
+every template byte identical. This is the only script that still needs the trick — the config it
+watches is a `modify_` script whose output depends on the live file on disk, so unlike the `/etc`
+bodies it cannot be inlined here.
 
 Inspect before applying:
 
@@ -555,10 +566,10 @@ tools/simulate-host mercury execute-template < dot_local/state/private_syncthing
   `/etc` writes, secret reads, `run_once_*` scripts. An unused config on the wrong host is inert.
 - The whole edge — Caddy, CoreDNS, cloudflared, `gaming-mode` — is generated from
   `.chezmoidata/`. Nothing about a service is declared in two places.
-- Never re-create a static `etc/caddy/Caddyfile`, `etc/coredns/Corefile`,
-  `etc/cloudflared/config.yml`, `dot_local/scripts/executable_gaming-mode`,
+- Never re-create a static `dot_local/scripts/executable_gaming-mode`,
   `dot_config/systemd/user/minecraft@.service` or `private_dot_ssh/private_config`. The `.tmpl`
-  files are the only source; a static sibling would be silently ignored and drift forever.
+  files are the only source; a static sibling would be silently ignored and drift forever. Same
+  for the four bodies in `.chezmoitemplates/etc/` — a sibling under `etc/` would deploy nowhere.
 - On a fresh Linux host, `run_once_30-set-default-shell.sh` needs `fish` present. It's in
   the `common` group of `packages.arch`, but if the shell change is skipped on first apply (the
   install prompt declined, or packages not installed yet), just run `chezmoi apply` again.

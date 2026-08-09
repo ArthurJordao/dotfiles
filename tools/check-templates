@@ -23,6 +23,16 @@ for h in $HOSTS; do
             fail=1
         fi
     done
+    # The /etc bodies live in .chezmoitemplates, so they have no .tmpl to feed
+    # in. They are only reached through the edge host's deploy script otherwise.
+    for e in $(./tools/render-edge --list); do
+        n=$((n + 1))
+        if ! out=$(./tools/render-edge "$h" "$e" 2>&1 >/dev/null); then
+            printf 'FAIL %-9s %s\n' "$h" ".chezmoitemplates/etc/$e"
+            printf '     %s\n' "$(echo "$out" | head -2)"
+            fail=1
+        fi
+    done
 done
 
 if [ "$fail" -eq 0 ]; then

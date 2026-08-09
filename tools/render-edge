@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Render one of the /etc configs as a given host would get it, without applying.
+#
+#   tools/render-edge --list
+#   tools/render-edge mars caddy/Caddyfile
+#   tools/render-edge --real-op mars caddy/caddy.env
+#
+# Their bodies live in .chezmoitemplates/etc/ and are inlined into
+# run_onchange_70-deploy-etc.sh.tmpl, so there is no `.tmpl` to redirect into
+# simulate-host. This feeds it the includeTemplate call instead.
+#
+# 1Password calls go to tools/mock-op unless --real-op is passed, same as
+# simulate-host.
+set -euo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
+
+if [ "${1:-}" = "--list" ]; then
+    (cd .chezmoitemplates/etc && find . -type f | sed 's|^\./||' | sort)
+    exit 0
+fi
+
+REAL=""
+if [ "${1:-}" = "--real-op" ]; then
+    REAL="--real-op"
+    shift
+fi
+
+HOST="${1:?usage: render-edge [--real-op] <host> <name> | render-edge --list}"
+NAME="${2:?usage: render-edge [--real-op] <host> <name> | render-edge --list}"
+
+printf '{{ includeTemplate "etc/%s" . }}' "$NAME" |
+    ./tools/simulate-host ${REAL:+"$REAL"} "$HOST" execute-template

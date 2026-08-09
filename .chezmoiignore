@@ -15,7 +15,6 @@ logs/
 flavours/
 bin/
 tools/
-etc/
 .config/fish/fish_variables
 .ssh/known_hosts*
 .ssh/agent/

@@ -8,6 +8,7 @@
 #
 # Field names are harvested from the templates themselves: over-inclusive on
 # purpose, since a spare field costs nothing and a missing one fails the render.
+# .chezmoitemplates needs its own pass -- its entries have no .tmpl extension.
 # Every field needs a `section` -- onepasswordItemFields drops the ones without,
 # leaving an empty map and `no entry for key "value"` at every lookup.
 set -uo pipefail
@@ -26,7 +27,8 @@ for arg in "$@"; do
             echo "0.0.0-mock"
             exit 0 ;;
         item)
-            grep -rhoE 'index \$[a-zA-Z]+ "[^"]+"' --include='*.tmpl' . \
+            { grep -rhoE 'index \$[a-zA-Z]+ "[^"]+"' --include='*.tmpl' . ;
+              grep -rhoE 'index \$[a-zA-Z]+ "[^"]+"' .chezmoitemplates ; } \
                 | sed 's/.*"\(.*\)"/\1/' | sort -u \
                 | awk 'BEGIN { printf "{\"fields\":[" }
                        { printf "%s{\"id\":\"%s\",\"label\":\"%s\",\"type\":\"STRING\",\"section\":{\"id\":\"mock\"},\"value\":\"mock:%s\"}", sep, $0, $0, $0; sep = "," }
