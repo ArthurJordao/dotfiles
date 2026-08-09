@@ -32,7 +32,6 @@ hosts:
       - calibre-web-automated
       - immich
       - music
-      - open-webui
       - shelfmark
       - teamspeak3
 
@@ -48,7 +47,6 @@ hosts:
       - slskd
       - soulsync
       - calibre-web-automated
-      - open-webui
       - shelfmark
       - teamspeak3
       - minecraft@vanilla

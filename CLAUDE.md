@@ -110,7 +110,7 @@ uid/gid 0 (see the music stack). Fixed facts:
 - Deploys to `~/.config/containers/systemd/`, where podman's systemd generator turns each
   `.container` / `.pod` / `.network` file into a rootless **user** unit.
 - Layout: root level for standalone services (`calibre-web-automated.container`,
-  `open-webui.container`, `teamspeak3.container`); subdirs for service groups that share a network/pod
+  `shelfmark.container`, `teamspeak3.container`); subdirs for service groups that share a network/pod
   (`music/` = slskd + navidrome + soulsync on `music.network`; `immich/` = a pod of
   server/db/valkey/ml plus the top-level `immich.pod`).
 - **A quadlet with a proxied port is a `.tmpl`, and its `PublishPort` host side is generated.**
@@ -191,9 +191,9 @@ service is not one entry, it's a line in each list that concerns it:
 ```yaml
 mars:
   ip: {lan: 192.168.15.23, tailscale: 100.127.50.55}
-  quadlets: [calibre-web-automated, immich, music, open-webui, shelfmark, teamspeak3]
+  quadlets: [calibre-web-automated, immich, music, shelfmark, teamspeak3]
   units: [immich-pod, immich-db, immich-valkey, immich-ml, immich-server,
-          navidrome, slskd, soulsync, calibre-web-automated, open-webui,
+          navidrome, slskd, soulsync, calibre-web-automated,
           shelfmark, teamspeak3, minecraft@vanilla, minecraft@atm10-tts]
   endpoints:
     - {name: books, port: 8083, public: true}
