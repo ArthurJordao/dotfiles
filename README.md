@@ -130,13 +130,20 @@ gated on what's declared there.
 
 chezmoi reads **every** file in `.chezmoidata/` and merges them into one template
 data namespace, so the split is organisational only — templates just see `.hosts`,
-`.domain`, `.syncthing` and `.packages` regardless of which file each came from.
+`.domain`, `.syncthing`, `.packages`, `.theme`, `.palettes` and `.secrets` regardless
+of which file each came from.
 
 | File | Holds |
 |---|---|
 | `hosts.yaml` | `domain`, `timezone`, and the per-host inventory: roles, user, ip, storage, quadlets, units, endpoints |
 | `syncthing.yaml` | `syncthing.folders` — the shared emulation library, not owned by any one host |
 | `packages.yaml` | `packages` — `arch`, grouped by `common` plus one key per role; `darwin`, flat |
+| `theme.yaml` | `theme` — `active` switches the whole fleet, plus the per-consumer theme names |
+| `palettes.yaml` | `palettes` — base16 colors. **Generated** by `tools/fetch-palette`; do not edit |
+| `secrets.yaml` | `secrets` — the 1Password vault and item names. Field names are not declared |
+
+Because the namespace is flat and shared, a key collision silently shadows real data —
+which is why the JSON Schemas live in `schemas/`, not next to the YAML they describe.
 
 ### Roles
 
