@@ -134,7 +134,7 @@ data namespace, so the split is organisational only — templates just see `.hos
 
 | File | Holds |
 |---|---|
-| `hosts.yaml` | `domain`, and the per-host inventory: roles, ip, quadlets, units, endpoints |
+| `hosts.yaml` | `domain`, and the per-host inventory: roles, user, ip, quadlets, units, endpoints |
 | `syncthing.yaml` | `syncthing.folders` — the shared emulation library, not owned by any one host |
 | `packages.yaml` | `packages` — `arch`, grouped by `common` plus one key per role; `darwin`, flat |
 
@@ -157,14 +157,18 @@ on a different host and the whole reverse-proxy/DNS layer moves with it.
 
 ### The three lists
 
-Caddy, CoreDNS, the Cloudflare Tunnel and `gaming-mode` are all **generated** from
-these at apply time. There is no hand-written copy of any of them.
+Caddy, CoreDNS, the Cloudflare Tunnel, `gaming-mode` and `~/.ssh/config` are all
+**generated** from these at apply time. There is no hand-written copy of any of them.
 
 | List | Consumer | Contents |
 |---|---|---|
 | `quadlets` | which container files deploy | quadlet filename *prefixes*, matched `<prefix>*` |
 | `units` | `gaming-mode` | systemd user units, **without** `.service` |
-| `endpoints` | Caddy, CoreDNS, cloudflared | hostnames to serve and resolve |
+| `endpoints` | Caddy, CoreDNS, cloudflared, `~/.ssh/config` | hostnames to serve and resolve |
+
+`~/.ssh/config` also reads the scalar `user`: one `Host` block per host, aliased by
+short name, `.local`, `<host>.<domain>`, both IPs and every endpoint pointing at it.
+A host without `user` gets no block.
 
 A fourth list, `syncthing.folders`, lives in `.chezmoidata/syncthing.yaml` rather than
 under a host, because it describes a library shared *between* hosts rather than any

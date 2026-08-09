@@ -1,0 +1,23 @@
+{{- $domain := .domain -}}
+# The Host blocks below are GENERATED from .chezmoidata/hosts.yaml — add a host
+# or an endpoint there, not here. Only this preamble is hand-written.
+
+Host *
+    IdentityFile ~/.ssh/id_rsa
+    AddKeysToAgent yes
+{{ range $hostname, $host := .hosts }}
+{{- if index $host "user" }}
+{{-   $aliases := list $hostname (printf "%s.local" $hostname) (printf "%s.%s" $hostname $domain) }}
+{{-   range (index $host "endpoints" | default list) }}
+{{-     $aliases = append $aliases (printf "%s.%s" .name $domain) }}
+{{-   end }}
+{{-   if index $host "ip" }}
+{{-     $aliases = append (append $aliases $host.ip.lan) $host.ip.tailscale }}
+{{-   end }}
+Host {{ join " " $aliases }}
+    User {{ $host.user }}
+    IdentityFile ~/.ssh/id_ed25519
+    ServerAliveInterval 30
+    ServerAliveCountMax 6
+{{ end }}
+{{- end -}}

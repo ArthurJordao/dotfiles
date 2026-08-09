@@ -86,6 +86,11 @@
             ]
           }
         },
+        "user": {
+          "type": "string",
+          "description": "Login account on that machine. Only consumer is ~/.ssh/config: a host without it gets no Host block, so it cannot be reached by short name.",
+          "pattern": "^[a-z_][a-z0-9_-]*$"
+        },
         "ip": {
           "$ref": "#/$defs/ip",
           "description": "Optional. Present means the host gets <hostname>.<domain> in both DNS views, and its endpoints resolve to these addresses."

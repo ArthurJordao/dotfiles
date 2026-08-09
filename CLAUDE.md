@@ -179,7 +179,7 @@ service is not one entry, it's a line in each list that concerns it:
 |---|---|---|
 | `quadlets` | `.chezmoiignore` | quadlet filename **prefixes**, matched `<prefix>*` |
 | `units` | `gaming-mode` `CANDIDATES` | systemd user units, **no** `.service` suffix |
-| `endpoints` | Caddy, CoreDNS, cloudflared | hostnames to serve and resolve |
+| `endpoints` | Caddy, CoreDNS, cloudflared, `~/.ssh/config` | hostnames to serve and resolve |
 
 ```yaml
 mars:
@@ -212,6 +212,12 @@ Endpoint fields: `name` (required), `port` (omit ⇒ DNS-only, no Caddy block, n
 Each template reads `.hosts` directly — there is no shared helper. The Corefile also emits
 `<hostname>.<domain>` for every host with an `ip`, which is why `mars`/`mercury`/`neptune` resolve
 without being declared as endpoints.
+
+`private_dot_ssh/private_config.tmpl` is a fifth consumer, and the only one reading the scalar
+`user`: one `Host` block per host, aliased by short name, `.local`, `<host>.<domain>`, both IPs
+and every endpoint of that host. A host without `user` gets no block. The `Host *` preamble is
+the only hand-written part. Rendered identically everywhere — the block for the host you are on
+is inert, not skipped.
 
 Inspect any of them without applying — this is the way to review a change:
 
@@ -491,9 +497,9 @@ tools/simulate-host mercury execute-template < dot_local/state/private_syncthing
 - The whole edge — Caddy, CoreDNS, cloudflared, `gaming-mode` — is generated from
   `.chezmoidata/`. Nothing about a service is declared in two places.
 - Never re-create a static `etc/caddy/Caddyfile`, `etc/coredns/Corefile`,
-  `etc/cloudflared/config.yml`, `dot_local/scripts/executable_gaming-mode` or
-  `dot_config/systemd/user/minecraft@.service`. The `.tmpl` files are the only source; a static
-  sibling would be silently ignored and drift forever.
+  `etc/cloudflared/config.yml`, `dot_local/scripts/executable_gaming-mode`,
+  `dot_config/systemd/user/minecraft@.service` or `private_dot_ssh/private_config`. The `.tmpl`
+  files are the only source; a static sibling would be silently ignored and drift forever.
 - On a fresh Linux host, `run_once_30-set-default-shell.sh.tmpl` needs `fish` present. It's in
   the `common` group of `packages.arch`, but if the shell change is skipped on first apply (the
   install prompt declined, or packages not installed yet), just run `chezmoi apply` again.

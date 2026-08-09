@@ -21,6 +21,7 @@ domain: arthurjordao.dev
 hosts:
   mars:
     roles: [server, podman, gui, gaming, minecraft, sunshine, emulation, edge, ddns]
+    user: turisa
     ip:
       lan: 192.168.15.23
       tailscale: 100.127.50.55
@@ -70,6 +71,7 @@ hosts:
 
   mercury:
     roles: [gui, gaming, moonlight, emulation]
+    user: arthur
     ip:
       lan: 192.168.15.28
       tailscale: 100.121.125.41
@@ -80,6 +82,7 @@ hosts:
 
   neptune:
     roles: [gui]
+    user: arthurjordao
     ip:
       lan: 192.168.15.20
       tailscale: 100.115.219.28
