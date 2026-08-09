@@ -1,12 +1,5 @@
 #!/bin/bash
-# Switches the source-dir remote from the bootstrap HTTPS clone to SSH, once
-# the keys chezmoi deploys actually work.
-#
-# run_once_, so it stops showing up in every `chezmoi diff` and stops shelling
-# out to github on every apply. The cost: a flip skipped because the keys were
-# not usable yet is not retried. Recover with either
-#   git -C "$SRC" remote set-url origin git@github.com:ArthurJordao/dotfiles
-#   chezmoi state delete-bucket --bucket=scriptState   # re-runs every run_once
+# Switches the source-dir remote from the bootstrap HTTPS clone to SSH.
 set -euo pipefail
 
 SRC={{ .chezmoi.sourceDir | quote }}
@@ -19,19 +12,6 @@ url="$(git -C "$SRC" config --get remote.origin.url || true)"
 case "$url" in
     https://github.com/ArthurJordao/dotfiles*) ;;   # only ever rewrite THIS repo
     *) exit 0 ;;                # already SSH, a foreign remote, or no origin
-esac
-
-[ -f "$HOME/.ssh/id_ed25519" ] || exit 0
-
-# ssh -T against github.com always exits non-zero (it authenticates, then
-# refuses a shell), so test the output, not the status.
-ssh_out="$(ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -T git@github.com 2>&1 || true)"
-case "$ssh_out" in
-    *'successfully authenticated'*) ;;
-    *)
-        echo "SSH to github.com not working yet; leaving the remote on HTTPS." >&2
-        exit 0
-        ;;
 esac
 
 git -C "$SRC" remote set-url origin git@github.com:ArthurJordao/dotfiles

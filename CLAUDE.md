@@ -318,11 +318,8 @@ chezmoi's template machinery exists, so it uses `uname`) and deliberately **dot-
 ignores dotfiles as source state; without the dot it would manage the script as a target). Either
 change breaks it silently.
 
-**`run_once_15-use-ssh-remote.sh.tmpl`** flips the source-dir remote from HTTPS to SSH once the keys
-this same apply just wrote actually work. `run_once_` because a plain `run_` shows up in every
-`chezmoi diff` and shells out to github on every apply. The trade: a flip skipped because the keys
-were not usable yet is never retried — fix it with `git remote set-url` by hand, or
-`chezmoi state delete-bucket --bucket=scriptState` to re-arm every `run_once_` script.
+**`run_once_15-use-ssh-remote.sh.tmpl`** flips the source-dir remote from the bootstrap HTTPS clone
+to SSH.
 
 `run_onchange_10-install-packages.sh.tmpl` renders the package names into its own body, so adding
 a role's key to `.chezmoidata/packages.yaml` changes that script's hash, and `10-` sorts before
