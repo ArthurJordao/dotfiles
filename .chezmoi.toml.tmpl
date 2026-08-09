@@ -5,6 +5,9 @@ sourceDir = {{ .chezmoi.sourceDir | quote }}
   is_linux = {{ eq .chezmoi.os "linux" }}
   hostname = {{ .chezmoi.hostname | quote }}
 
+[env]
+  OP_ACCOUNT = "my.1password.com"
+
 [onepassword]
   command = "op"
 
