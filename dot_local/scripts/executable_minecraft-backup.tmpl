@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# minecraft-backup — daily tarball of the vanilla world onto the bulk SSD, so a
+# minecraft-backup — daily tarball of the vanilla world onto the external SSD, so a
 # root-disk failure doesn't take the backups with it. Keeps the newest KEEP.
 #
 # Backs up whichever world* dirs exist: newer MC keeps every dimension inside
@@ -11,7 +11,7 @@ set -euo pipefail
 
 INSTANCE="vanilla"
 SRC_DIR="$HOME/minecraft/$INSTANCE"
-DEST_DIR="/mnt/x9pro/minecraft-backups"
+DEST_DIR="{{ includeTemplate "storage-path" (dict "hosts" .hosts "name" "external") }}/minecraft-backups"
 KEEP=3
 SESSION="minecraft-$INSTANCE"
 

@@ -18,6 +18,9 @@
 
 domain: arthurjordao.dev
 
+# Fleet-wide. Read by every quadlet that sets TZ.
+timezone: America/Sao_Paulo
+
 hosts:
   mars:
     roles: [server, podman, gui, gaming, minecraft, sunshine, emulation, edge, ddns]
@@ -27,6 +30,9 @@ hosts:
       tailscale: 100.127.50.55
     # Read off the host after its first syncthing start; empty omits it.
     syncthing_id: "34WVFBB-7BPUYSO-PIU3HJU-LQ7MA53-FIMPVUR-Q6YAKGI-DCTMY4D-VSTRKQB"
+
+    storage:
+      external: /mnt/x9pro
 
     quadlets:
       - calibre-web-automated

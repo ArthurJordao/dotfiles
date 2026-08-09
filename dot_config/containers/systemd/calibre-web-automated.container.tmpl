@@ -1,3 +1,4 @@
+{{- $external := includeTemplate "storage-path" (dict "hosts" .hosts "name" "external") -}}
 [Unit]
 Description=Calibre-Web-Automated ebook library
 Wants=network-online.target
@@ -9,16 +10,16 @@ AutoUpdate=registry
 # CWA is served as `books`, not under its own name.
 PublishPort={{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "books") }}:8083
 
-# Run as uid/gid 0, which maps to the host user (turisa) under rootless
-# podman, so CWA can write the Calibre library and ingest dirs on /mnt/x9pro.
+# Run as uid/gid 0, which maps to the host user (turisa) under rootless podman,
+# so CWA can write the Calibre library and ingest dirs on the external SSD.
 Environment=PUID=0
 Environment=PGID=0
 Environment=UMASK=022
-Environment=TZ=America/Sao_Paulo
+Environment=TZ={{ .timezone }}
 
 Volume=cwa-config:/config
-Volume=/mnt/x9pro/books:/calibre-library
-Volume=/mnt/x9pro/book-ingest:/cwa-book-ingest
+Volume={{ $external }}/books:/calibre-library
+Volume={{ $external }}/book-ingest:/cwa-book-ingest
 
 [Service]
 Restart=always

@@ -1,5 +1,5 @@
 [Unit]
-Description=Backup the Minecraft vanilla world to /mnt/x9pro
+Description=Backup the Minecraft vanilla world to the external SSD
 
 [Service]
 Type=oneshot

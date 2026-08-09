@@ -1,3 +1,4 @@
+{{- $external := includeTemplate "storage-path" (dict "hosts" .hosts "name" "external") -}}
 [Unit]
 Description=Immich Server
 Requires=immich-pod.service immich-db.service immich-valkey.service
@@ -14,7 +15,7 @@ Environment=NVIDIA_DRIVER_CAPABILITIES=video,compute,utility
 EnvironmentFile=%h/.config/containers/systemd/immich/immich.env
 Volume=%h/immich/library:/usr/src/app/upload
 Volume=/etc/localtime:/etc/localtime:ro
-Volume=/mnt/x9pro:/mnt/ssd:ro
+Volume={{ $external }}:/mnt/ssd:ro
 
 [Service]
 Restart=always

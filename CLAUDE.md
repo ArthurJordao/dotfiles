@@ -99,7 +99,7 @@ uid/gid 0 (see the music stack). Fixed facts:
 
 - Host user: `turisa` · LAN IP `192.168.15.23` · Tailscale IP `100.127.50.55`
 - Base domain: `arthurjordao.dev`; every service is exposed as `<service>.arthurjordao.dev`
-- Bulk media/storage SSD mounted at `/mnt/x9pro`
+- External media/storage SSD mounted at `/mnt/x9pro`, declared as `hosts.mars.storage.external`
 - Secrets: 1Password item `mars-secrets` (vault `dotfiles`), pulled at apply-time via
   `onepasswordRead "op://dotfiles/mars-secrets/<FIELD>"` in `.tmpl` files
 
@@ -113,6 +113,15 @@ uid/gid 0 (see the music stack). Fixed facts:
   `shelfmark.container`, `teamspeak3.container`); subdirs for service groups that share a network/pod
   (`music/` = slskd + navidrome + soulsync on `music.network`; `immich/` = a pod of
   server/db/valkey/ml plus the top-level `immich.pod`).
+- **Mount points and the timezone are data, not per-service facts.** `{{ .timezone }}` is
+  fleet-wide, read directly. Mount points are per-host under `storage` and read through a
+  template — the lookup is fleet-wide like `endpoint-port`, so the quadlet renders identically
+  on hosts that don't deploy it, and a name declared twice with different paths fails:
+
+  ```
+  {{- $external := includeTemplate "storage-path" (dict "hosts" .hosts "name" "external") -}}
+  Volume={{ $external }}/music:/music:ro
+  ```
 - **Home paths use systemd's `%h`, never `/home/turisa`** — both quadlets and hand-written user
   units. One less host fact baked into a file.
 - **A quadlet with a proxied port is a `.tmpl`, and its `PublishPort` host side is generated.**
@@ -476,6 +485,9 @@ tools/simulate-host mercury execute-template < dot_local/state/private_syncthing
    ```
    PublishPort={{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "<name>") }}:<image port>
    ```
+
+   Same for `TZ` (`{{ .timezone }}`) and any path on the external SSD (`storage-path`) — see
+   "Three concerns per service".
 2. **Walk all three lists** in that host's entry in `.chezmoidata/hosts.yaml`. Nothing errors if you
    miss one — see the drift warning above.
 

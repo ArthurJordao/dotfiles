@@ -1,3 +1,4 @@
+{{- $external := includeTemplate "storage-path" (dict "hosts" .hosts "name" "external") -}}
 [Unit]
 Description=slskd (Soulseek daemon)
 Wants=network-online.target
@@ -15,11 +16,11 @@ PublishPort=50300:50300
 Environment=SLSKD_DOWNLOADS_DIR=/downloads
 Environment=SLSKD_SHARED_DIR=/music
 Environment=SLSKD_REMOTE_CONFIGURATION=true
-Environment=TZ=America/Sao_Paulo
+Environment=TZ={{ .timezone }}
 EnvironmentFile=%h/.config/containers/systemd/music/slskd.env
 
-Volume=/mnt/x9pro/downloads:/downloads
-Volume=/mnt/x9pro/music:/music:ro
+Volume={{ $external }}/downloads:/downloads
+Volume={{ $external }}/music:/music:ro
 Volume=slskd-config:/app
 
 [Service]

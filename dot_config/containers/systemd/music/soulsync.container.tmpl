@@ -1,3 +1,4 @@
+{{- $external := includeTemplate "storage-path" (dict "hosts" .hosts "name" "external") -}}
 [Unit]
 Description=SoulSync Music Discovery
 Wants=network-online.target
@@ -16,13 +17,13 @@ PublishPort={{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "soulsyn
 Environment=PUID=0
 Environment=PGID=0
 Environment=UMASK=022
-Environment=TZ=America/Sao_Paulo
+Environment=TZ={{ .timezone }}
 
 Volume=soulsync-config:/app/config
 Volume=soulsync-data:/app/data
 Volume=soulsync-logs:/app/logs
-Volume=/mnt/x9pro/downloads:/app/downloads
-Volume=/mnt/x9pro/music:/app/Transfer
+Volume={{ $external }}/downloads:/app/downloads
+Volume={{ $external }}/music:/app/Transfer
 
 [Service]
 Restart=always

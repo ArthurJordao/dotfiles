@@ -7,13 +7,19 @@
   "additionalProperties": false,
   "required": [
     "domain",
-    "hosts"
+    "hosts",
+    "timezone"
   ],
   "properties": {
     "domain": {
       "type": "string",
       "description": "Base domain. Every endpoint is served as <name>.<domain>, and every host with an `ip` resolves as <hostname>.<domain>.",
       "pattern": "^[a-z0-9-]+(\\.[a-z0-9-]+)+$"
+    },
+    "timezone": {
+      "type": "string",
+      "description": "IANA zone, fleet-wide. Every quadlet that sets TZ reads it from here.",
+      "pattern": "^[A-Za-z]+(/[A-Za-z0-9_+-]+)+$"
     },
     "hosts": {
       "type": "object",
@@ -94,6 +100,22 @@
         "ip": {
           "$ref": "#/$defs/ip",
           "description": "Optional. Present means the host gets <hostname>.<domain> in both DNS views, and its endpoints resolve to these addresses."
+        },
+        "storage": {
+          "type": "object",
+          "description": "Named mount points on this host, read by the `storage-path` template. The lookup is fleet-wide, so the same name must not appear on two hosts with different paths.",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^/",
+            "description": "Absolute path, no trailing slash — consumers append their own subdirectory.",
+            "not": {
+              "pattern": "/$"
+            }
+          }
         },
         "quadlets": {
           "type": "array",

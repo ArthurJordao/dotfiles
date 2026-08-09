@@ -134,7 +134,7 @@ data namespace, so the split is organisational only — templates just see `.hos
 
 | File | Holds |
 |---|---|
-| `hosts.yaml` | `domain`, and the per-host inventory: roles, user, ip, quadlets, units, endpoints |
+| `hosts.yaml` | `domain`, `timezone`, and the per-host inventory: roles, user, ip, storage, quadlets, units, endpoints |
 | `syncthing.yaml` | `syncthing.folders` — the shared emulation library, not owned by any one host |
 | `packages.yaml` | `packages` — `arch`, grouped by `common` plus one key per role; `darwin`, flat |
 
@@ -194,6 +194,27 @@ PublishPort={{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "books")
 The container side stays literal; it's the image's own port, not something the
 reverse proxy has an opinion about. An endpoint name that doesn't exist fails the
 apply rather than yielding a 502 later.
+
+### Mount points and the timezone
+
+Two more values that aren't per-service facts. `timezone` is fleet-wide, read straight
+off the data as `{{ .timezone }}` by every quadlet that sets `TZ`. Mount points are
+per-host, declared under `storage` and read through a template:
+
+```yaml
+mars:
+  storage:
+    external: /mnt/x9pro    # the SSD holding media and backups
+```
+
+```
+{{- $external := includeTemplate "storage-path" (dict "hosts" .hosts "name" "external") -}}
+Volume={{ $external }}/music:/music:ro
+```
+
+Like `endpoint-port`, the lookup is fleet-wide rather than per rendering host, so a
+quadlet renders identically on hosts that don't deploy it. An unknown name fails the
+apply, as does the same name declared with two different paths.
 
 ### Adding an emulation host
 

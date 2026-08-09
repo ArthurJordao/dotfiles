@@ -1,0 +1,24 @@
+{{- /* A named mount point, from `storage` in .chezmoidata/hosts.yaml.
+
+       Looked up across the whole fleet rather than the rendering host, for the
+       same reason as endpoint-port: a quadlet has to render identically on
+       hosts that don't deploy it. Two hosts declaring the same name with
+       different paths is ambiguous and fails.
+
+         {{- $external := includeTemplate "storage-path" (dict "hosts" .hosts "name" "external") -}}
+         Volume={{ $external }}/music:/music:ro */ -}}
+{{- $want := .name -}}
+{{- $paths := list -}}
+{{- range $host := .hosts -}}
+{{- $storage := index $host "storage" | default dict -}}
+{{- if hasKey $storage $want -}}
+{{- $paths = append $paths (index $storage $want) -}}
+{{- end -}}
+{{- end -}}
+{{- $paths = $paths | uniq -}}
+{{- if eq (len $paths) 0 -}}
+{{- fail (printf "storage-path: no host declares storage %q in .chezmoidata/hosts.yaml" $want) -}}
+{{- else if gt (len $paths) 1 -}}
+{{- fail (printf "storage-path: storage %q is declared as %v on different hosts" $want $paths) -}}
+{{- end -}}
+{{- first $paths -}}
