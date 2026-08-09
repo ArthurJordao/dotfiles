@@ -260,6 +260,11 @@
             }
           ]
         },
+        "served_by": {
+          "type": "string",
+          "description": "Non-container service listening on this port. Absent means a quadlet must publish it, which is what tools/check-consistency enforces.",
+          "minLength": 1
+        },
         "tls_insecure": {
           "type": "boolean",
           "description": "Skip verification of the upstream's certificate. Only meaningful with scheme: https, e.g. CoreDNS's self-signed DoH listener.",

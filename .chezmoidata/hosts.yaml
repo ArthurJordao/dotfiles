@@ -19,6 +19,9 @@
 # quadlets/units/endpoints generate the Caddy, CoreDNS, cloudflared and
 # gaming-mode configs. They are independent lists and nothing errors when they
 # disagree. `syncthing.folders` is a fourth such list.
+#
+# `served_by` on an endpoint names the non-container service listening on that
+# port. Without it, tools/check-consistency requires a quadlet to publish it.
 
 domain: arthurjordao.dev
 
@@ -69,7 +72,7 @@ hosts:
 
     endpoints:
       - {name: books, port: 8083, public: true}
-      - {name: dns, port: 8053, scheme: https, tls_insecure: true, log: false}
+      - {name: dns, port: 8053, scheme: https, tls_insecure: true, log: false, served_by: coredns}
       - {name: immich, port: 2283, public: true}
       - {name: minecraft}
       - {name: music, port: 4533}
@@ -77,7 +80,7 @@ hosts:
       - {name: slskd, port: 5030}
       - {name: soulsync, port: 8008}
       # Config UI only — moonlight talks straight to the host, not via Caddy.
-      - {name: sunshine, port: 47990, scheme: https, tls_insecure: true}
+      - {name: sunshine, port: 47990, scheme: https, tls_insecure: true, served_by: sunshine}
 
   mercury:
     roles: [gui, gaming, moonlight, emulation]
