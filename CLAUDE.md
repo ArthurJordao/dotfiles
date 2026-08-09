@@ -312,15 +312,17 @@ Pre-installed prerequisites: `chezmoi` and `git`. `1password-cli` is **not** one
 itself via the `hooks.read-source-state.pre` hook (`.install-password-manager.sh`) the first time
 source state is read, before any template needing `op` runs.
 
-Two top-level files drive the bootstrap and have no `run_*` slot of their own:
+**`.install-password-manager.sh`** drives the bootstrap and has no `run_*` slot of its own — it is
+the `hooks.read-source-state.pre` hook itself. Deliberately **not** a `.tmpl` (hooks run before
+chezmoi's template machinery exists, so it uses `uname`) and deliberately **dot-prefixed** (chezmoi
+ignores dotfiles as source state; without the dot it would manage the script as a target). Either
+change breaks it silently.
 
-- **`.install-password-manager.sh`** — the `hooks.read-source-state.pre` hook itself. Deliberately
-  **not** a `.tmpl` (hooks run before chezmoi's template machinery exists, so it uses `uname`) and
-  deliberately **dot-prefixed** (chezmoi ignores dotfiles as source state; without the dot it would
-  manage the script as a target). Either change breaks it silently.
-- **`run_15-use-ssh-remote.sh.tmpl`** — flips the source-dir remote from HTTPS to SSH once the keys
-  this same apply just wrote actually work. Deliberately a plain `run_`: a `run_onchange_` keyed on
-  the remote URL would never retry a flip that got skipped once.
+**`run_once_15-use-ssh-remote.sh.tmpl`** flips the source-dir remote from HTTPS to SSH once the keys
+this same apply just wrote actually work. `run_once_` because a plain `run_` shows up in every
+`chezmoi diff` and shells out to github on every apply. The trade: a flip skipped because the keys
+were not usable yet is never retried — fix it with `git remote set-url` by hand, or
+`chezmoi state delete-bucket --bucket=scriptState` to re-arm every `run_once_` script.
 
 `run_onchange_10-install-packages.sh.tmpl` renders the package names into its own body, so adding
 a role's key to `.chezmoidata/packages.yaml` changes that script's hash, and `10-` sorts before
@@ -560,6 +562,6 @@ tools/simulate-host mercury execute-template < dot_local/state/private_syncthing
   `etc/cloudflared/config.yml`, `dot_local/scripts/executable_gaming-mode`,
   `dot_config/systemd/user/minecraft@.service` or `private_dot_ssh/private_config`. The `.tmpl`
   files are the only source; a static sibling would be silently ignored and drift forever.
-- On a fresh Linux host, `run_once_30-set-default-shell.sh.tmpl` needs `fish` present. It's in
+- On a fresh Linux host, `run_once_30-set-default-shell.sh` needs `fish` present. It's in
   the `common` group of `packages.arch`, but if the shell change is skipped on first apply (the
   install prompt declined, or packages not installed yet), just run `chezmoi apply` again.

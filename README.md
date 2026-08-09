@@ -118,10 +118,12 @@ headlessly, `just packages` picks up the delta. This same apply also runs
 `run_once_30-set-default-shell`, which changes your login shell to fish — log
 out and back in for it to take effect.
 
-This apply also runs `run_15-use-ssh-remote`, a plain `run_` script (it runs on
-every apply, not just the first) that checks whether the SSH keys it just wrote
-actually work and, if so, flips the source-dir remote from HTTPS to
-`git@github.com:ArthurJordao/dotfiles`.
+This apply also runs `run_once_15-use-ssh-remote`, which checks whether the SSH
+keys it just wrote actually work and, if so, flips the source-dir remote from
+HTTPS to `git@github.com:ArthurJordao/dotfiles`. If the keys weren't usable yet
+it leaves the remote alone and, being `run_once_`, won't try again — set the
+remote by hand, or run `chezmoi state delete-bucket --bucket=scriptState` to
+re-arm it.
 
 ## Host configuration
 

@@ -2,8 +2,11 @@
 # Switches the source-dir remote from the bootstrap HTTPS clone to SSH, once
 # the keys chezmoi deploys actually work.
 #
-# A plain run_ deliberately, not run_onchange_: keyed on the remote URL, a flip
-# skipped once (keys not ready) would never retry.
+# run_once_, so it stops showing up in every `chezmoi diff` and stops shelling
+# out to github on every apply. The cost: a flip skipped because the keys were
+# not usable yet is not retried. Recover with either
+#   git -C "$SRC" remote set-url origin git@github.com:ArthurJordao/dotfiles
+#   chezmoi state delete-bucket --bucket=scriptState   # re-runs every run_once
 set -euo pipefail
 
 SRC={{ .chezmoi.sourceDir | quote }}
