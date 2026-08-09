@@ -12,6 +12,13 @@ update:
     op whoami >/dev/null 2>&1 || eval "$(op signin --account my.1password.com)"
     chezmoi update
 
+# Run every repo check: templates, schemas, list consistency, shellcheck
+check:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "$(chezmoi source-path)"
+    tools/check
+
 {{ if eq (index .hosts .hostname).os "darwin" -}}
 # Install declared packages
 packages:

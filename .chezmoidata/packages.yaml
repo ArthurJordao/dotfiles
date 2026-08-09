@@ -9,6 +9,7 @@ packages:
   arch:
     common:
       - 1password-cli
+      - check-jsonschema
       - chezmoi
       - fish
       - git
@@ -19,6 +20,7 @@ packages:
       - neovim
       - python-pipx
       - ripgrep
+      - shellcheck
       - tailscale
     edge:
       - cloudflared
@@ -69,6 +71,7 @@ packages:
       - python@3.13
       - awscli
       - caddy
+      - check-jsonschema
       - dnsmasq
       - libssh2
       - libgit2

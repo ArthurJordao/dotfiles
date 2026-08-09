@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Run every check in this repo.
+#
+#   tools/check
+#
+# Every check runs even when an earlier one failed: a template parse error and a
+# drifted `units` list are independent problems and you want both in one pass.
+set -uo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
+
+fail=0
+for c in check-templates check-schemas check-consistency check-shell; do
+    printf '\n=== %s ===\n' "$c"
+    ./tools/"$c" || fail=1
+done
+
+printf '\n'
+if [ "$fail" -eq 0 ]; then
+    echo "all checks passed"
+else
+    echo "CHECKS FAILED" >&2
+fi
+exit "$fail"
