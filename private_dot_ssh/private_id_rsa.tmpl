@@ -1,1 +1,1 @@
-{{ onepasswordRead (printf "op://%s/ssh-rsa/private" .secrets.vault) }}
+{{ onepasswordRead (printf "op://%s/%s/private" .secrets.vault (index .secrets.items "ssh-rsa")) }}
