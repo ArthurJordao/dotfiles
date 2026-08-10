@@ -94,10 +94,6 @@
                 "description": "Moonlight client — streams from a `sunshine` host. Linux only; on macOS the cask is in the Brewfile, which is not role-gated."
               },
               {
-                "const": "vr",
-                "description": "ALVR host: streams SteamVR to a standalone headset over Wi-Fi. Package only — ALVR is launched from the desktop, not a unit."
-              },
-              {
                 "const": "emulation",
                 "description": "Shared EmuDeck library: installs syncthing, enables its user unit, and renders the folders in `syncthing.folders`. Also needs `syncthing_id` once the host has run syncthing once."
               },
