@@ -12,6 +12,6 @@ echo "Importing GPG key from 1Password..."
 tmp="$(mktemp)"
 chmod 600 "$tmp"
 trap 'rm -f "$tmp"' EXIT
-op document get gpg-key --vault dotfiles > "$tmp"
+op document get {{ index .secrets.items "gpg-key" }} --vault {{ .secrets.vault }} > "$tmp"
 gpg --import "$tmp"
 echo "GPG key imported successfully"
