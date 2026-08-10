@@ -45,6 +45,10 @@ packages:
       - podman
     sunshine:
       - sunshine
+    vr:
+      # Upstream's own release tarball. The plain `alvr` AUR package builds with
+      # --no-nvidia (no NVENC), and `alvr-nvidia` was removed from the AUR.
+      - alvr-bin
   darwin:
     taps:
       - homebrew/cask-fonts

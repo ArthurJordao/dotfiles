@@ -8,6 +8,7 @@
 #   minecraft  minecraft@ units + helper scripts
 #   sunshine   sunshine game-stream host (package + its user unit)
 #   moonlight  moonlight client, i.e. streams *from* a sunshine host
+#   vr         ALVR host — streams SteamVR to a standalone headset over Wi-Fi
 #   emulation  syncthing + the shared EmuDeck library (see `syncthing.folders`)
 #   edge       Caddy, CoreDNS, cloudflared, /etc deploy
 #   ddns       cloudflare-ddns service+timer
@@ -30,7 +31,7 @@ timezone: America/Sao_Paulo
 
 hosts:
   mars:
-    roles: [server, podman, gui, gaming, minecraft, sunshine, emulation, edge, ddns]
+    roles: [server, podman, gui, gaming, minecraft, sunshine, vr, emulation, edge, ddns]
     os: linux
     distro: arch
     user: turisa
