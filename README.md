@@ -139,7 +139,7 @@ of which file each came from.
 | `packages.yaml` | `packages` — `arch`, grouped by `common` plus one key per role; `darwin`, flat |
 | `theme.yaml` | `theme` — `active` switches the whole fleet, plus the per-consumer theme names |
 | `palettes.yaml` | `palettes` — base16 colors. **Generated** by `tools/fetch-palette`; do not edit |
-| `secrets.yaml` | `secrets` — the 1Password vault and item names. Field names are not declared |
+| `secrets.yaml` | `secrets` — the 1Password vault, and every item title the repo reads. Field names are not declared |
 
 Because the namespace is flat and shared, a key collision silently shadows real data —
 which is why the JSON Schemas live in `schemas/`, not next to the YAML they describe.
@@ -340,9 +340,21 @@ named a unit that would never exist; an endpoint with no quadlet was a 502.
 
 ## Secrets
 
-Secrets live in 1Password, read with `op` at apply-time. `.chezmoidata/secrets.yaml`
-names the vault and the items; field names aren't declared anywhere, so adding a secret
-is a 1Password edit plus an apply.
+Secrets live in 1Password, read with `op` at apply-time. One item per service, titled for
+the service; `.chezmoidata/secrets.yaml` names the vault and every title. Field names
+aren't declared anywhere, so adding a secret is a 1Password edit plus an apply.
+
+Put every field **inside a section**. `onepasswordItemFields` silently drops fields that
+aren't in one, leaving an empty map and a `no entry for key "value"` failure that names
+neither the item nor the field. To see what chezmoi can actually read from an item:
+
+```bash
+echo '{{ range $k, $_ := onepasswordItemFields "slskd" .secrets.vault }}{{ $k }}
+{{ end }}' | ./tools/simulate-host --real-op mars execute-template
+```
+
+An empty list means the fields are outside a section. Without `--real-op` this goes to
+`tools/mock-op` and tells you nothing about the vault.
 
 ## Day-to-day
 

@@ -121,11 +121,11 @@ uid/gid 0 (see the music stack). Fixed facts:
 - Host user: `turisa` · LAN IP `192.168.15.23` · Tailscale IP `100.127.50.55`
 - Base domain: `arthurjordao.dev`; every service is exposed as `<service>.arthurjordao.dev`
 - External media/storage SSD mounted at `/mnt/x9pro`, declared as `hosts.mars.storage.external`
-- Secrets: 1Password item named by `secrets.items.mars`, pulled at apply-time. The item is
-  fetched **once per file** and indexed, so the vault/item name appears in no template:
+- Secrets: one 1Password item per service, titles declared in `.chezmoidata/secrets.yaml`.
+  The item is fetched **once per file** and indexed, so no title appears in a template:
 
   ```
-  {{- $op := onepasswordItemFields .secrets.items.mars .secrets.vault -}}
+  {{- $op := onepasswordItemFields .secrets.items.slskd .secrets.vault -}}
   SLSKD_USERNAME={{ (index $op "SLSKD_WEB_USERNAME").value }}
   ```
 
@@ -530,8 +530,9 @@ tools/simulate-host mercury execute-template < dot_local/state/private_syncthing
 # Adding a new service (checklist)
 
 1. `dot_config/containers/systemd/<svc>.container` (+ `<svc>.env.tmpl` if it needs secrets;
-   add the fields to the 1Password item `secrets.items.mars` names — nothing to declare in
-   the repo). Name it `.container.tmpl` if it publishes a proxied port, and write that port as
+   create a 1Password item titled for the service, put its fields **inside a section**, and
+   add the title to `secrets.items`). Name it `.container.tmpl` if it publishes a proxied
+   port, and write that port as
 
    ```
    PublishPort={{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "<name>") }}:<image port>
