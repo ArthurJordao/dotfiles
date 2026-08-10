@@ -177,6 +177,10 @@ Fixed facts:
 - Secrets go in a sibling `<service>.env.tmpl` referenced via `EnvironmentFile=`. **Do not
   use `| quote`** in these — podman's `--env-file` keeps literal quotes. `%h` expands to the
   home dir inside unit files.
+- **The two env mechanisms quote oppositely.** An `Environment=` line is systemd syntax and
+  splits on whitespace, so a value containing a space must be quoted and the quotes are
+  stripped: `Environment="UPDATE_CRON=@every 15m"`. Unquoted, the container silently receives
+  `@every`. In the `EnvironmentFile=` above, the same quotes would arrive literally.
 - **Generated units cannot be `systemctl enable`d** ("transient or generated" error).
   Boot-start comes from `[Install] WantedBy=default.target` in the file itself. To bring one
   up: `systemctl --user daemon-reload && systemctl --user start <svc>.service`.

@@ -14,7 +14,10 @@ Environment=IP4_DOMAINS={{ $domains }}
 # No IPv6 here, and `none` is also what lets this run without --network host.
 Environment=IP6_PROVIDER=none
 Environment=TTL=300
-Environment=UPDATE_CRON=@every 15m
+# Quoted because systemd splits Environment= on whitespace -- unquoted, the
+# container gets `@every` and exits. Opposite of the .env file, where podman
+# keeps quotes literally.
+Environment="UPDATE_CRON=@every 15m"
 
 [Service]
 Restart=always
