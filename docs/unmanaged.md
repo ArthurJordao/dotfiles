@@ -258,7 +258,13 @@ server's tmux session, not RCON.
 
 Do not "fix" this by binding it to loopback: vanilla and Paper have no `rcon.ip`, so RCON
 inherits `server-ip`, and setting that would bind the *game* port to loopback too. Leave it
-off. A pre-change backup is at `~/minecraft/vanilla/server.properties.bak-rcon`.
+off.
+
+`rcon.password` and `rcon.port` were deleted from the file as well, but **the server rewrites
+`server.properties` on every start** and re-adds the full key set, so both reappear with
+defaults — an *empty* password and 25575. That is fine and expected: `enable-rcon=false` is an
+explicit value and survives, which is what keeps the port closed. Deleting the lines is not a
+control, it just kept the old password off disk.
 
 ### No longer load-bearing
 
