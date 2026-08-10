@@ -1,0 +1,13 @@
+{{- $jvm := includeTemplate "minecraft-jvm" (dict "minecraft" .minecraft "instance" "atm10-tts") -}}
+{{- $env := "" -}}
+{{- range .minecraft.instances -}}
+{{- if eq .name "atm10-tts" }}{{ $env = index . "java_env" }}{{ end -}}
+{{- end -}}
+#!/usr/bin/env bash
+# GENERATED — JVM comes from .chezmoidata/minecraft.yaml.
+#
+# startserver.sh is modpack-shipped and stays unmanaged: it installs NeoForge and
+# writes a first-run server.properties. It picks its JVM from this variable, set
+# here rather than in the unit because a tmux pane inherits the tmux server's
+# environment, not the client's.
+{{ $env }}={{ $jvm }} exec ./startserver.sh

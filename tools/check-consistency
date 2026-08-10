@@ -64,10 +64,12 @@ def fail(rule, msg):
 
 
 data = json.loads(render("_checker", text=(
-    '{{ dict "hosts" .hosts "packages" .packages "syncthing" .syncthing | toJson }}')))
+    '{{ dict "hosts" .hosts "packages" .packages "syncthing" .syncthing '
+    '"minecraft" .minecraft | toJson }}')))
 hosts = data["hosts"]
 packages = data.get("packages") or {}
 folders = (data.get("syncthing") or {}).get("folders") or []
+instances = (data.get("minecraft") or {}).get("instances") or []
 
 files = quadlet_files()
 top_level = set(f.split(os.sep)[0] for f in files)
@@ -154,6 +156,32 @@ all_roles = set(r for h in hosts.values() for r in (h.get("roles") or []))
 for key in sorted(packages.get("arch") or {}):
     if key != "common" and key not in all_roles:
         fail("C6", "packages.arch.%s is not a role any host declares" % key)
+
+# C7 -- an instance whose JDK package is not declared installs no JVM to run on.
+for name in sorted(hosts):
+    host = hosts[name]
+    roles = host.get("roles") or []
+    if "minecraft" not in roles:
+        continue
+    family = packages.get(host.get("distro") or "") or {}
+    declared = set()
+    for group in ["common"] + roles:
+        for pkg in family.get(group) or []:
+            declared.add(pkg if isinstance(pkg, str) else pkg.get("name"))
+    for inst in instances:
+        pkg = "jdk%s-openjdk" % inst["jdk"]
+        if pkg not in declared:
+            fail("C7", "%s: instance %r needs %s, absent from "
+                       "packages.arch.minecraft" % (name, inst["name"], pkg))
+
+# C8 -- a `ddns: true` endpoint with no cloudflare-ddns quadlet never updates.
+ddns_names = [e["name"] for h in hosts.values()
+              for e in (h.get("endpoints") or []) if e.get("ddns")]
+if ddns_names:
+    if not any(any(q.startswith("cloudflare-ddns") for q in (h.get("quadlets") or []))
+               for h in hosts.values()):
+        fail("C8", "endpoints %s set `ddns: true` but no host deploys the "
+                   "cloudflare-ddns quadlet" % ", ".join(sorted(ddns_names)))
 
 if failures:
     for line in failures:

@@ -1,0 +1,18 @@
+{{- /* Absolute java path for a named instance, from .chezmoidata/minecraft.yaml.
+
+       `jdk: 21` becomes /usr/lib/jvm/java-21-openjdk/bin/java. Only an LTS Arch
+       packages separately can be pinned this way -- rolling jdk-openjdk renames
+       its directory on each bump and would break the path silently.
+
+         {{ includeTemplate "minecraft-jvm" (dict "minecraft" .minecraft "instance" "vanilla") }} */ -}}
+{{- $want := .instance -}}
+{{- $jdk := "" -}}
+{{- range (index .minecraft "instances" | default list) -}}
+{{- if eq .name $want -}}
+{{- $jdk = printf "%v" .jdk -}}
+{{- end -}}
+{{- end -}}
+{{- if eq $jdk "" -}}
+{{- fail (printf "minecraft-jvm: no instance named %q in .chezmoidata/minecraft.yaml" $want) -}}
+{{- end -}}
+{{- printf "/usr/lib/jvm/java-%s-openjdk/bin/java" $jdk -}}

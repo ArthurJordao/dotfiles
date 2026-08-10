@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ArthurJordao/dotfiles/schemas/cloudflare.schema.json",
+  "title": "cloudflare account data",
+  "description": "Shape of .chezmoidata/cloudflare.yaml. Merged into the same template data as hosts.yaml. Validates structure only -- it cannot tell whether the tunnel exists or whether its credentials file is present on the edge host.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "cloudflare"
+  ],
+  "properties": {
+    "cloudflare": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tunnel_id"
+      ],
+      "properties": {
+        "tunnel_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "description": "Named tunnel UUID. Also names the credentials JSON the edge host keeps at ~/.cloudflared/<tunnel_id>.json."
+        }
+      }
+    }
+  }
+}

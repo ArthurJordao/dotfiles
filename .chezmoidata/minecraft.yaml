@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=../schemas/minecraft.schema.json
+#
+# Minecraft server instances — a flat list like `endpoints`, and the only place
+# an instance's JDK is declared. `jdk: 21` derives both Arch names: the package
+# jdk21-openjdk and the path /usr/lib/jvm/java-21-openjdk.
+#
+# `java_env` names the env var a modpack-shipped launcher reads to pick a JVM.
+# Every instance gets a managed `start` script; for one wrapping a modpack
+# script, `start` sets this var and execs it.
+#
+# This is the only place an instance is declared. A host runs them by having the
+# `minecraft` role — `units` carries no minecraft entries, and both the unit's
+# Conflicts= and gaming-mode's CANDIDATES derive from here.
+
+minecraft:
+  instances:
+    - {name: atm10-tts, jdk: 21, java_env: ATM10_JAVA}
+    - {name: vanilla, jdk: 25, xms: 2G, xmx: 4G}

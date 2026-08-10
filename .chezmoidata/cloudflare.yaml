@@ -1,0 +1,7 @@
+# yaml-language-server: $schema=../schemas/cloudflare.schema.json
+#
+# Cloudflare account coordinates. The tunnel's credentials JSON is derived from
+# `tunnel_id` and lives only on the edge host — never in this repo.
+
+cloudflare:
+  tunnel_id: e5653e06-8ef3-4810-a2dc-3d730d73e949

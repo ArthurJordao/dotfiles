@@ -1,0 +1,287 @@
+# What lives only on mars
+
+Things mars depends on that `chezmoi apply` does not create. Rebuilding the box means
+walking this list by hand.
+
+Everything here was read off the running host. Where a file is short, its whole body is
+inlined so this document is enough on its own.
+
+The generated files are **not** here: `/etc/caddy/Caddyfile`, `/etc/coredns/Corefile`,
+`/etc/cloudflared/config.yml` and `/etc/caddy/caddy.env` are rendered from
+`.chezmoidata/` and installed by `run_onchange_after_70-deploy-etc.sh.tmpl`. Never write
+them by hand — the next apply overwrites them. Only the *units* that run those services
+are unmanaged.
+
+---
+
+## A. Host state to recreate
+
+### The caddy binary is hand-built
+
+`/usr/bin/caddy` is owned by **no package**. `xcaddy-bin` ships only the builder; the
+binary running in production was built with the Cloudflare DNS provider compiled in.
+Without that module Caddy cannot answer the DNS-01 challenge and **every certificate
+fails to issue**.
+
+```sh
+xcaddy build --with github.com/caddy-dns/cloudflare
+sudo install -m755 ./caddy /usr/bin/caddy
+```
+
+Verify: `caddy list-modules | grep dns.providers.cloudflare` must print that line.
+Currently running v2.11.2.
+
+### The caddy user
+
+`caddy.service` runs as `User=caddy`, and no package creates the account.
+
+```sh
+sudo useradd --system --home-dir /var/lib/caddy --shell /sbin/nologin caddy
+```
+
+`/var/lib/caddy` holds Caddy's ACME state, including issued certificates. Losing it
+forces a re-issue of every certificate, which is subject to Let's Encrypt rate limits.
+
+### Linger for turisa
+
+Without this, **no user unit starts at boot** — the entire self-hosted stack stays down
+until someone logs in.
+
+```sh
+sudo loginctl enable-linger turisa
+```
+
+### logind must not kill turisa's processes
+
+CachyOS ships `/etc/systemd/logind.conf.d/steam-deckify.conf` with
+`KillUserProcesses=True`, which kills processes spawned over SSH the moment the session
+ends. The `zz-` prefix is what makes this drop-in win.
+
+```ini
+# /etc/systemd/logind.conf.d/zz-keep-turisa-processes.conf
+[Login]
+KillExcludeUsers=turisa
+```
+
+### Kernel cmdline: pcie_aspm=off
+
+Fixes NVMe PCIe AER errors that dropped SSH connections. The bootloader is limine, and
+this whole file is hand-maintained.
+
+```sh
+# /etc/default/limine
+ESP_PATH="/boot"
+KERNEL_CMDLINE[default]+="quiet nowatchdog splash rw rootflags=subvol=/@ root=UUID=28a7565f-3c81-4424-9351-17558c2b0736"
+BOOT_ORDER="*, *lts, *fallback, Snapshots"
+KERNEL_CMDLINE[default]+=" pcie_aspm=off"
+```
+
+Verify after boot: `grep -o pcie_aspm=off /proc/cmdline`.
+
+### The external SSD mount
+
+Every media path, the immich library and the minecraft backups live here. `nofail` keeps
+a missing disk from blocking boot.
+
+```
+# /etc/fstab
+UUID=30CD-0AC4 /mnt/x9pro exfat defaults,nofail,uid=1000,gid=1000,umask=022,x-systemd.automount 0 0
+```
+
+### Name resolution: two halves of one fix
+
+systemd-resolved sent private reverse lookups to mDNS and waited out the timeout — a PTR
+for a LAN address cost a flat 7.7s. Turning resolved's mDNS off fixed that but removed
+glibc's only route to `.local`, so both halves are needed together.
+
+```sh
+sudo nmcli connection modify ap-not-found connection.llmnr 0 connection.mdns 0
+```
+
+```
+# /etc/nsswitch.conf — the hosts: line, with mdns_minimal right after mymachines
+hosts: mymachines mdns_minimal [NOTFOUND=return] resolve [!UNAVAIL=return] files myhostname dns
+```
+
+A copy of the original is at `/etc/nsswitch.conf.pre-mdns`. `avahi-daemon` provides
+`.local` service discovery independently, which is why dropping resolved's mDNS is safe.
+
+### System units
+
+None of these are packaged. `coredns` and `cloudflared` binaries *are* package-owned —
+only their units are missing.
+
+```ini
+# /etc/systemd/system/caddy.service
+[Unit]
+Description=Caddy Web Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=caddy
+Group=caddy
+ExecStart=/usr/bin/caddy run --config /etc/caddy/Caddyfile
+ExecReload=/usr/bin/caddy reload --config /etc/caddy/Caddyfile
+EnvironmentFile=/etc/caddy/caddy.env
+TimeoutStopSec=5s
+Restart=on-failure
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```ini
+# /etc/systemd/system/coredns.service
+[Unit]
+Description=CoreDNS DNS Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/bin/coredns -conf /etc/coredns/Corefile
+Restart=on-failure
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```ini
+# /etc/systemd/system/cloudflared.service
+[Unit]
+Description=cloudflared
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+TimeoutStartSec=15
+Type=notify
+ExecStart=/usr/bin/cloudflared --no-autoupdate --config /etc/cloudflared/config.yml tunnel run
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```ini
+# /etc/systemd/system/cloudflared-update.service
+[Unit]
+Description=Update cloudflared
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/bin/bash -c '/usr/bin/cloudflared update; code=$?; if [ $code -eq 11 ]; then systemctl restart cloudflared; exit 0; fi; exit $code'
+```
+
+```ini
+# /etc/systemd/system/cloudflared-update.timer
+[Unit]
+Description=Update cloudflared
+
+[Timer]
+OnCalendar=daily
+
+[Install]
+WantedBy=timers.target
+```
+
+Enable with `sudo systemctl enable --now caddy coredns cloudflared cloudflared-update.timer`.
+
+### Drop-ins
+
+```ini
+# /etc/systemd/system/cockpit.socket.d/override.conf — keep cockpit off the LAN
+[Socket]
+ListenStream=
+ListenStream=127.0.0.1:9090
+```
+
+```ini
+# /etc/systemd/system/tailscaled.service.d/before-umount.conf
+[Unit]
+Before=umount.target
+```
+
+### No longer load-bearing
+
+- **`archlinux-java` default.** The atm10-tts modpack launcher used to fall through to
+  bare `java`, making the system-wide default silently load-bearing. Each instance's JVM
+  is now pinned in `.chezmoidata/minecraft.yaml` and injected by its managed
+  `~/minecraft/<instance>/start` script. Recorded so nobody hunts for a dependency that
+  was removed.
+- **`~/cloudflare-ddns/`.** Was an untracked clone of the abandoned Python
+  cloudflare-ddns, complete with a venv and an uncommitted local patch. Replaced by the
+  `cloudflare-ddns` quadlet on upstream's v2 image. Delete the directory if it is still
+  present.
+
+### Known drift
+
+Rolling **`jdk-openjdk`** (26) is installed but declared nowhere. It renames its own
+directory on every bump, so no pinned path should ever point at it. Either
+`paru -Rns jdk-openjdk` or declare it deliberately in `packages.arch.minecraft`.
+`tools/check-consistency` reads repo data only and cannot see this — it needs a check
+against the live host.
+
+---
+
+## B. Secrets and external services
+
+- **1Password vault `dotfiles`** is the root of every secret the repo renders. Item
+  titles are declared in `.chezmoidata/secrets.yaml`; field names are not — templates
+  read them off the item. Lose the vault and no apply can complete. Note that
+  `onepasswordItemFields` silently drops any field that is not inside a **section**.
+- **Cloudflare Tunnel credentials** at `~/.cloudflared/<tunnel_id>.json`, where
+  `tunnel_id` is in `.chezmoidata/cloudflare.yaml`. Correctly absent from the repo.
+  Recreate with `cloudflared tunnel login` then `cloudflared tunnel create <name>`, which
+  mints a **new** ID that must be written back into that data file.
+- **The tunnel is locally managed.** Never add a Public Hostname in the Cloudflare
+  dashboard: that attaches a *remote* config which cloudflared obeys while silently
+  ignoring `config.yml`, and there is no supported way to detach it. Routes are created
+  once per hostname with `cloudflared tunnel route dns <tunnel-id> <hostname>`.
+- **Cloudflare API tokens.** Two distinct ones, both needing *Edit DNS* on the zone: one
+  for Caddy's DNS-01 challenge (`/etc/caddy/caddy.env`, from the `caddy` item) and one
+  for the DDNS container (from the `cloudflare-ddns` item).
+- **Router port-forward.** TCP 25565 → mars, for Minecraft. The only forwarded port.
+  `minecraft.arthurjordao.dev`'s A record is kept current by the `cloudflare-ddns`
+  quadlet.
+- **Wi-Fi PSK** lives in the NetworkManager profile `ap-not-found` under
+  `/etc/NetworkManager/system-connections/`, root-only and not in the repo. There is also
+  a wired profile, "Conexão cabeada 1".
+
+---
+
+## C. Data, not config
+
+None of this is reconstructible from the repo.
+
+| What | Where | Backup |
+|---|---|---|
+| immich library | `/mnt/x9pro` | none |
+| media (music, books, book-ingest) | `/mnt/x9pro` | none |
+| minecraft worlds, mods, plugins | `~/minecraft/<instance>/` | `vanilla` only, below |
+| minecraft backups | `/mnt/x9pro/minecraft-backups` | newest 3 tarballs, `vanilla` world only |
+| podman named volumes | `~/.local/share/containers` | none |
+| syncthing identity | `~/.local/state/syncthing/{cert,key}.pem` | none — regenerating changes the device ID |
+| syncthing database | `~/.local/state/syncthing/` (SQLite) | none, rebuildable by rescanning |
+
+`minecraft-backup.timer` runs daily and keeps the newest 3 tarballs of the `vanilla`
+world tree only. **Nothing here has an offsite copy**, and the external SSD is a single
+exfat volume with no redundancy.
+
+The syncthing device ID is derived from `cert.pem`. Regenerating it means editing
+`syncthing_id` in `.chezmoidata/hosts.yaml` and re-approving the device on every peer.
+
+---
+
+## D. Deliberately disposable
+
+Left over from diagnosing Wi-Fi drops. Do **not** recreate these; they are listed only so
+a future reader does not mistake them for load-bearing.
+
+- `/etc/systemd/system/wifi-linklog.service`
+- `/usr/local/bin/wifi-linklog`

@@ -1,7 +1,14 @@
 {{- $domain := .domain -}}
+{{- $tunnel := .cloudflare.tunnel_id -}}
+{{- $user := "" -}}
+{{- range $host := .hosts -}}
+{{- if has "edge" (index $host "roles" | default list) -}}
+{{- $user = index $host "user" -}}
+{{- end -}}
+{{- end -}}
 # GENERATED from .chezmoidata/hosts.yaml — set `public: true` on an endpoint there.
-tunnel: e5653e06-8ef3-4810-a2dc-3d730d73e949
-credentials-file: /home/turisa/.cloudflared/e5653e06-8ef3-4810-a2dc-3d730d73e949.json
+tunnel: {{ $tunnel }}
+credentials-file: /home/{{ $user }}/.cloudflared/{{ $tunnel }}.json
 
 # Public ingress via Cloudflare Tunnel — no open ports. LAN/Tailscale clients
 # still resolve via CoreDNS, so these routes only affect outside traffic.

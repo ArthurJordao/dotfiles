@@ -20,10 +20,11 @@ Hosts share this repo, gated by roles in `.chezmoidata/hosts.yaml`:
 ## Host gating: three axes
 
 `.chezmoidata/` is the only place hosts are named — `hosts.yaml` holds the per-host inventory,
-`syncthing.yaml` the shared emulation folders, `packages.yaml` the package declarations,
-`secrets.yaml` the 1Password vault and item names. chezmoi merges every file in that directory
-into one template data namespace, so templates just read `.hosts` / `.domain` / `.syncthing` /
-`.packages` / `.secrets`. Gate on the axis that is the actual reason a file isn't universal:
+`syncthing.yaml` the shared emulation folders, `minecraft.yaml` the server instances and their
+JDKs, `packages.yaml` the package declarations, `secrets.yaml` the 1Password vault and item names,
+`cloudflare.yaml` the tunnel ID. chezmoi merges every file in that directory into one template data
+namespace, so templates just read `.hosts` / `.domain` / `.syncthing` / `.minecraft` / `.packages`
+/ `.secrets` / `.cloudflare`. Gate on the axis that is the actual reason a file isn't universal:
 
 | Axis | Mechanism | Use for |
 |---|---|---|
@@ -55,6 +56,11 @@ everything and is what to run after moving or renaming any source file:
 CI runs the same `tools/check` on every push. It needs no secrets.
 
 Silent failures worth knowing:
+- **A tmux pane inherits the tmux *server's* environment, not the client's.** `Environment=` in a
+  unit whose `ExecStart` is `tmux new-session` never reaches the command — only names in tmux's
+  `update-environment` cross over. This is why `minecraft/atm10-tts/start` sets `ATM10_JAVA`
+  itself: a script running inside the pane is unaffected. `tmux new-session -e VAR=value` also
+  works if a value ever has to come from the unit.
 - `dir/**` then `!dir/keep` in `.chezmoiignore` ignores everything. Negation needs single-star `dir/*`.
 - A `.container` whose prefix is not in a host's `quadlets` deploys nowhere, no error.
 - **A bare field lookup on a key that may be absent errors under `missingkey=error`, and
@@ -116,7 +122,14 @@ Silent failures worth knowing:
 
 Everything runs **rootless podman** as user `turisa`. Container-root inside a rootless
 container maps to `turisa` on the host, so services that must write host-owned dirs run as
-uid/gid 0 (see the music stack). Fixed facts:
+uid/gid 0 (see the music stack).
+
+**Not everything mars needs is in this repo.** `docs/unmanaged.md` is the rebuild checklist for
+the rest: the hand-built `caddy` binary and its user, linger, the four `/etc/systemd/system`
+units, the limine cmdline, the fstab line, and the name-resolution fix. Add to it whenever
+something load-bearing is set up by hand.
+
+Fixed facts:
 
 - Host user: `turisa` · LAN IP `192.168.15.23` · Tailscale IP `100.127.50.55`
 - Base domain: `arthurjordao.dev`; every service is exposed as `<service>.arthurjordao.dev`
@@ -139,7 +152,8 @@ uid/gid 0 (see the music stack). Fixed facts:
 - Deploys to `~/.config/containers/systemd/`, where podman's systemd generator turns each
   `.container` / `.pod` / `.network` file into a rootless **user** unit.
 - Layout: root level for standalone services (`calibre-web-automated.container`,
-  `shelfmark.container`, `teamspeak3.container`); subdirs for service groups that share a network/pod
+  `cloudflare-ddns.container`, `shelfmark.container`, `teamspeak3.container`); subdirs for service
+  groups that share a network/pod
   (`music/` = slskd + navidrome + soulsync on `music.network`; `immich/` = a pod of
   server/db/valkey/ml plus the top-level `immich.pod`).
 - **Mount points and the timezone are data, not per-service facts.** `{{ .timezone }}` is
@@ -225,7 +239,7 @@ service is not one entry, it's a line in each list that concerns it:
 | List | Drives | Contents |
 |---|---|---|
 | `quadlets` | `.chezmoiignore` | quadlet filename **prefixes**, matched `<prefix>*` |
-| `units` | `gaming-mode` `CANDIDATES` | systemd user units, **no** `.service` suffix |
+| `units` | `gaming-mode` `CANDIDATES` | systemd user units, **no** `.service` suffix. Minecraft instances are not here — they come from `.chezmoidata/minecraft.yaml` |
 | `endpoints` | Caddy, CoreDNS, cloudflared, `~/.ssh/config`, quadlet `PublishPort` | hostnames to serve and resolve |
 
 ```yaml
@@ -233,14 +247,14 @@ mars:
   os: linux
   distro: arch                    # linux only; picks the package family
   ip: {lan: 192.168.15.23, tailscale: 100.127.50.55}
-  quadlets: [calibre-web-automated, immich, music, shelfmark, teamspeak3]
+  quadlets: [calibre-web-automated, cloudflare-ddns, immich, music, shelfmark, teamspeak3]
   units: [immich-pod, immich-db, immich-valkey, immich-ml, immich-server,
-          navidrome, slskd, soulsync, calibre-web-automated,
-          shelfmark, teamspeak3, minecraft@vanilla, minecraft@atm10-tts]
+          navidrome, slskd, soulsync, calibre-web-automated, cloudflare-ddns,
+          shelfmark, teamspeak3, syncthing]
   endpoints:
     - {name: books, port: 8083, public: true}
     - {name: dns, port: 8053, scheme: https, tls_insecure: true, log: false, served_by: coredns}
-    - {name: minecraft}           # no port -> DNS record only
+    - {name: minecraft, ddns: true}   # no port -> DNS record only; ddns keeps the A record current
 ```
 
 **The three lists are independent, and that is the one thing that can drift.** A quadlet with no
@@ -249,15 +263,18 @@ will never exist; an endpoint with no quadlet is a 502. None of it errors. The o
 *can't* drift is the port: the quadlet reads it from the endpoint.
 
 They don't line up 1:1: `immich` is one quadlet, five units, one endpoint; `music` is one quadlet,
-three units, three endpoints; `teamspeak3` has no endpoint; `minecraft@*` are units with no
-quadlet; `dns` is an endpoint with neither.
+three units, three endpoints; `teamspeak3` has no endpoint; `dns` is an endpoint with neither;
+`minecraft` is an endpoint whose units come from `.chezmoidata/minecraft.yaml` instead.
 
 `units` must name **every** unit to restore, not just a pod. `Requires=` propagates stop to
 dependents but start only to dependencies — stopping `immich-pod` takes the containers down, but
 starting it alone brings up an empty pod.
 
 Endpoint fields: `name` (required), `port` (omit ⇒ DNS-only, no Caddy block, no tunnel),
-`public`, `scheme`, `tls_insecure`, `log`, `served_by`.
+`public`, `ddns`, `scheme`, `tls_insecure`, `log`, `served_by`.
+
+`ddns: true` makes the `cloudflare-ddns` container keep that hostname's public A record on the
+current WAN IP. Independent of `public`, which routes a hostname through the tunnel instead.
 
 `served_by` names the non-container service listening on that port — `dns` → coredns, `sunshine` →
 the package. Without it, `check-consistency` requires one of that host's quadlets to publish the
@@ -344,7 +361,7 @@ its unit. The catch: decline the install prompt (see "Packages"), or run headles
 step 50 still fails for lack of the package.
 
 `run_once_after_50-enable-systemd-units.sh.tmpl` enables only the hand-written units, gated by the
-role that owns each (`ddns`, `podman`, `minecraft`) — quadlet services are generated and can't be
+role that owns each (`podman`, `minecraft`) — quadlet services are generated and can't be
 enabled.
 
 Note `run_once_` state is keyed on content hash (renaming is free); `run_onchange_` is keyed on
@@ -407,18 +424,25 @@ hosts in `.chezmoidata/hosts.yaml` relocates the whole Caddy/CoreDNS/cloudflared
 
 ## Other mars pieces
 
-- `dot_config/systemd/user/` — hand-written units: `cloudflare-ddns` (service+timer keeps the
-  public A record current), `minecraft@.service.tmpl` (unit template; instances are mutually
-  exclusive), and `minecraft-backup` (service+timer; daily world backup).
-- **Minecraft instances are named in exactly one place**: the `minecraft@*` entries in a host's
-  `units`. `gaming-mode`'s `CANDIDATES` and `minecraft@.service`'s `Conflicts=` are both derived
-  from them, the latter by prefix-filtering that list. Renaming an instance is a one-line edit.
+- `dot_config/systemd/user/` — hand-written units: `minecraft@.service.tmpl` (unit template;
+  instances are mutually exclusive) and `minecraft-backup` (service+timer; daily world backup).
+- **Minecraft instances are declared in exactly one place**: `.chezmoidata/minecraft.yaml`. A host
+  runs them by having the `minecraft` role — `units` carries no minecraft entries. Both
+  `minecraft@.service`'s `Conflicts=` and `gaming-mode`'s `CANDIDATES` derive from that list, so
+  renaming an instance is a one-line edit.
+- **Every instance has a managed launcher at `~/minecraft/<instance>/start`**, and the unit runs
+  `./start` for all of them — a uniform name is what keeps the shared unit template free of any
+  per-instance branching. `vanilla`'s runs java directly; `atm10-tts`'s injects the JVM and execs
+  the modpack's own `startserver.sh`, which stays unmanaged because it installs NeoForge and
+  writes a first-run `server.properties`. **Nothing under `minecraft/` may be `exact_`** — it
+  holds worlds, mods and backups.
 - `dot_local/scripts/executable_minecraft` — helper to keep the boot server in sync with the
   running one.
-- **JDKs are pinned.** `~/minecraft/<instance>/startserver.sh` (not in this repo) hardcodes an
-  absolute JVM path per instance — vanilla `/usr/lib/jvm/java-25-openjdk`, modpack 21 — so the
-  `minecraft` key under `packages.arch` must match. Never use `jdk-openjdk` (rolling): its
-  directory is renamed on each bump and silently breaks the path. Only LTS is pinnable.
+- **JDKs are pinned per instance** by `jdk:` in `.chezmoidata/minecraft.yaml`, which derives both
+  Arch names: package `jdk21-openjdk` and path `/usr/lib/jvm/java-21-openjdk`. `check-consistency`
+  C7 requires each instance's package to be declared under `packages.arch.minecraft`. Never use
+  `jdk-openjdk` (rolling): its directory is renamed on each bump and silently breaks the path.
+  Only LTS is pinnable.
 - `dot_local/scripts/executable_minecraft-backup` — daily tarball of the `vanilla` world tree to
   `/mnt/x9pro/minecraft-backups`, keeping the newest 3. Pauses+flushes saves via the server's
   tmux console when it's running so the snapshot is consistent. Run by `minecraft-backup.timer`.
