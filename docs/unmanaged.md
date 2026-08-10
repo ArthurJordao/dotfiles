@@ -249,6 +249,17 @@ mars has no global IPv6 and no IPv6 egress, so the v6 duplicates of these rules 
 Possibly stale: the `alvr` application profile rules (`9943:9944` tcp+udp) remain, though the
 `vr` role and its package were removed from the repo.
 
+### RCON is disabled on purpose
+
+`enable-rcon=false` in each instance's `server.properties` (not managed by this repo). It
+used to listen on `*:25575` on `vanilla`, and the LAN is blanket-accepted, so anything on the
+network could reach it. Nothing needs it — `minecraft-backup` drives the console through the
+server's tmux session, not RCON.
+
+Do not "fix" this by binding it to loopback: vanilla and Paper have no `rcon.ip`, so RCON
+inherits `server-ip`, and setting that would bind the *game* port to loopback too. Leave it
+off. A pre-change backup is at `~/minecraft/vanilla/server.properties.bak-rcon`.
+
 ### No longer load-bearing
 
 - **`archlinux-java` default.** The atm10-tts modpack launcher used to fall through to
