@@ -64,8 +64,6 @@ hosts:
       - calibre-web-automated
       - shelfmark
       - teamspeak3
-      - minecraft@vanilla
-      - minecraft@atm10-tts
       - syncthing
       # sunshine is deliberately absent: gaming-mode stops everything in this
       # list, and that would kill the session being streamed.

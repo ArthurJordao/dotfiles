@@ -8,8 +8,9 @@
 # Every instance gets a managed `start` script; for one wrapping a modpack
 # script, `start` sets this var and execs it.
 #
-# tools/check-consistency ties this list to the `minecraft@*` entries in a
-# host's `units` in both directions, and to packages.arch.minecraft.
+# This is the only place an instance is declared. A host runs them by having the
+# `minecraft` role — `units` carries no minecraft entries, and both the unit's
+# Conflicts= and gaming-mode's CANDIDATES derive from here.
 
 minecraft:
   instances:
