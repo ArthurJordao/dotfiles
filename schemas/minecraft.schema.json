@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ArthurJordao/dotfiles/schemas/minecraft.schema.json",
+  "title": "minecraft instance data",
+  "description": "Shape of .chezmoidata/minecraft.yaml. Merged into the same template data as hosts.yaml. Validates structure only -- it cannot catch an instance missing from a host's `units`, a JDK whose package is undeclared, or a heap larger than the box has. tools/check-consistency covers the first two.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "minecraft"
+  ],
+  "properties": {
+    "minecraft": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "instances"
+      ],
+      "properties": {
+        "instances": {
+          "type": "array",
+          "description": "One entry per server instance. The name is the systemd template instance: `vanilla` is started as minecraft@vanilla.service.",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/instance"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "instance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "jdk"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?$",
+          "description": "systemd template instance name, and the directory under ~/minecraft/."
+        },
+        "jdk": {
+          "type": "integer",
+          "description": "Java major version. Derives package jdk<N>-openjdk and path /usr/lib/jvm/java-<N>-openjdk. Must be an LTS that Arch packages separately -- never the rolling jdk-openjdk, whose directory is renamed on each bump.",
+          "minimum": 8,
+          "maximum": 99
+        },
+        "java_env": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$",
+          "description": "Env var the instance's modpack-shipped launcher reads to choose a JVM. That launcher stays unmanaged; the managed `start` wrapper sets this var and execs it."
+        },
+        "xms": {
+          "type": "string",
+          "pattern": "^[0-9]+[KMG]$",
+          "description": "Initial heap, e.g. 2G. Only used by a managed launcher."
+        },
+        "xmx": {
+          "type": "string",
+          "pattern": "^[0-9]+[KMG]$",
+          "description": "Maximum heap, e.g. 4G. Only used by a managed launcher."
+        }
+      }
+    }
+  }
+}
