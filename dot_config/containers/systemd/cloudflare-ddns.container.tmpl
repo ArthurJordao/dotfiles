@@ -1,0 +1,23 @@
+{{- $domains := includeTemplate "ddns-domains" (dict "hosts" .hosts "domain" .domain) -}}
+[Unit]
+Description=Cloudflare DDNS — keeps the public A record current
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=docker.io/timothyjmiller/cloudflare-ddns:latest
+AutoUpdate=registry
+EnvironmentFile=%h/.config/containers/systemd/cloudflare-ddns.env
+
+# Domains come from the endpoints marked `ddns: true`.
+Environment=IP4_DOMAINS={{ $domains }}
+# No IPv6 here, and `none` is also what lets this run without --network host.
+Environment=IP6_PROVIDER=none
+Environment=TTL=300
+Environment=UPDATE_CRON=@every 15m
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

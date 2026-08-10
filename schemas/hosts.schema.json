@@ -246,6 +246,11 @@
           "description": "true adds a Cloudflare Tunnel ingress rule, reachable from the public internet. Still needs `cloudflared tunnel route dns` once to create the CNAME.",
           "default": false
         },
+        "ddns": {
+          "type": "boolean",
+          "description": "true makes the cloudflare-ddns container keep this hostname's public A record pointed at the current WAN IP. Independent of `public`, which routes a hostname through the tunnel instead.",
+          "default": false
+        },
         "scheme": {
           "description": "The UPSTREAM's scheme, not the listener's. Caddy always terminates TLS itself; set https only when the thing behind it also speaks TLS.",
           "default": "http",

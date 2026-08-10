@@ -45,6 +45,7 @@ hosts:
 
     quadlets:
       - calibre-web-automated
+      - cloudflare-ddns
       - immich
       - music
       - shelfmark
@@ -62,6 +63,7 @@ hosts:
       - slskd
       - soulsync
       - calibre-web-automated
+      - cloudflare-ddns
       - shelfmark
       - teamspeak3
       - syncthing
@@ -72,7 +74,7 @@ hosts:
       - {name: books, port: 8083, public: true}
       - {name: dns, port: 8053, scheme: https, tls_insecure: true, log: false, served_by: coredns}
       - {name: immich, port: 2283, public: true}
-      - {name: minecraft}
+      - {name: minecraft, ddns: true}
       - {name: music, port: 4533}
       - {name: shelfmark, port: 8084}
       - {name: slskd, port: 5030}

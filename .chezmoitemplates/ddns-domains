@@ -1,0 +1,20 @@
+{{- /* Comma-joined <name>.<domain> for every endpoint with `ddns: true`.
+
+       Looked up across the whole fleet rather than the rendering host, for the
+       same reason as endpoint-port: the quadlet has to render identically on
+       hosts that don't deploy it.
+
+         Environment=IP4_DOMAINS={{ includeTemplate "ddns-domains" (dict "hosts" .hosts "domain" .domain) }} */ -}}
+{{- $domain := .domain -}}
+{{- $names := list -}}
+{{- range $host := .hosts -}}
+{{- range (index $host "endpoints" | default list) -}}
+{{- if index . "ddns" | default false -}}
+{{- $names = append $names (printf "%s.%s" .name $domain) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- if eq (len $names) 0 -}}
+{{- fail "ddns-domains: no endpoint sets `ddns: true` in .chezmoidata/hosts.yaml" -}}
+{{- end -}}
+{{- join "," ($names | uniq | sortAlpha) -}}
