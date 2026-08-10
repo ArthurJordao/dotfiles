@@ -100,10 +100,6 @@
               {
                 "const": "edge",
                 "description": "Owns Caddy, CoreDNS, cloudflared and the /etc deploy. Move it to relocate the whole edge."
-              },
-              {
-                "const": "ddns",
-                "description": "cloudflare-ddns service + timer."
               }
             ]
           }

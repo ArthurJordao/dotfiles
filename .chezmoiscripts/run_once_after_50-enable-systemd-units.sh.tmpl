@@ -1,13 +1,9 @@
 {{- $roles := (index .hosts .hostname).roles -}}
-{{ if or (has "ddns" $roles) (has "minecraft" $roles) (has "podman" $roles) (has "sunshine" $roles) (has "emulation" $roles) -}}
+{{ if or (has "minecraft" $roles) (has "podman" $roles) (has "sunshine" $roles) (has "emulation" $roles) -}}
 #!/bin/bash
 set -euo pipefail
 
 systemctl --user daemon-reload
-{{ if has "ddns" $roles -}}
-systemctl --user enable --now cloudflare-ddns.service
-systemctl --user enable --now cloudflare-ddns.timer
-{{ end -}}
 {{ if has "podman" $roles -}}
 systemctl --user enable --now podman-auto-update.timer
 {{ end -}}

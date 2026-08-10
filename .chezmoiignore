@@ -31,13 +31,9 @@ Pictures/**
 
 # Axis 2: role — gated by what the box is FOR.
 
-{{ if not (or (has "ddns" $roles) (has "minecraft" $roles)) }}
+{{ if not (has "minecraft" $roles) }}
 .config/systemd
 .config/systemd/**
-{{ end }}
-{{ if not (has "ddns" $roles) }}
-.config/systemd/user/cloudflare-ddns.service
-.config/systemd/user/cloudflare-ddns.timer
 {{ end }}
 {{ if not (has "minecraft" $roles) }}
 .config/systemd/user/minecraft@.service
