@@ -207,6 +207,48 @@ ListenStream=127.0.0.1:9090
 Before=umount.target
 ```
 
+### Firewall (ufw)
+
+`ufw` is active on the iptables-nft backend; `nftables.service` is inactive. Nothing in the
+repo touches the firewall, so every rule below is lost on a rebuild. Default policy is
+deny incoming, allow outgoing.
+
+```sh
+sudo ufw allow 22                 # ssh (tcp+udp)
+sudo ufw allow 9987/udp           # teamspeak3 voice
+sudo ufw allow 10011/tcp          # teamspeak3 serverquery
+sudo ufw allow 30033/tcp          # teamspeak3 filetransfer
+sudo ufw allow 53/tcp             # coredns
+sudo ufw allow 53/udp
+sudo ufw allow 443/tcp            # caddy
+sudo ufw allow 9090/tcp           # cockpit (inert: the socket binds 127.0.0.1 only)
+sudo ufw allow 10400:10401/udp
+sudo ufw allow from 192.168.15.0/24                              # LAN is blanket-accepted
+sudo ufw allow from 192.168.15.0/24 to any port 27031            # steam remote play
+```
+
+**Minecraft is the only port reachable from the internet** (the router forwards 25565/tcp),
+so it is the only one rate-limited. **Insert the exemptions first — order decides
+everything.** iptables is first-match, and the blanket LAN accept sits *below* the
+minecraft rule, so without these two the limit would apply to household players too:
+
+```sh
+sudo ufw insert 1 allow from 192.168.15.0/24 to any port 25565 proto tcp comment 'minecraft: LAN exempt from limit'
+sudo ufw insert 2 allow from 100.64.0.0/10   to any port 25565 proto tcp comment 'minecraft: tailscale exempt'
+sudo ufw limit 25565/tcp comment 'minecraft: rate-limit external joins'
+```
+
+`ufw limit` is `-m recent`: 6 new connections per source IP per 30s, then REJECT, with the
+window refreshed on every hit. A Java client opens two connections per join (status ping,
+then login), so external players get roughly three join attempts per 30 seconds. Verify the
+exemptions land above the limit with `sudo ufw status numbered | grep 25565`, and watch it
+with `journalctl -k -g 'UFW LIMIT BLOCK'`.
+
+mars has no global IPv6 and no IPv6 egress, so the v6 duplicates of these rules are inert.
+
+Possibly stale: the `alvr` application profile rules (`9943:9944` tcp+udp) remain, though the
+`vr` role and its package were removed from the repo.
+
 ### No longer load-bearing
 
 - **`archlinux-java` default.** The atm10-tts modpack launcher used to fall through to
