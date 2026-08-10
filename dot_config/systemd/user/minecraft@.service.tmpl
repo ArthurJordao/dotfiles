@@ -12,7 +12,7 @@ Conflicts={{ join " " $instances }}
 [Service]
 Type=forking
 WorkingDirectory=%h/minecraft/%i
-ExecStart=/usr/bin/tmux new-session -d -s minecraft-%i ./startserver.sh
+ExecStart=/usr/bin/tmux new-session -d -s minecraft-%i ./start
 ExecStop=/usr/bin/tmux send-keys -t minecraft-%i 'stop' C-m
 ExecStop=/bin/sleep 10
 Restart=on-failure
