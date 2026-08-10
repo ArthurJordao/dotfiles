@@ -45,6 +45,8 @@ Pictures/**
 .config/systemd/user/minecraft-backup.timer
 .local/scripts/minecraft
 .local/scripts/minecraft-backup
+minecraft
+minecraft/**
 {{ end }}
 {{ if not (and (has "server" $roles) (has "gaming" $roles)) }}
 .local/scripts/gaming-mode
