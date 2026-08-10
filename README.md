@@ -136,6 +136,8 @@ of which file each came from.
 |---|---|
 | `hosts.yaml` | `domain`, `timezone`, and the per-host inventory: roles, os, distro, user, ip, storage, quadlets, units, endpoints |
 | `syncthing.yaml` | `syncthing.folders` — the shared emulation library, not owned by any one host |
+| `minecraft.yaml` | `minecraft.instances` — every server instance and its JDK, heap and launcher env var |
+| `cloudflare.yaml` | `cloudflare.tunnel_id` — the named tunnel, which also names its credentials file |
 | `packages.yaml` | `packages` — `arch`, grouped by `common` plus one key per role; `darwin`, flat |
 | `theme.yaml` | `theme` — `active` switches the whole fleet, plus the per-consumer theme names |
 | `palettes.yaml` | `palettes` — base16 colors. **Generated** by `tools/fetch-palette`; do not edit |
@@ -154,9 +156,8 @@ What the box is *for*. Unknown names are silently inert, never an error.
 | `podman` | deploys the rootless podman quadlets in `quadlets` |
 | `gui` | graphical session configs |
 | `gaming` | used for games; with `server`, also installs `gaming-mode` |
-| `minecraft` | `minecraft@` units, backup timer, helper scripts |
+| `minecraft` | the instances in `minecraft.yaml`, their launchers, backup timer, helper scripts |
 | `edge` | owns Caddy, CoreDNS, cloudflared and the `/etc` deploy |
-| `ddns` | `cloudflare-ddns` service + timer |
 
 Roles compose, and moving one between hosts relocates what it carries — put `edge`
 on a different host and the whole reverse-proxy/DNS layer moves with it.
@@ -264,6 +265,7 @@ Only `name` is required. `<name>` is prefixed onto the `domain` key.
 | `name` | `<name>.arthurjordao.dev` is the full hostname |
 | `port` | omit for a DNS record with no reverse-proxy block |
 | `public` | `true` adds a Cloudflare Tunnel ingress rule (public internet) |
+| `ddns` | `true` keeps this hostname's public A record on the current WAN IP, via the `cloudflare-ddns` container |
 | `scheme` | `https` when the upstream itself speaks TLS |
 | `tls_insecure` | `true` skips verification of the upstream's certificate |
 | `log` | `false` disables the JSON access log |
