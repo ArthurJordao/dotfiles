@@ -11,8 +11,11 @@ Host *
 {{-   range (index $host "endpoints" | default list) }}
 {{-     $aliases = append $aliases (printf "%s.%s" .name $domain) }}
 {{-   end }}
-{{-   if index $host "ip" }}
-{{-     $aliases = append (append $aliases $host.ip.lan) $host.ip.tailscale }}
+{{-   $ip := index $host "ip" | default dict }}
+{{-   range $kind := list "lan" "tailscale" }}
+{{-     if index $ip $kind }}
+{{-       $aliases = append $aliases (index $ip $kind) }}
+{{-     end }}
 {{-   end }}
 Host {{ join " " $aliases }}
     User {{ $host.user }}

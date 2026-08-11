@@ -3,7 +3,7 @@
 {{- $myId := index $me "syncthing_id" | default "" -}}
 {{- $peers := list -}}
 {{- range $name, $h := .hosts -}}
-{{-   if and (has "emulation" $h.roles) (ne (index $h "syncthing_id" | default "") "") -}}
+{{-   if and (has "emulation" (index $h "roles" | default list)) (ne (index $h "syncthing_id" | default "") "") -}}
 {{-     $peers = append $peers $name -}}
 {{-   end -}}
 {{- end }}

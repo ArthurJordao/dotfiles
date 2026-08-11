@@ -17,8 +17,9 @@
 
 (tailscale_hosts) {
     hosts {
+{{- /* An unmanaged host may have no tailscale address yet — no record here. */ -}}
 {{- range $hostname, $host := .hosts }}
-{{- if index $host "ip" }}
+{{- if index (index $host "ip" | default dict) "tailscale" }}
         {{ $host.ip.tailscale }} {{ $hostname }}.{{ $domain }}
 {{- range (index $host "endpoints" | default list) }}
         {{ $host.ip.tailscale }} {{ .name }}.{{ $domain }}
@@ -56,9 +57,10 @@
      to succeed, it just must not cost a 7.7s upstream timeout. */}}
 {{- $rev := dict -}}
 {{- range $hostname, $host := .hosts -}}
-{{-   if index $host "ip" -}}
-{{-     range $kind := list "lan" "tailscale" -}}
-{{-       $o := splitList "." (index $host.ip $kind) -}}
+{{-   $ip := index $host "ip" | default dict -}}
+{{-   range $kind := list "lan" "tailscale" -}}
+{{-     if index $ip $kind -}}
+{{-       $o := splitList "." (index $ip $kind) -}}
 {{-       $_ := set $rev (printf "%s.%s.%s.in-addr.arpa" (index $o 2) (index $o 1) (index $o 0)) true -}}
 {{-     end -}}
 {{-   end -}}

@@ -35,6 +35,14 @@ namespace, so templates just read `.hosts` / `.domain` / `.syncthing` / `.minecr
 Roles compose: `gaming-mode` uses `and (has "server") (has "gaming")`. Never put OS/distro in
 `roles` — they are their own fields.
 
+**`managed: false` puts a box in the inventory without applying to it** — it gets its DNS
+records and its `~/.ssh/config` block, nothing else, and declares `user`/`ip` only.
+`roles`/`os`/`distro` are required on a managed host and inert on this one, `ip.tailscale`
+is optional (it may not be on the tailnet), and `tools/hosts` omits it so no template is
+ever rendered against it. Consequence for any template that iterates `.hosts`: guard every
+field access — `index $h "roles" | default list`, never `$h.roles`. `europa` (a Kindle
+running KOReader) is the first one.
+
 **Read `os`/`distro` from the host, never `.chezmoi.os`.** chezmoi's own value describes the
 machine running the render and cannot be overridden, which is exactly what made `simulate-host`
 half-blind. Every host declares `os` (and `distro` on Linux), so overriding the hostname overrides

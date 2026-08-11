@@ -134,7 +134,7 @@ of which file each came from.
 
 | File | Holds |
 |---|---|
-| `hosts.yaml` | `domain`, `timezone`, and the per-host inventory: roles, os, distro, user, ip, storage, quadlets, units, endpoints |
+| `hosts.yaml` | `domain`, `timezone`, and the per-host inventory: managed, roles, os, distro, user, ip, storage, quadlets, units, endpoints |
 | `syncthing.yaml` | `syncthing.folders` — the shared emulation library, not owned by any one host |
 | `minecraft.yaml` | `minecraft.instances` — every server instance and its JDK, heap and launcher env var |
 | `cloudflare.yaml` | `cloudflare.tunnel_id` — the named tunnel, which also names its credentials file |
@@ -174,8 +174,19 @@ Caddy, CoreDNS, the Cloudflare Tunnel, `gaming-mode` and `~/.ssh/config` are all
 | `endpoints` | Caddy, CoreDNS, cloudflared, `~/.ssh/config`, quadlet `PublishPort` | hostnames to serve and resolve |
 
 `~/.ssh/config` also reads the scalar `user`: one `Host` block per host, aliased by
-short name, `.local`, `<host>.<domain>`, both IPs and every endpoint pointing at it.
+short name, `.local`, `<host>.<domain>`, its IPs and every endpoint pointing at it.
 A host without `user` gets no block.
+
+### Hosts chezmoi doesn't manage
+
+`managed: false` marks a box that is in the inventory only to be *reached* — it gets
+its DNS records in both views and its `~/.ssh/config` block, and nothing else. It may
+declare `user` and `ip` alone: `roles`, `os` and the rest are required on a managed
+host and merely inert on this one, which `tools/check-consistency` reports. `tools/hosts`
+omits it, so no template is ever rendered against it, and `ip.tailscale` is optional
+because such a box may not be on the tailnet.
+
+`europa` — a Kindle running KOReader — is the first of these.
 
 A fourth list, `syncthing.folders`, lives in `.chezmoidata/syncthing.yaml` rather than
 under a host, because it describes a library shared *between* hosts rather than any

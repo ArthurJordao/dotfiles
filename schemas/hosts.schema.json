@@ -38,26 +38,58 @@
     "host": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "roles",
-        "os"
-      ],
-      "if": {
-        "properties": {
-          "os": {
-            "const": "linux"
+      "allOf": [
+        {
+          "$comment": "Everything chezmoi needs to apply is required on a managed host and optional on an unmanaged one, which has no target to apply to. Declaring one anyway is inert rather than invalid, and tools/check-consistency reports it.",
+          "if": {
+            "properties": {
+              "managed": {
+                "const": false
+              }
+            },
+            "required": [
+              "managed"
+            ]
+          },
+          "else": {
+            "required": [
+              "roles",
+              "os"
+            ],
+            "properties": {
+              "ip": {
+                "required": [
+                  "lan",
+                  "tailscale"
+                ]
+              }
+            }
           }
         },
-        "required": [
-          "os"
-        ]
-      },
-      "then": {
-        "required": [
-          "distro"
-        ]
-      },
+        {
+          "if": {
+            "properties": {
+              "os": {
+                "const": "linux"
+              }
+            },
+            "required": [
+              "os"
+            ]
+          },
+          "then": {
+            "required": [
+              "distro"
+            ]
+          }
+        }
+      ],
       "properties": {
+        "managed": {
+          "type": "boolean",
+          "description": "false means chezmoi is never applied to this box: it is here for its DNS records and its ~/.ssh/config block, and may declare nothing but `user` and `ip`. tools/hosts omits it, so no template is ever rendered against it. Default true.",
+          "default": true
+        },
         "roles": {
           "type": "array",
           "description": "What the box is for. Required: .chezmoiignore reads it unguarded, so omitting it errors under missingkey=error.",
@@ -201,20 +233,19 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "lan",
-        "tailscale"
+        "lan"
       ],
       "properties": {
         "lan": {
           "type": "string",
           "format": "ipv4",
-          "description": "Resolved for LAN clients (the 192.168.15.0/24 CoreDNS view).",
+          "description": "Resolved for LAN clients (the 192.168.15.0/24 CoreDNS view). Needs a DHCP reservation or it drifts.",
           "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}$"
         },
         "tailscale": {
           "type": "string",
           "format": "ipv4",
-          "description": "Resolved for tailnet clients (the 100.64.0.0/10 CoreDNS view).",
+          "description": "Resolved for tailnet clients (the 100.64.0.0/10 CoreDNS view). Required on a managed host; optional on `managed: false`, which may not be on the tailnet yet -- every consumer guards on it.",
           "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}$"
         }
       }

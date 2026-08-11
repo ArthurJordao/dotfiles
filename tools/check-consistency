@@ -76,6 +76,10 @@ top_level = set(f.split(os.sep)[0] for f in files)
 
 for name in sorted(hosts):
     host = hosts[name]
+    # An unmanaged host declares nothing but user/ip -- every rule below is
+    # about state chezmoi deploys, and it deploys none.
+    if host.get("managed") is False:
+        continue
     quadlets = host.get("quadlets") or []
     units = host.get("units") or []
     endpoints = host.get("endpoints") or []
@@ -182,6 +186,26 @@ if ddns_names:
                for h in hosts.values()):
         fail("C8", "endpoints %s set `ddns: true` but no host deploys the "
                    "cloudflare-ddns quadlet" % ", ".join(sorted(ddns_names)))
+
+# C9 -- an endpoint named after a host emits that name twice in the Corefile.
+for name in sorted(hosts):
+    for endpoint in hosts[name].get("endpoints") or []:
+        if endpoint["name"] in hosts:
+            fail("C9", "%s: endpoint %r collides with the host of that name -- "
+                       "both emit <name>.<domain> in the Corefile and an ssh alias"
+                       % (name, endpoint["name"]))
+
+# C10 -- a `managed: false` host declaring state nothing will ever deploy.
+DEPLOY_FIELDS = ["roles", "os", "distro", "quadlets", "units", "endpoints",
+                 "storage", "syncthing_id"]
+for name in sorted(hosts):
+    host = hosts[name]
+    if host.get("managed") is not False:
+        continue
+    declared = [f for f in DEPLOY_FIELDS if f in host]
+    if declared:
+        fail("C10", "%s: `managed: false` but declares %s -- chezmoi never runs "
+                    "there, so it is inert" % (name, ", ".join(declared)))
 
 if failures:
     for line in failures:

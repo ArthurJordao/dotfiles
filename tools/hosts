@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
-# Print every host in .chezmoidata/hosts.yaml, one per line.
+# Print every host chezmoi applies to, one per line.
 #
 #   tools/hosts
+#
+# `managed: false` hosts are omitted: they declare no os/roles, so rendering a
+# template against one would fail on data that only a real target has.
 #
 # The hostname passed to simulate-host is a placeholder: this template reads
 # .hosts only, never .hostname.
 set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
-printf '%s' '{{ range (keys .hosts | sortAlpha) }}{{ . }}
-{{ end }}' | ./tools/simulate-host _list execute-template
+# shellcheck disable=SC2016  # $name/$host are Go template variables, not shell
+printf '%s' '{{ range $name, $host := .hosts }}{{ if or (not (hasKey $host "managed")) $host.managed }}{{ $name }}
+{{ end }}{{ end }}' | ./tools/simulate-host _list execute-template

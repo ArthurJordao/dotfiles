@@ -21,6 +21,9 @@
 #
 # `served_by` on an endpoint names the non-container service listening on that
 # port. Without it, tools/check-consistency requires a quadlet to publish it.
+#
+# `managed: false` marks a host chezmoi is never applied to — it carries `user`
+# and `ip` only, and exists here for the DNS records and the ssh config block.
 
 domain: arthurjordao.dev
 
@@ -28,6 +31,15 @@ domain: arthurjordao.dev
 timezone: America/Sao_Paulo
 
 hosts:
+  # Kindle Paperwhite running KOReader. Its SSH server is KOReader's patched
+  # dropbear, which reads authorized_keys from
+  # /mnt/us/koreader/settings/SSH/authorized_keys, not ~/.ssh.
+  europa:
+    managed: false
+    user: root
+    ip:
+      lan: 192.168.15.22
+
   mars:
     roles: [server, podman, gui, gaming, minecraft, sunshine, emulation, edge]
     os: linux
