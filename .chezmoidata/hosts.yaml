@@ -113,7 +113,7 @@ hosts:
     user: arthurjordao
     ip:
       lan: 192.168.15.20
-      tailscale: 100.115.219.28
+      tailscale: 100.123.133.58
     quadlets: []
     units: []
     endpoints: []
