@@ -39,6 +39,7 @@ hosts:
     user: root
     ip:
       lan: 192.168.15.22
+      tailscale: 100.84.63.99
 
   mars:
     roles: [server, podman, gui, gaming, minecraft, sunshine, emulation, edge]
