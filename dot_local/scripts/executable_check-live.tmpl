@@ -1,0 +1,79 @@
+{{- $me := index .hosts .hostname -}}
+{{- $roles := $me.roles -}}
+#!/usr/bin/env bash
+# check-live — report where this host disagrees with what .chezmoidata declares:
+# units that should be running, containers with no quadlet behind them,
+# endpoints that should answer, units that failed. Read-only, no credentials.
+#
+#   check-live
+#
+# GENERATED — the unit and endpoint lists are this host's entry in
+# .chezmoidata/hosts.yaml, plus .chezmoidata/minecraft.yaml for the instances.
+set -uo pipefail
+
+RED=$'\033[31m'; YELLOW=$'\033[33m'; GREEN=$'\033[32m'; DIM=$'\033[2m'; OFF=$'\033[0m'
+[ -t 1 ] || { RED=""; YELLOW=""; GREEN=""; DIM=""; OFF=""; }
+
+failures=0
+notes=0
+bad()  { printf '%s%s%s\n' "$RED"    "$1" "$OFF"; failures=$((failures + 1)); }
+note() { printf '%s%s%s\n' "$YELLOW" "$1" "$OFF"; notes=$((notes + 1)); }
+ok()   { printf '%s%s%s\n' "$GREEN"  "$1" "$OFF"; }
+
+UNITS=(
+{{- range (index $me "units" | default list) }}
+    "{{ . }}.service"
+{{- end }}
+)
+
+INSTANCES=(
+{{- if has "minecraft" $roles }}
+{{- range .minecraft.instances }}
+    "minecraft@{{ .name }}.service"
+{{- end }}
+{{- end }}
+)
+
+RUNTIME="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+# A quadlet unit reports is-enabled=generated, so its boot proof is a symlink here.
+GEN="$RUNTIME/systemd/generator"
+
+echo "=== declared units ==="
+for unit in "${UNITS[@]}"; do
+    active=$(systemctl --user is-active "$unit" 2>/dev/null)
+    boot="boot"
+    if [ ! -e "$GEN/default.target.wants/$unit" ] &&
+       [ "$(systemctl --user is-enabled "$unit" 2>/dev/null)" != "enabled" ]; then
+        boot="NOT AT BOOT"
+    fi
+    if [ "$active" = active ] && [ "$boot" = boot ]; then
+        printf '  %-26s %sactive, %s%s\n' "${unit%.service}" "$DIM" "$boot" "$OFF"
+    else
+        bad "  ${unit%.service}: $active, $boot"
+    fi
+done
+
+if [ "${#INSTANCES[@]}" -gt 0 ]; then
+    echo
+    echo "=== minecraft instances ==="
+    # Mutually exclusive (Conflicts=), so only an *enabled* instance has to be up.
+    for unit in "${INSTANCES[@]}"; do
+        enabled=$(systemctl --user is-enabled "$unit" 2>/dev/null)
+        active=$(systemctl --user is-active "$unit" 2>/dev/null)
+        if [ "$enabled" = enabled ] && [ "$active" != active ]; then
+            bad "  $unit: enabled at boot but $active"
+        else
+            printf '  %-26s %s%s, %s%s\n' "$unit" "$DIM" "$enabled" "$active" "$OFF"
+        fi
+    done
+fi
+
+echo
+if [ "$failures" -eq 0 ] && [ "$notes" -eq 0 ]; then
+    ok "Everything the repo declares is running."
+elif [ "$failures" -eq 0 ]; then
+    printf '%s%d note(s), nothing failing.%s\n' "$YELLOW" "$notes" "$OFF"
+else
+    printf '%s%d failure(s), %d note(s).%s\n' "$RED" "$failures" "$notes" "$OFF"
+fi
+[ "$failures" -eq 0 ]
