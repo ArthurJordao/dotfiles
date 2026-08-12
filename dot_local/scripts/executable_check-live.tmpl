@@ -69,6 +69,50 @@ if [ "${#INSTANCES[@]}" -gt 0 ]; then
 fi
 
 echo
+echo "=== containers with no quadlet behind them ==="
+# Container names cannot drive this: navidrome and slskd set ContainerName=,
+# the rest get podman's systemd- prefix. The unit label is the reliable link.
+QUADLET_DIR="$HOME/.config/containers/systemd"
+quadlet_units() {
+    local file base stem ext
+    while IFS= read -r file; do
+        base="${file##*/}"; stem="${base%.*}"; ext="${base##*.}"
+        case "$ext" in
+            container) printf '%s.service\n'         "$stem" ;;
+            pod)       printf '%s-pod.service\n'     "$stem" ;;
+            network)   printf '%s-network.service\n' "$stem" ;;
+            volume)    printf '%s-volume.service\n'  "$stem" ;;
+        esac
+    done < <(find "$QUADLET_DIR" -type f 2>/dev/null)
+}
+mapfile -t QUADLET_UNITS < <(quadlet_units | sort -u)
+
+orphans=0
+while IFS=$'\t' read -r container owner; do
+    [ -n "$container" ] || continue
+    if [ -z "$owner" ]; then
+        bad "  $container: no PODMAN_SYSTEMD_UNIT label — started by hand, not by a quadlet"
+        orphans=$((orphans + 1))
+        continue
+    fi
+    found=0
+    for unit in "${QUADLET_UNITS[@]}"; do
+        [ "$unit" = "$owner" ] && { found=1; break; }
+    done
+    if [ "$found" -eq 0 ]; then
+        bad "  $container: owned by $owner, which no quadlet file generates"
+        printf '    %sstop it with: systemctl --user stop %s%s\n' "$DIM" "$owner" "$OFF"
+        orphans=$((orphans + 1))
+    fi
+done < <(podman ps --format json | python3 -c '
+import json, sys
+for c in json.load(sys.stdin):
+    labels = c.get("Labels") or {}
+    print("%s\t%s" % (c["Names"][0], labels.get("PODMAN_SYSTEMD_UNIT", "")))
+')
+[ "$orphans" -eq 0 ] && ok "  none"
+
+echo
 if [ "$failures" -eq 0 ] && [ "$notes" -eq 0 ]; then
     ok "Everything the repo declares is running."
 elif [ "$failures" -eq 0 ]; then
