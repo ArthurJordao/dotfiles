@@ -34,6 +34,16 @@ INSTANCES=(
 {{- end }}
 )
 
+{{/* An endpoint with no port is DNS-only. `index` because scheme and
+     tls_insecure are optional and a bare .field errors under missingkey=error. */}}
+ENDPOINTS=(
+{{- range (index $me "endpoints" | default list) }}
+{{- if hasKey . "port" }}
+    "{{ .name }}|{{ .port }}|{{ index . "scheme" | default "http" }}|{{ if index . "tls_insecure" }}insecure{{ end }}"
+{{- end }}
+{{- end }}
+)
+
 RUNTIME="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 # A quadlet unit reports is-enabled=generated, so its boot proof is a symlink here.
 GEN="$RUNTIME/systemd/generator"
@@ -111,6 +121,31 @@ for c in json.load(sys.stdin):
     print("%s\t%s" % (c["Names"][0], labels.get("PODMAN_SYSTEMD_UNIT", "")))
 ')
 [ "$orphans" -eq 0 ] && ok "  none"
+
+if [ "${#ENDPOINTS[@]}" -gt 0 ]; then
+    echo
+    echo "=== endpoints ==="
+    # 127.0.0.1, never localhost: rootless containers use pasta, which forwards
+    # IPv4 only, so ::1 is accepted then dropped.
+    for entry in "${ENDPOINTS[@]}"; do
+        IFS='|' read -r name port scheme insecure <<< "$entry"
+        args=(-s -o /dev/null -w '%{http_code}' --max-time 5)
+        [ "$insecure" = insecure ] && args+=(-k)
+        code=$(curl "${args[@]}" "$scheme://127.0.0.1:$port/" 2>/dev/null)
+        rc=$?
+        if [ "$rc" -eq 0 ]; then
+            # Any status means it answered; 302 and 401 are healthy for apps with auth.
+            printf '  %-12s %-6s %s%s%s\n' "$name" "$port" "$DIM" "$code" "$OFF"
+        else
+            case "$rc" in
+                7)  why="connection refused" ;;
+                28) why="timed out" ;;
+                *)  why="curl exit $rc" ;;
+            esac
+            bad "  $name ($port): $why"
+        fi
+    done
+fi
 
 echo
 if [ "$failures" -eq 0 ] && [ "$notes" -eq 0 ]; then
