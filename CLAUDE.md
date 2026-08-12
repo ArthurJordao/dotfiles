@@ -483,6 +483,21 @@ hosts in `.chezmoidata/hosts.yaml` relocates the whole Caddy/CoreDNS/cloudflared
   carry a `systemd-` prefix. Gaming mode leaves `cloudflare-ddns`, `immich-ml` and `immich-server`
   in *failed* state — their containers exit non-zero on SIGTERM — so every section consults its
   state file.
+- **Both sunshine configs are `modify_` scripts** — the web UI rewrites `sunshine.conf` and
+  `apps.json` whole on every Save, so a plain template would revert it and stay permanently dirty.
+  `modify_sunshine.conf.tmpl` owns one line; `modify_apps.json.tmpl` owns the apps named in
+  `OWNED`, deletes those in `RETIRED`, and passes through anything added in the UI. It matches
+  sunshine's own writer (nlohmann `dump(4)`: 4 spaces, sorted keys, no trailing newline) so a UI
+  save leaves `chezmoi diff` quiet, and it preserves each app's `uuid` — that is how a client
+  remembers an app.
+- **Sunshine captures the physical connector** (`Screencasting with KMS`), so the stream's
+  resolution *is* the display's. `dot_local/scripts/executable_sunshine-client-mode` is the
+  prep-cmd behind the "Desktop (client resolution)" app: it reads `SUNSHINE_CLIENT_WIDTH`/
+  `_HEIGHT`/`_FPS` and switches the output to a matching mode, then restores it. Only a mode the
+  display already advertises is used, and it always exits 0 — a non-zero prep-cmd aborts the
+  stream. Sunshine's own `dd_*` auto-resolution options are Windows/macOS only.
+- A prep-cmd runs **without a shell**, so `apps.json` needs absolute paths — no `~`, no `$HOME`,
+  and no systemd `%h`. The path is rendered from the host's `user`.
 
 # Emulation library sync (mars ↔ mercury)
 

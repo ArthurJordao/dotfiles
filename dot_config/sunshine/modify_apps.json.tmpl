@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+{{- $me := index .hosts .hostname -}}
+{{- $mode := printf "/home/%s/.local/scripts/sunshine-client-mode" (index $me "user" | default "") }}
+# A `modify_` script, not a plain template: sunshine's web UI rewrites this file
+# whole on every Save. We own the apps named in OWNED and delete the ones in
+# RETIRED; anything added through the UI passes through untouched.
+#
+# The transform must be IDEMPOTENT — chezmoi diffs our stdout against the file
+# on disk. Sunshine writes it with nlohmann's dump(4): 4 spaces, keys sorted, no
+# trailing newline. Matching that keeps `chezmoi diff` quiet after a UI save.
+import json
+import sys
+
+# Absolute paths: sunshine runs a prep-cmd without a shell, so no ~ or $HOME.
+MODE = "{{ $mode }}"
+
+OWNED = [
+    {"name": "Desktop", "image-path": "desktop.png"},
+    {
+        # Sunshine captures the physical connector, so the only way to give a
+        # client its own resolution is to set the display to it and put it back.
+        "name": "Desktop (client resolution)",
+        "image-path": "desktop.png",
+        "prep-cmd": [{"do": MODE + " set", "undo": MODE + " restore"}],
+    },
+    {
+        "name": "Steam Big Picture",
+        "image-path": "steam.png",
+        "detached": ["setsid steam steam://open/bigpicture"],
+        "prep-cmd": [{"do": "", "undo": "setsid steam steam://close/bigpicture"}],
+    },
+]
+
+# Shipped by sunshine, and dead on Wayland: xrandr against an X11 output name.
+RETIRED = ["Low Res Desktop"]
+
+DEFAULT_ENV = {"PATH": "$(PATH):$(HOME)/.local/bin"}
+
+try:
+    config = json.loads(sys.stdin.read())
+except ValueError:
+    config = {}
+if not isinstance(config, dict):
+    config = {}
+
+apps = [a for a in config.get("apps", [])
+        if isinstance(a, dict) and a.get("name") not in RETIRED]
+
+for owned in OWNED:
+    for i, existing in enumerate(apps):
+        if existing.get("name") == owned["name"]:
+            # Keep the uuid the UI assigned: it is how a client remembers an app.
+            if "uuid" in existing:
+                owned = dict(owned, uuid=existing["uuid"])
+            apps[i] = owned
+            break
+    else:
+        apps.append(owned)
+
+config["env"] = config.get("env") or DEFAULT_ENV
+config["apps"] = apps
+
+sys.stdout.write(json.dumps(config, indent=4, sort_keys=True, ensure_ascii=False))

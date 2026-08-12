@@ -53,6 +53,7 @@ minecraft/**
 {{ if not (has "sunshine" $roles) }}
 .config/sunshine
 .config/sunshine/**
+.local/scripts/sunshine-client-mode
 {{ end }}
 {{ if not (has "emulation" $roles) }}
 Emulation
