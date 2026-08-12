@@ -63,6 +63,12 @@ everything and is what to run after moving or renaming any source file:
 
 CI runs the same `tools/check` on every push. It needs no secrets.
 
+`just check` proves the repo is self-consistent and runs anywhere. **`just check-live` runs on a
+`podman` host and proves that host matches it** — declared units active and wanted at boot,
+containers accounted for by a quadlet file, endpoints answering, no failed units of ours.
+Read-only, no credentials. It reads `gaming-mode`'s state file, so a stopped stack reports as
+intentional rather than as drift.
+
 Silent failures worth knowing:
 - **A tmux pane inherits the tmux *server's* environment, not the client's.** `Environment=` in a
   unit whose `ExecStart` is `tmux new-session` never reaches the command — only names in tmux's
@@ -469,6 +475,14 @@ hosts in `.chezmoidata/hosts.yaml` relocates the whole Caddy/CoreDNS/cloudflared
 - `dot_local/scripts/executable_gaming-mode` — `gaming-mode {on|off|status}` stops the whole
   self-hosted stack to free CPU/GPU/RAM for gaming, then restores exactly what was running.
   **Its `CANDIDATES` list must include every resource-heavy service** — add new services here.
+- `dot_local/scripts/executable_check-live` — `just check-live`: what the repo declares vs what is
+  running. Boot-readiness for a quadlet unit is a symlink in
+  `$XDG_RUNTIME_DIR/systemd/generator/default.target.wants/`, **not** `is-enabled`, which reports
+  `generated` for every generated unit. A container is matched to its quadlet through podman's
+  `PODMAN_SYSTEMD_UNIT` label, since `navidrome` and `slskd` set `ContainerName=` while the rest
+  carry a `systemd-` prefix. Gaming mode leaves `cloudflare-ddns`, `immich-ml` and `immich-server`
+  in *failed* state — their containers exit non-zero on SIGTERM — so every section consults its
+  state file.
 
 # Emulation library sync (mars ↔ mercury)
 

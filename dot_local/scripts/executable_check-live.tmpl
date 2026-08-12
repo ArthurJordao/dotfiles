@@ -1,0 +1,209 @@
+{{- $me := index .hosts .hostname -}}
+{{- $roles := $me.roles -}}
+#!/usr/bin/env bash
+# check-live — report where this host disagrees with what .chezmoidata declares:
+# units that should be running, containers with no quadlet behind them,
+# endpoints that should answer, units that failed. Read-only, no credentials.
+#
+#   check-live
+#
+# GENERATED — the unit and endpoint lists are this host's entry in
+# .chezmoidata/hosts.yaml, plus .chezmoidata/minecraft.yaml for the instances.
+set -uo pipefail
+
+RED=$'\033[31m'; YELLOW=$'\033[33m'; GREEN=$'\033[32m'; DIM=$'\033[2m'; OFF=$'\033[0m'
+[ -t 1 ] || { RED=""; YELLOW=""; GREEN=""; DIM=""; OFF=""; }
+
+failures=0
+notes=0
+bad()  { printf '%s%s%s\n' "$RED"    "$1" "$OFF"; failures=$((failures + 1)); }
+note() { printf '%s%s%s\n' "$YELLOW" "$1" "$OFF"; notes=$((notes + 1)); }
+ok()   { printf '%s%s%s\n' "$GREEN"  "$1" "$OFF"; }
+
+UNITS=(
+{{- range (index $me "units" | default list) }}
+    "{{ . }}.service"
+{{- end }}
+)
+
+INSTANCES=(
+{{- if has "minecraft" $roles }}
+{{- range .minecraft.instances }}
+    "minecraft@{{ .name }}.service"
+{{- end }}
+{{- end }}
+)
+
+{{/* An endpoint with no port is DNS-only. `index` because scheme and
+     tls_insecure are optional and a bare .field errors under missingkey=error. */}}
+ENDPOINTS=(
+{{- range (index $me "endpoints" | default list) }}
+{{- if hasKey . "port" }}
+    "{{ .name }}|{{ .port }}|{{ index . "scheme" | default "http" }}|{{ if index . "tls_insecure" }}insecure{{ end }}"
+{{- end }}
+{{- end }}
+)
+
+RUNTIME="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+# A quadlet unit reports is-enabled=generated, so its boot proof is a symlink here.
+GEN="$RUNTIME/systemd/generator"
+
+# gaming-mode records exactly what it stopped, so a stopped stack is not drift.
+GAMING_STATE="$RUNTIME/gaming-mode.units"
+GAMING_STOPPED=()
+[ -f "$GAMING_STATE" ] && mapfile -t GAMING_STOPPED < "$GAMING_STATE"
+gaming_stopped() {
+    local unit
+    for unit in "${GAMING_STOPPED[@]}"; do
+        [ "$unit" = "$1" ] && return 0
+    done
+    return 1
+}
+
+echo "=== declared units ==="
+for unit in "${UNITS[@]}"; do
+    if gaming_stopped "$unit"; then
+        note "  ${unit%.service}: stopped by gaming mode"
+        continue
+    fi
+    active=$(systemctl --user is-active "$unit" 2>/dev/null)
+    boot="boot"
+    if [ ! -e "$GEN/default.target.wants/$unit" ] &&
+       [ "$(systemctl --user is-enabled "$unit" 2>/dev/null)" != "enabled" ]; then
+        boot="NOT AT BOOT"
+    fi
+    if [ "$active" = active ] && [ "$boot" = boot ]; then
+        printf '  %-26s %sactive, %s%s\n' "${unit%.service}" "$DIM" "$boot" "$OFF"
+    else
+        bad "  ${unit%.service}: $active, $boot"
+    fi
+done
+
+if [ "${#INSTANCES[@]}" -gt 0 ]; then
+    echo
+    echo "=== minecraft instances ==="
+    # Mutually exclusive (Conflicts=), so only an *enabled* instance has to be up.
+    for unit in "${INSTANCES[@]}"; do
+        if gaming_stopped "$unit"; then
+            note "  $unit: stopped by gaming mode"
+            continue
+        fi
+        enabled=$(systemctl --user is-enabled "$unit" 2>/dev/null)
+        active=$(systemctl --user is-active "$unit" 2>/dev/null)
+        if [ "$enabled" = enabled ] && [ "$active" != active ]; then
+            bad "  $unit: enabled at boot but $active"
+        else
+            printf '  %-26s %s%s, %s%s\n' "$unit" "$DIM" "$enabled" "$active" "$OFF"
+        fi
+    done
+fi
+
+echo
+echo "=== containers with no quadlet behind them ==="
+# Container names cannot drive this: navidrome and slskd set ContainerName=,
+# the rest get podman's systemd- prefix. The unit label is the reliable link.
+QUADLET_DIR="$HOME/.config/containers/systemd"
+quadlet_units() {
+    local file base stem ext
+    while IFS= read -r file; do
+        base="${file##*/}"; stem="${base%.*}"; ext="${base##*.}"
+        case "$ext" in
+            container) printf '%s.service\n'         "$stem" ;;
+            pod)       printf '%s-pod.service\n'     "$stem" ;;
+            network)   printf '%s-network.service\n' "$stem" ;;
+            volume)    printf '%s-volume.service\n'  "$stem" ;;
+        esac
+    done < <(find "$QUADLET_DIR" -type f 2>/dev/null)
+}
+mapfile -t QUADLET_UNITS < <(quadlet_units | sort -u)
+
+orphans=0
+while IFS=$'\t' read -r container owner; do
+    [ -n "$container" ] || continue
+    if [ -z "$owner" ]; then
+        bad "  $container: no PODMAN_SYSTEMD_UNIT label — started by hand, not by a quadlet"
+        orphans=$((orphans + 1))
+        continue
+    fi
+    found=0
+    for unit in "${QUADLET_UNITS[@]}"; do
+        [ "$unit" = "$owner" ] && { found=1; break; }
+    done
+    if [ "$found" -eq 0 ]; then
+        bad "  $container: owned by $owner, which no quadlet file generates"
+        printf '    %sstop it with: systemctl --user stop %s%s\n' "$DIM" "$owner" "$OFF"
+        orphans=$((orphans + 1))
+    fi
+done < <(podman ps --format json | python3 -c '
+import json, sys
+for c in json.load(sys.stdin):
+    labels = c.get("Labels") or {}
+    print("%s\t%s" % (c["Names"][0], labels.get("PODMAN_SYSTEMD_UNIT", "")))
+')
+[ "$orphans" -eq 0 ] && ok "  none"
+
+if [ "${#ENDPOINTS[@]}" -gt 0 ]; then
+    echo
+    echo "=== endpoints ==="
+    # 127.0.0.1, never localhost: rootless containers use pasta, which forwards
+    # IPv4 only, so ::1 is accepted then dropped.
+    for entry in "${ENDPOINTS[@]}"; do
+        IFS='|' read -r name port scheme insecure <<< "$entry"
+        args=(-s -o /dev/null -w '%{http_code}' --max-time 5)
+        [ "$insecure" = insecure ] && args+=(-k)
+        code=$(curl "${args[@]}" "$scheme://127.0.0.1:$port/" 2>/dev/null)
+        rc=$?
+        if [ "$rc" -eq 0 ]; then
+            # Any status means it answered; 302 and 401 are healthy for apps with auth.
+            printf '  %-12s %-6s %s%s%s\n' "$name" "$port" "$DIM" "$code" "$OFF"
+        else
+            case "$rc" in
+                7)  why="connection refused" ;;
+                28) why="timed out" ;;
+                *)  why="curl exit $rc" ;;
+            esac
+            # No endpoint names the unit serving it, so gate on the mode itself.
+            if [ -f "$GAMING_STATE" ]; then
+                note "  $name ($port): $why ${DIM}(gaming mode is on)${OFF}"
+            else
+                bad "  $name ($port): $why"
+            fi
+        fi
+    done
+fi
+
+echo
+echo "=== failed units ==="
+# A failed unit we do not declare is not this repo's problem: app-steam@autostart
+# lands here whenever Steam is killed rather than exited.
+ours() {
+    local unit
+    for unit in "${UNITS[@]}" "${INSTANCES[@]}" "${QUADLET_UNITS[@]}"; do
+        [ "$unit" = "$1" ] && return 0
+    done
+    return 1
+}
+found=0
+while read -r unit; do
+    [ -n "$unit" ] || continue
+    found=$((found + 1))
+    if gaming_stopped "$unit"; then
+        # Several containers exit non-zero on SIGTERM, so gaming-mode leaves them failed.
+        note "  $unit ${DIM}(stopped by gaming mode)${OFF}"
+    elif ours "$unit"; then
+        bad "  $unit"
+    else
+        note "  $unit ${DIM}(not declared here)${OFF}"
+    fi
+done < <(systemctl --user --failed --plain --no-legend | awk '{print $1}')
+[ "$found" -eq 0 ] && ok "  none"
+
+echo
+if [ "$failures" -eq 0 ] && [ "$notes" -eq 0 ]; then
+    ok "Everything the repo declares is running."
+elif [ "$failures" -eq 0 ]; then
+    printf '%s%d note(s), nothing failing.%s\n' "$YELLOW" "$notes" "$OFF"
+else
+    printf '%s%d failure(s), %d note(s).%s\n' "$RED" "$failures" "$notes" "$OFF"
+fi
+[ "$failures" -eq 0 ]

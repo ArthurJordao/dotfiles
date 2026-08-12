@@ -47,6 +47,9 @@ minecraft/**
 {{ if not (and (has "server" $roles) (has "gaming" $roles)) }}
 .local/scripts/gaming-mode
 {{ end }}
+{{ if not (has "podman" $roles) }}
+.local/scripts/check-live
+{{ end }}
 {{ if not (has "sunshine" $roles) }}
 .config/sunshine
 .config/sunshine/**

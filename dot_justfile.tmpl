@@ -54,3 +54,8 @@ emu-sync-check:
 emu-merge-gamelists:
     ~/.local/scripts/emu-merge-gamelists
 {{ end }}
+{{ if has "podman" (index .hosts .hostname).roles }}
+# Report where this host disagrees with what the repo declares
+check-live:
+    ~/.local/scripts/check-live
+{{ end }}
