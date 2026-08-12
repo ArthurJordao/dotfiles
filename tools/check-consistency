@@ -56,6 +56,17 @@ def generated_unit(rel):
     return stem + GENERATES[ext], ext
 
 
+def claims(entry, quadlet):
+    """Whether a `quadlets` entry names this top-level entry under systemd/.
+
+    An entry is a directory (`immich`) or the stem before the first dot
+    (`immich.pod`, `cloudflare-ddns.env.tmpl`). Not a prefix test: .chezmoiignore
+    emits one host's names to suppress them on the others, and a prefix would let
+    `shelf` swallow another host's `shelfmark`.
+    """
+    return entry == quadlet or entry.startswith(quadlet + ".")
+
+
 failures = []
 
 
@@ -85,15 +96,16 @@ for name in sorted(hosts):
     endpoints = host.get("endpoints") or []
     roles = host.get("roles") or []
 
-    # .chezmoiignore un-ignores `<prefix>*` at the top level of the quadlet dir.
+    # .chezmoiignore suppresses every *other* host's quadlets, so this host
+    # receives whatever its own names claim.
     deployed = [f for f in files
-                if any(f.split(os.sep)[0].startswith(p) for p in quadlets)]
+                if any(claims(f.split(os.sep)[0], q) for q in quadlets)]
 
-    # C1 -- a prefix matching nothing deploys nothing, with no error.
-    for prefix in quadlets:
-        if not any(t.startswith(prefix) for t in top_level):
-            fail("C1", "%s: quadlet prefix %r matches no file under "
-                       "dot_config/containers/systemd/" % (name, prefix))
+    # C1 -- a name matching nothing deploys nothing, with no error.
+    for quadlet in quadlets:
+        if not any(claims(t, quadlet) for t in top_level):
+            fail("C1", "%s: quadlet name %r matches no file under "
+                       "dot_config/containers/systemd/" % (name, quadlet))
 
     # C2 -- a container missing from `units` keeps running through gaming mode.
     for f in deployed:
@@ -182,7 +194,7 @@ for name in sorted(hosts):
 ddns_names = [e["name"] for h in hosts.values()
               for e in (h.get("endpoints") or []) if e.get("ddns")]
 if ddns_names:
-    if not any(any(q.startswith("cloudflare-ddns") for q in (h.get("quadlets") or []))
+    if not any("cloudflare-ddns" in (h.get("quadlets") or [])
                for h in hosts.values()):
         fail("C8", "endpoints %s set `ddns: true` but no host deploys the "
                    "cloudflare-ddns quadlet" % ", ".join(sorted(ddns_names)))
@@ -206,6 +218,15 @@ for name in sorted(hosts):
     if declared:
         fail("C10", "%s: `managed: false` but declares %s -- chezmoi never runs "
                     "there, so it is inert" % (name, ", ".join(declared)))
+
+# C11 -- a file no host claims. .chezmoiignore suppresses the *other* hosts'
+# quadlets by name, so anything unclaimed is unignored everywhere: it deploys to
+# every host with the podman role and starts at the next boot.
+claimed = set(q for h in hosts.values() for q in (h.get("quadlets") or []))
+for entry in sorted(top_level):
+    if not any(claims(entry, q) for q in claimed):
+        fail("C11", "dot_config/containers/systemd/%s is in no host's "
+                    "`quadlets` -- it deploys to every podman host" % entry)
 
 if failures:
     for line in failures:
