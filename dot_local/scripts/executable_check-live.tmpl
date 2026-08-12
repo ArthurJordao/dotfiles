@@ -48,8 +48,24 @@ RUNTIME="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 # A quadlet unit reports is-enabled=generated, so its boot proof is a symlink here.
 GEN="$RUNTIME/systemd/generator"
 
+# gaming-mode records exactly what it stopped, so a stopped stack is not drift.
+GAMING_STATE="$RUNTIME/gaming-mode.units"
+GAMING_STOPPED=()
+[ -f "$GAMING_STATE" ] && mapfile -t GAMING_STOPPED < "$GAMING_STATE"
+gaming_stopped() {
+    local unit
+    for unit in "${GAMING_STOPPED[@]}"; do
+        [ "$unit" = "$1" ] && return 0
+    done
+    return 1
+}
+
 echo "=== declared units ==="
 for unit in "${UNITS[@]}"; do
+    if gaming_stopped "$unit"; then
+        note "  ${unit%.service}: stopped by gaming mode"
+        continue
+    fi
     active=$(systemctl --user is-active "$unit" 2>/dev/null)
     boot="boot"
     if [ ! -e "$GEN/default.target.wants/$unit" ] &&
@@ -68,6 +84,10 @@ if [ "${#INSTANCES[@]}" -gt 0 ]; then
     echo "=== minecraft instances ==="
     # Mutually exclusive (Conflicts=), so only an *enabled* instance has to be up.
     for unit in "${INSTANCES[@]}"; do
+        if gaming_stopped "$unit"; then
+            note "  $unit: stopped by gaming mode"
+            continue
+        fi
         enabled=$(systemctl --user is-enabled "$unit" 2>/dev/null)
         active=$(systemctl --user is-active "$unit" 2>/dev/null)
         if [ "$enabled" = enabled ] && [ "$active" != active ]; then
@@ -142,7 +162,12 @@ if [ "${#ENDPOINTS[@]}" -gt 0 ]; then
                 28) why="timed out" ;;
                 *)  why="curl exit $rc" ;;
             esac
-            bad "  $name ($port): $why"
+            # No endpoint names the unit serving it, so gate on the mode itself.
+            if [ -f "$GAMING_STATE" ]; then
+                note "  $name ($port): $why ${DIM}(gaming mode is on)${OFF}"
+            else
+                bad "  $name ($port): $why"
+            fi
         fi
     done
 fi
