@@ -31,9 +31,6 @@ domain: arthurjordao.dev
 timezone: America/Sao_Paulo
 
 hosts:
-  # Kindle Paperwhite running KOReader. Its SSH server is KOReader's patched
-  # dropbear, which reads authorized_keys from
-  # /mnt/us/koreader/settings/SSH/authorized_keys, not ~/.ssh.
   europa:
     managed: false
     user: root
