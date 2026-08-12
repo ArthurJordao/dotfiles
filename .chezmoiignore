@@ -66,13 +66,22 @@ Emulation/**
 {{ end }}
 
 # Axis 3: placement. Which containers live on THIS host.
-# The negation needs the single-star `*`; `**` here silently ignores everything.
+# Inverted on purpose: ignoring every *other* host's quadlets by exact name
+# leaves anything unclaimed unignored, so `exact_systemd` prunes it. A name is a
+# directory or the stem before the first dot -- never a prefix, which would let
+# one host's `shelf` swallow another's `shelfmark`.
 {{ if not (has "podman" $roles) }}
 .config/containers
 .config/containers/**
 {{ else }}
-.config/containers/systemd/*
-{{ range (index $me "quadlets" | default list) -}}
-!.config/containers/systemd/{{ . }}*
-{{ end -}}
+{{- $mine := index $me "quadlets" | default list -}}
+{{- range $h := .hosts -}}
+{{- range (index $h "quadlets" | default list) -}}
+{{- if not (has . $mine) }}
+.config/containers/systemd/{{ . }}
+.config/containers/systemd/{{ . }}/**
+.config/containers/systemd/{{ . }}.*
+{{- end -}}
+{{- end -}}
+{{- end }}
 {{ end }}

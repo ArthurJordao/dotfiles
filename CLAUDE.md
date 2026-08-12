@@ -69,8 +69,11 @@ Silent failures worth knowing:
   `update-environment` cross over. This is why `minecraft/atm10-tts/start` sets `ATM10_JAVA`
   itself: a script running inside the pane is unaffected. `tmux new-session -e VAR=value` also
   works if a value ever has to come from the unit.
-- `dir/**` then `!dir/keep` in `.chezmoiignore` ignores everything. Negation needs single-star `dir/*`.
-- A `.container` whose prefix is not in a host's `quadlets` deploys nowhere, no error.
+- `dir/**` then `!dir/keep` in `.chezmoiignore` ignores everything. Negation needs single-star
+  `dir/*` — though no block relies on negation any more.
+- **A quadlet file no host claims deploys to *every* podman host.** The ignore names other hosts'
+  quadlets to suppress them, so anything unclaimed is unignored everywhere and `exact_systemd`
+  keeps it. `check-consistency` C11 is what makes that an error.
 - **A bare field lookup on a key that may be absent errors under `missingkey=error`, and
   `| default` can't rescue it.** `index` yields nil there instead: a darwin host has no `distro`,
   so `.chezmoitemplates/install-packages.sh` reads `index (index .hosts .hostname) "distro"`.
@@ -86,7 +89,9 @@ Silent failures worth knowing:
   in source — `exact_Emulation` would wipe the ROM library. `private_` is unrelated: it sets
   0700/0600, and is right only where the target really is 0700. `dot_local/state/private_syncthing/`
   needs it (syncthing sets 0700 on a directory holding `key.pem`, and without it chezmoi reports
-  "has changed since chezmoi last wrote it" every apply); a flatpak data dir does not.
+  "has changed since chezmoi last wrote it" every apply); a flatpak data dir does not. On the
+  quadlets, `exact_` goes on `systemd/` and never on `containers/` — that one is podman's own
+  (`auth.json`, `containers.conf`), and nothing in it is managed.
 - **`exact_` does not recurse.** Each directory level needs its own prefix — `exact_nvim/exact_lua/
   exact_plugins/`. A level without it silently keeps stray files. Files matching `.chezmoiignore`
   are exempt from `exact_` deletion.
@@ -155,14 +160,17 @@ Fixed facts:
 
 ## Three concerns per service
 
-**1. Container (podman quadlet)** — `dot_config/containers/systemd/`
+**1. Container (podman quadlet)** — `dot_config/containers/exact_systemd/`
 
 - Deploys to `~/.config/containers/systemd/`, where podman's systemd generator turns each
   `.container` / `.pod` / `.network` file into a rootless **user** unit.
+- **Every level is `exact_`**, so a file in the target that no host's `quadlets` claims is deleted
+  on the next apply — that is how a retired service leaves. It removes the file, not the running
+  container: stop the unit yourself.
 - Layout: root level for standalone services (`calibre-web-automated.container`,
   `cloudflare-ddns.container`, `shelfmark.container`, `teamspeak3.container`); subdirs for service
   groups that share a network/pod
-  (`music/` = slskd + navidrome + soulsync on `music.network`; `immich/` = a pod of
+  (`exact_music/` = slskd + navidrome + soulsync on `music.network`; `exact_immich/` = a pod of
   server/db/valkey/ml plus the top-level `immich.pod`).
 - **Mount points and the timezone are data, not per-service facts.** `{{ .timezone }}` is
   fleet-wide, read directly. Mount points are per-host under `storage` and read through a
@@ -250,7 +258,7 @@ service is not one entry, it's a line in each list that concerns it:
 
 | List | Drives | Contents |
 |---|---|---|
-| `quadlets` | `.chezmoiignore` | quadlet filename **prefixes**, matched `<prefix>*` |
+| `quadlets` | `.chezmoiignore` | quadlet **names** — a top-level directory, or the stem before the first `.` |
 | `units` | `gaming-mode` `CANDIDATES` | systemd user units, **no** `.service` suffix. Minecraft instances are not here — they come from `.chezmoidata/minecraft.yaml` |
 | `endpoints` | Caddy, CoreDNS, cloudflared, `~/.ssh/config`, quadlet `PublishPort` | hostnames to serve and resolve |
 
@@ -565,7 +573,7 @@ tools/simulate-host mercury execute-template < dot_local/state/private_syncthing
 
 # Adding a new service (checklist)
 
-1. `dot_config/containers/systemd/<svc>.container` (+ `<svc>.env.tmpl` if it needs secrets;
+1. `dot_config/containers/exact_systemd/<svc>.container` (+ `<svc>.env.tmpl` if it needs secrets;
    create a 1Password item titled for the service, put its fields **inside a section**, and
    add the title to `secrets.items`). Name it `.container.tmpl` if it publishes a proxied
    port, and write that port as
