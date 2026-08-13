@@ -183,10 +183,10 @@ A host without `user` gets no block.
 its DNS records in both views and its `~/.ssh/config` block, and nothing else. It may
 declare `user` and `ip` alone: `roles`, `os` and the rest are required on a managed
 host and merely inert on this one, which `tools/check-consistency` reports. `tools/hosts`
-omits it, so no template is ever rendered against it, and `ip.tailscale` is optional
-because such a box may not be on the tailnet.
+omits it, so no template is ever rendered against it. `ip` may be omitted entirely, but
+declaring it means declaring both `lan` and `tailscale`.
 
-`europa` — a Kindle running KOReader — is the first of these.
+`europa` and `deimos` — Kindles running KOReader — are these.
 
 A fourth list, `syncthing.folders`, lives in `.chezmoidata/syncthing.yaml` rather than
 under a host, because it describes a library shared *between* hosts rather than any

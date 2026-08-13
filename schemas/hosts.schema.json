@@ -55,15 +55,7 @@
             "required": [
               "roles",
               "os"
-            ],
-            "properties": {
-              "ip": {
-                "required": [
-                  "lan",
-                  "tailscale"
-                ]
-              }
-            }
+            ]
           }
         },
         {
@@ -233,7 +225,8 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "lan"
+        "lan",
+        "tailscale"
       ],
       "properties": {
         "lan": {
@@ -245,7 +238,7 @@
         "tailscale": {
           "type": "string",
           "format": "ipv4",
-          "description": "Resolved for tailnet clients (the 100.64.0.0/10 CoreDNS view). Required on a managed host; optional on `managed: false`, which may not be on the tailnet yet -- every consumer guards on it.",
+          "description": "Resolved for tailnet clients (the 100.64.0.0/10 CoreDNS view). Required whenever `ip` is declared, managed or not -- every box in the inventory is on the tailnet.",
           "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}$"
         }
       }

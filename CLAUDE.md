@@ -37,11 +37,12 @@ Roles compose: `gaming-mode` uses `and (has "server") (has "gaming")`. Never put
 
 **`managed: false` puts a box in the inventory without applying to it** — it gets its DNS
 records and its `~/.ssh/config` block, nothing else, and declares `user`/`ip` only.
-`roles`/`os`/`distro` are required on a managed host and inert on this one, `ip.tailscale`
-is optional (it may not be on the tailnet), and `tools/hosts` omits it so no template is
-ever rendered against it. Consequence for any template that iterates `.hosts`: guard every
-field access — `index $h "roles" | default list`, never `$h.roles`. `europa` (a Kindle
-running KOReader) is the first one.
+`roles`/`os`/`distro` are required on a managed host and inert on this one, and `tools/hosts`
+omits it so no template is ever rendered against it. `ip` itself is optional, but declaring it
+means declaring **both** `lan` and `tailscale` — every box in the inventory is on the tailnet.
+Consequence for any template that iterates `.hosts`: guard every field access — `index $h
+"roles" | default list`, never `$h.roles`. `europa` and `deimos` (Kindles running KOReader)
+are the ones so far.
 
 **Read `os`/`distro` from the host, never `.chezmoi.os`.** chezmoi's own value describes the
 machine running the render and cannot be overridden, which is exactly what made `simulate-host`
