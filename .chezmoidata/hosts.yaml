@@ -31,6 +31,13 @@ domain: arthurjordao.dev
 timezone: America/Sao_Paulo
 
 hosts:
+  deimos:
+    managed: false
+    user: root
+    ip:
+      lan: 192.168.15.27
+      tailscale: 100.94.29.100
+
   europa:
     managed: false
     user: root
