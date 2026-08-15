@@ -265,17 +265,23 @@ world/datapacks/Matcha_Flavoured_1_12.zip   sha1 77d080d2fe207a886c8c784ac239dec
 ```
 
 **The same zip is both the datapack and the resource pack** — the author ships them bound
-together, so the file that sits in `world/datapacks/` is also the one served to clients.
-These three lines in `server.properties` are what serve it:
+together (one `pack.mcmeta` over both `data/` and `assets/`), so the file in
+`world/datapacks/` is also the one served to clients. These lines in `server.properties`
+serve it:
 
 ```properties
 resource-pack=https://cdn.modrinth.com/data/QI0EmgZ1/versions/E9rngRfK/Matcha_Flavoured_1_12.zip
 resource-pack-sha1=77d080d2fe207a886c8c784ac239dec54a213065
 require-resource-pack=true
+resource-pack-prompt={"text":"Matcha Flavoured needs its textures - item names and recipes depend on them."}
 ```
 
 Required, not optional: the pack carries item names and recipe icons, so declining leaves
 the game unreadable rather than merely untextured.
+
+**`resource-pack-prompt` is parsed as a JSON text component, not a plain string.** Plain
+text logs `Failed to parse resource pack prompt` at every boot and the prompt is dropped —
+the server still starts, so it is easy to miss.
 
 Updating the pack means replacing the zip **and** both `resource-pack*` lines with the new
 version's URL and sha1 — a stale sha1 makes every client reject the download. Install the
@@ -283,8 +289,18 @@ datapack before the world is first generated; Matcha shuffles item progression, 
 against adding it to an existing world.
 
 `difficulty` selects the pack's own mode: `easy` is its relaxed variant, `normal` the
-intended challenge. The server prints "Matcha Flavoured is now loaded" on startup when the
-datapack is live — check with `minecraft attach`.
+intended challenge. `matcha` is on `normal`. Confirm the pack is live with
+`minecraft attach` then `datapack list` — it should report
+`[file/Matcha_Flavoured_1_12.zip (world)]` among the enabled packs.
+
+**A fresh `server.properties` is `white-list=false`, and 25565 is the one internet-facing
+port-forward.** Any new instance therefore needs `white-list=true` and a `whitelist.json`
+copied from the instance it replaces, or switching to it publishes an open server. Both
+`vanilla` and `matcha` carry the same three-player whitelist.
+
+Matcha logs its own upstream defects on every boot — stray `HELP.txt` files under
+`dimension_type/`, `jukebox_song/` and `advancement/`, plus two unparseable advancement
+files. They are the pack author's, harmless, and not worth chasing.
 
 ### RCON is disabled on purpose
 
