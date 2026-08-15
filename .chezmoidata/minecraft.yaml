@@ -15,4 +15,5 @@
 minecraft:
   instances:
     - {name: atm10-tts, jdk: 21, java_env: ATM10_JAVA}
+    - {name: matcha, jdk: 25, xms: 2G, xmx: 4G}
     - {name: vanilla, jdk: 25, xms: 2G, xmx: 4G}

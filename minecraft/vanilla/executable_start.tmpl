@@ -1,10 +1,1 @@
-{{- $jvm := includeTemplate "minecraft-jvm" (dict "minecraft" .minecraft "instance" "vanilla") -}}
-{{- $heap := dict -}}
-{{- range .minecraft.instances -}}
-{{- if eq .name "vanilla" }}{{ $heap = . }}{{ end -}}
-{{- end -}}
-#!/usr/bin/env bash
-# GENERATED — JVM and heap come from .chezmoidata/minecraft.yaml.
-{{ $jvm }} \
-    -Xmx{{ $heap.xmx }} -Xms{{ $heap.xms }} \
-    -jar paper.jar nogui
+{{ includeTemplate "minecraft-paper-start" (dict "minecraft" .minecraft "instance" "vanilla") -}}

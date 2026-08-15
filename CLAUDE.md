@@ -459,8 +459,9 @@ hosts in `.chezmoidata/hosts.yaml` relocates the whole Caddy/CoreDNS/cloudflared
   renaming an instance is a one-line edit.
 - **Every instance has a managed launcher at `~/minecraft/<instance>/start`**, and the unit runs
   `./start` for all of them — a uniform name is what keeps the shared unit template free of any
-  per-instance branching. `vanilla`'s runs java directly; `atm10-tts`'s injects the JVM and execs
-  the modpack's own `startserver.sh`, which stays unmanaged because it installs NeoForge and
+  per-instance branching. A plain Paper instance (`vanilla`, `matcha`) is one
+  `includeTemplate "minecraft-paper-start"` line; `atm10-tts`'s injects the JVM and execs the
+  modpack's own `startserver.sh`, which stays unmanaged because it installs NeoForge and
   writes a first-run `server.properties`. **Nothing under `minecraft/` may be `exact_`** — it
   holds worlds, mods and backups.
 - `dot_local/scripts/executable_minecraft` — helper to keep the boot server in sync with the
@@ -470,9 +471,11 @@ hosts in `.chezmoidata/hosts.yaml` relocates the whole Caddy/CoreDNS/cloudflared
   C7 requires each instance's package to be declared under `packages.arch.minecraft`. Never use
   `jdk-openjdk` (rolling): its directory is renamed on each bump and silently breaks the path.
   Only LTS is pinnable.
-- `dot_local/scripts/executable_minecraft-backup` — daily tarball of the `vanilla` world tree to
-  `/mnt/x9pro/minecraft-backups`, keeping the newest 3. Pauses+flushes saves via the server's
-  tmux console when it's running so the snapshot is consistent. Run by `minecraft-backup.timer`.
+- `dot_local/scripts/executable_minecraft-backup` — daily tarball of every instance's world tree
+  to `/mnt/x9pro/minecraft-backups`, keeping the newest 3 per instance. Pauses+flushes saves via
+  the server's tmux console when it's running so the snapshot is consistent. An instance with no
+  `world*` dirs yet is skipped, not an error, and one instance's failure doesn't stop the rest.
+  Run by `minecraft-backup.timer`.
 - `dot_local/scripts/executable_gaming-mode` — `gaming-mode {on|off|status}` stops the whole
   self-hosted stack to free CPU/GPU/RAM for gaming, then restores exactly what was running.
   **Its `CANDIDATES` list must include every resource-heavy service** — add new services here.

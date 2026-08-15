@@ -1,0 +1,22 @@
+{{- /* Managed launcher for a plain Paper instance, from .chezmoidata/minecraft.yaml.
+
+       An instance wrapping a modpack-shipped launcher writes its own start
+       script instead -- that launcher picks the JVM off `java_env`.
+
+         {{ includeTemplate "minecraft-paper-start" (dict "minecraft" .minecraft "instance" "vanilla") }} */ -}}
+{{- $want := .instance -}}
+{{- $jvm := includeTemplate "minecraft-jvm" (dict "minecraft" .minecraft "instance" $want) -}}
+{{- $heap := dict -}}
+{{- range (index .minecraft "instances" | default list) -}}
+{{- if eq .name $want -}}
+{{- $heap = . -}}
+{{- end -}}
+{{- end -}}
+{{- if not (and (hasKey $heap "xms") (hasKey $heap "xmx")) -}}
+{{- fail (printf "minecraft-paper-start: instance %q needs xms and xmx in .chezmoidata/minecraft.yaml" $want) -}}
+{{- end -}}
+#!/usr/bin/env bash
+# GENERATED — JVM and heap come from .chezmoidata/minecraft.yaml.
+{{ $jvm }} \
+    -Xmx{{ $heap.xmx }} -Xms{{ $heap.xms }} \
+    -jar paper.jar nogui

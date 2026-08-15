@@ -249,6 +249,43 @@ mars has no global IPv6 and no IPv6 egress, so the v6 duplicates of these rules 
 Possibly stale: the `alvr` application profile rules (`9943:9944` tcp+udp) remain, though the
 `vr` role and its package were removed from the repo.
 
+### Minecraft instance contents
+
+The repo declares each instance and writes its `~/minecraft/<instance>/start`. Everything
+else in that directory is hand-placed and not reconstructible from a clone: the server jar,
+`eula.txt`, `server.properties`, worlds, plugins and datapacks.
+
+`matcha` runs **Paper 26.2 build 112** (`paper-26.2-112.jar`, sha256 `bd3a58cf9687…`, from
+`https://fill.papermc.io/v3/projects/paper/versions/26.2/builds`) with the **Matcha
+Flavoured** datapack, [Modrinth `QI0EmgZ1`](https://modrinth.com/project/QI0EmgZ1), version
+1.12:
+
+```
+world/datapacks/Matcha_Flavoured_1_12.zip   sha1 77d080d2fe207a886c8c784ac239dec54a213065
+```
+
+**The same zip is both the datapack and the resource pack** — the author ships them bound
+together, so the file that sits in `world/datapacks/` is also the one served to clients.
+These three lines in `server.properties` are what serve it:
+
+```properties
+resource-pack=https://cdn.modrinth.com/data/QI0EmgZ1/versions/E9rngRfK/Matcha_Flavoured_1_12.zip
+resource-pack-sha1=77d080d2fe207a886c8c784ac239dec54a213065
+require-resource-pack=true
+```
+
+Required, not optional: the pack carries item names and recipe icons, so declining leaves
+the game unreadable rather than merely untextured.
+
+Updating the pack means replacing the zip **and** both `resource-pack*` lines with the new
+version's URL and sha1 — a stale sha1 makes every client reject the download. Install the
+datapack before the world is first generated; Matcha shuffles item progression, and it warns
+against adding it to an existing world.
+
+`difficulty` selects the pack's own mode: `easy` is its relaxed variant, `normal` the
+intended challenge. The server prints "Matcha Flavoured is now loaded" on startup when the
+datapack is live — check with `minecraft attach`.
+
 ### RCON is disabled on purpose
 
 `enable-rcon=false` in each instance's `server.properties` (not managed by this repo). It
@@ -322,15 +359,16 @@ None of this is reconstructible from the repo.
 |---|---|---|
 | immich library | `/mnt/x9pro` | none |
 | media (music, books, book-ingest) | `/mnt/x9pro` | none |
-| minecraft worlds, mods, plugins | `~/minecraft/<instance>/` | `vanilla` only, below |
-| minecraft backups | `/mnt/x9pro/minecraft-backups` | newest 3 tarballs, `vanilla` world only |
+| minecraft worlds, mods, plugins | `~/minecraft/<instance>/` | world trees only, below |
+| minecraft backups | `/mnt/x9pro/minecraft-backups` | newest 3 tarballs per instance |
 | podman named volumes | `~/.local/share/containers` | none |
 | syncthing identity | `~/.local/state/syncthing/{cert,key}.pem` | none — regenerating changes the device ID |
 | syncthing database | `~/.local/state/syncthing/` (SQLite) | none, rebuildable by rescanning |
 
-`minecraft-backup.timer` runs daily and keeps the newest 3 tarballs of the `vanilla`
-world tree only. **Nothing here has an offsite copy**, and the external SSD is a single
-exfat volume with no redundancy.
+`minecraft-backup.timer` runs daily and keeps the newest 3 tarballs of every instance's
+world tree. Only worlds: the server jar, plugins, mods and `server.properties` are not
+backed up. **Nothing here has an offsite copy**, and the external SSD is a single exfat
+volume with no redundancy.
 
 The syncthing device ID is derived from `cert.pem`. Regenerating it means editing
 `syncthing_id` in `.chezmoidata/hosts.yaml` and re-approving the device on every peer.

@@ -1,62 +1,109 @@
 #!/usr/bin/env bash
-# minecraft-backup — daily tarball of the vanilla world onto the external SSD, so a
-# root-disk failure doesn't take the backups with it. Keeps the newest KEEP.
+# minecraft-backup — daily tarball of every instance's world onto the external SSD,
+# so a root-disk failure doesn't take the backups with it. Keeps the newest KEEP
+# per instance.
+#
+# GENERATED — the instance list is .chezmoidata/minecraft.yaml.
 #
 # Backs up whichever world* dirs exist: newer MC keeps every dimension inside
-# world/, older Paper split them into world_nether / world_the_end.
+# world/, older Paper split them into world_nether / world_the_end. An instance
+# with none is skipped rather than failing the timer — it has never been run.
 #
-# If the server is running, saves are paused and flushed through its tmux
-# console first. Run by minecraft-backup.timer; safe by hand.
+# If an instance is running, its saves are paused and flushed through its tmux
+# console first. One instance's failure doesn't stop the rest; the exit status
+# still reports it. Run by minecraft-backup.timer; safe by hand.
 set -euo pipefail
 
-INSTANCE="vanilla"
-SRC_DIR="$HOME/minecraft/$INSTANCE"
+INSTANCES=(
+{{- range .minecraft.instances }}
+    "{{ .name }}"
+{{- end }}
+)
 DEST_DIR="{{ includeTemplate "storage-path" (dict "hosts" .hosts "name" "external") }}/minecraft-backups"
 KEEP=3
-SESSION="minecraft-$INSTANCE"
 
 mkdir -p "$DEST_DIR"
-archive="$DEST_DIR/${INSTANCE}-$(date +%F).tar.gz"
 
-mc_console() { tmux send-keys -t "$SESSION" "$1" C-m 2>/dev/null || true; }
+mc_console() { tmux send-keys -t "$1" "$2" C-m 2>/dev/null || true; }
 
-running=0
-if systemctl --user is-active --quiet "minecraft@$INSTANCE.service"; then
-    running=1
-fi
+# Set while an instance is mid-backup, so dying between save-off and the rename
+# still re-enables saves and drops the half-written tarball.
+cur_session=""
+cur_archive=""
+cur_running=0
 
-# On any exit: re-enable saves and drop a half-written tarball if tar failed.
 cleanup() {
-    [ "$running" -eq 1 ] && mc_console "save-on"
-    rm -f "$archive.part"
+    [ "$cur_running" -eq 1 ] && mc_console "$cur_session" "save-on"
+    [ -n "$cur_archive" ] && rm -f "$cur_archive.part"
     return 0
 }
 trap cleanup EXIT
 
-worlds=()
-for name in world world_nether world_the_end; do
-    [ -d "$SRC_DIR/$name" ] && worlds+=("$name")
+backup_instance() {
+    local instance="$1"
+    local src_dir="$HOME/minecraft/$instance"
+    local archive name rc old
+    archive="$DEST_DIR/${instance}-$(date +%F).tar.gz"
+
+    local worlds=()
+    for name in world world_nether world_the_end; do
+        [ -d "$src_dir/$name" ] && worlds+=("$name")
+    done
+    if [ "${#worlds[@]}" -eq 0 ]; then
+        echo "minecraft-backup: $instance: no world dirs under $src_dir, skipping"
+        return 0
+    fi
+
+    cur_session="minecraft-$instance"
+    cur_archive="$archive"
+    cur_running=0
+    if systemctl --user is-active --quiet "minecraft@$instance.service"; then
+        cur_running=1
+        mc_console "$cur_session" "save-off"
+        mc_console "$cur_session" "save-all flush"
+        sleep 5
+    fi
+
+    # Write to a .part name then rename, so a half-written tarball never looks final.
+    rc=0
+    tar -C "$src_dir" -czf "$archive.part" "${worlds[@]}" || rc=1
+
+    [ "$cur_running" -eq 1 ] && mc_console "$cur_session" "save-on"
+    cur_running=0
+
+    if [ "$rc" -ne 0 ]; then
+        rm -f "$archive.part"
+        cur_archive=""
+        echo "minecraft-backup: $instance: tar failed" >&2
+        return 1
+    fi
+    # Checked explicitly: this runs under `|| failed+=`, which disables errexit
+    # inside the function.
+    if ! mv -f "$archive.part" "$archive"; then
+        rm -f "$archive.part"
+        cur_archive=""
+        echo "minecraft-backup: $instance: could not rename into place" >&2
+        return 1
+    fi
+    cur_archive=""
+
+    local backups=()
+    mapfile -t backups < <(ls -1t "$DEST_DIR/${instance}-"*.tar.gz 2>/dev/null || true)
+    if [ "${#backups[@]}" -gt "$KEEP" ]; then
+        for old in "${backups[@]:$KEEP}"; do
+            rm -f "$old"
+        done
+    fi
+
+    echo "minecraft-backup: $instance: wrote $archive ($(du -h "$archive" | cut -f1)) [dirs: ${worlds[*]}]; kept newest $KEEP"
+}
+
+failed=()
+for instance in "${INSTANCES[@]}"; do
+    backup_instance "$instance" || failed+=("$instance")
 done
-if [ "${#worlds[@]}" -eq 0 ]; then
-    echo "minecraft-backup: no world dirs under $SRC_DIR" >&2
+
+if [ "${#failed[@]}" -gt 0 ]; then
+    echo "minecraft-backup: failed for: ${failed[*]}" >&2
     exit 1
 fi
-
-if [ "$running" -eq 1 ]; then
-    mc_console "save-off"
-    mc_console "save-all flush"
-    sleep 5
-fi
-
-# Write to a .part name then rename, so a half-written tarball never looks final.
-tar -C "$SRC_DIR" -czf "$archive.part" "${worlds[@]}"
-mv -f "$archive.part" "$archive"
-
-mapfile -t backups < <(ls -1t "$DEST_DIR/${INSTANCE}-"*.tar.gz 2>/dev/null || true)
-if [ "${#backups[@]}" -gt "$KEEP" ]; then
-    for old in "${backups[@]:$KEEP}"; do
-        rm -f "$old"
-    done
-fi
-
-echo "minecraft-backup: wrote $archive ($(du -h "$archive" | cut -f1)) [dirs: ${worlds[*]}]; kept newest $KEEP"
