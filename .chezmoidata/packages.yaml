@@ -123,6 +123,7 @@ packages:
       - lesspipe
       - librdkafka
       - libxmlsec1
+      - luarocks
       - luv
       - markdown
       - mosh
