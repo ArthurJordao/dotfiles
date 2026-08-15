@@ -87,8 +87,10 @@ backup_instance() {
     fi
     cur_archive=""
 
+    # Match only the date-stamped names this script writes, so a hand-made
+    # snapshot dropped in the same directory is never pruned.
     local backups=()
-    mapfile -t backups < <(ls -1t "$DEST_DIR/${instance}-"*.tar.gz 2>/dev/null || true)
+    mapfile -t backups < <(ls -1t "$DEST_DIR/${instance}-"[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].tar.gz 2>/dev/null || true)
     if [ "${#backups[@]}" -gt "$KEEP" ]; then
         for old in "${backups[@]:$KEEP}"; do
             rm -f "$old"
