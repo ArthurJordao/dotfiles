@@ -1,4 +1,5 @@
 {{- $me := index .hosts .hostname -}}
+{{- $user := index $me "user" | default "" -}}
 {{- $op := onepasswordItemFields .secrets.items.olivetin .secrets.vault -}}
 # GENERATED from .chezmoidata/ — edit hosts.yaml and dashboard.yaml, not this.
 #
@@ -36,7 +37,7 @@ accessControlLists:
     addToEveryAction: true
   - name: family
     matchUsergroups: [family]
-    permissions: {view: true, exec: true, logs: false}
+    permissions: {view: true, exec: true, logs: true}
 
 actions:
 {{- range .dashboard.actions }}
@@ -61,10 +62,10 @@ actions:
   # Feeds the container entity. Runs as turisa, so podman needs no socket.
   - title: Refresh containers
     shell: >-
-      mkdir -p /home/{{ $me.user }}/.local/state/olivetin &&
+      mkdir -p /home/{{ $user }}/.local/state/olivetin &&
       podman ps -a --format json |
       python3 -c 'import json,sys; print(json.dumps([{"name": c["Names"][0], "state": c["State"], "image": c["Image"]} for c in json.load(sys.stdin)]))'
-      > /home/{{ $me.user }}/.local/state/olivetin/containers.json
+      > /home/{{ $user }}/.local/state/olivetin/containers.json
     timeout: 30
     execOnStartup: true
     execOnCron: '* * * * *'
@@ -86,7 +87,7 @@ entities:
   # Written by the Refresh containers action. Deliberately outside the config
   # dir: chezmoi manages that, and would fight OliveTin over a file it rewrites
   # every minute.
-  - file: /home/{{ $me.user }}/.local/state/olivetin/containers.json
+  - file: /home/{{ $user }}/.local/state/olivetin/containers.json
     name: container
 
 dashboards:
@@ -98,18 +99,25 @@ dashboards:
   - title: Services
     contents:
 {{- range $group := .dashboard.groups }}
-      - type: fieldset
-        title: {{ $group }}
-        contents:
+{{- $members := list }}
 {{- range $hostname, $host := $.hosts }}
 {{- range (index $host "endpoints" | default list) }}
 {{- $tile := index $.dashboard.tiles .name | default dict }}
 {{- if and (hasKey . "port") (eq (index $tile "group" | default "") $group) }}
+{{- $members = append $members . }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if $members }}
+      - type: fieldset
+        title: {{ $group }}
+        contents:
+{{- range $members }}
+{{- $tile := index $.dashboard.tiles .name | default dict }}
           - type: display
             title: |
               <a href="https://{{ .name }}.{{ $.domain }}">{{ index $tile "label" | default .name }}</a>
               {{- with index $tile "description" }}<br /><small>{{ . }}</small>{{ end }}
-{{- end }}
 {{- end }}
 {{- end }}
 {{- end }}
