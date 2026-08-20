@@ -108,24 +108,6 @@ actions:
     execOnStartup: true
     execOnCron: '* * * * *'
     acls: [cron]
-  - title: 'Start {{ "{{ container.name }}" }}'
-    icon: '<iconify-icon icon="mdi:play"></iconify-icon>'
-    shell: 'podman start {{ "{{ container.name }}" }}'
-    entity: container
-    timeout: 60
-  - title: 'Stop {{ "{{ container.name }}" }}'
-    icon: '<iconify-icon icon="mdi:stop"></iconify-icon>'
-    shell: 'podman stop {{ "{{ container.name }}" }}'
-    entity: container
-    timeout: 60
-  - title: 'Logs {{ "{{ container.name }}" }}'
-    icon: '<iconify-icon icon="mdi:text-box-outline"></iconify-icon>'
-    shell: 'podman logs --tail 200 {{ "{{ container.name }}" }}'
-    entity: container
-    timeout: 30
-    popupOnStart: execution-dialog-stdout-only
-
-
 entities:
   # Written by the Refresh containers action. NDJSON, one object per line --
   # OliveTin parses entity files line by line, and podman's `--format json`
@@ -226,10 +208,10 @@ dashboards:
 {{- end }}
 {{- end }}
   - title: Containers
+{{- /* Display only: an entity-bound ACTION expands per container at runtime,
+       and those generated titles are on no dashboard, which is what kept
+       OliveTin's built-in "Actions" view in the sidebar. */}}
     contents:
-{{- /* Listed so no action is dashboard-less: that is what keeps OliveTin's
-       built-in "Actions" view in the sidebar. They are visible here because
-       `hidden: true` appears not to count as placed. */}}
       - title: Refresh status
       - title: Refresh containers
       - type: fieldset
@@ -242,6 +224,3 @@ dashboards:
               <div style="font-weight:600">{{ "{{ container.state }}" }}</div>
               <div style="opacity:.7;font-size:.8em;word-break:break-all">{{ "{{ container.image }}" }}</div>
             cssClass: '{{ "{{ container.state }}" }}'
-          - title: 'Start {{ "{{ container.name }}" }}'
-          - title: 'Stop {{ "{{ container.name }}" }}'
-          - title: 'Logs {{ "{{ container.name }}" }}'
