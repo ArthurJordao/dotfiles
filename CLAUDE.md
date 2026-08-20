@@ -502,6 +502,14 @@ hosts in `.chezmoidata/hosts.yaml` relocates the whole Caddy/CoreDNS/cloudflared
   stream. Sunshine's own `dd_*` auto-resolution options are Windows/macOS only.
 - A prep-cmd runs **without a shell**, so `apps.json` needs absolute paths — no `~`, no `$HOME`,
   and no systemd `%h`. The path is rendered from the host's `user`.
+- **The dashboard is OliveTin**, a systemd *user* unit rather than a container —
+  `gaming-mode` drives `systemctl --user` and the container buttons call
+  `podman` directly. Its whole config is generated: tiles come from `endpoints`,
+  and presentation, logins and buttons from `.chezmoidata/dashboard.yaml`.
+  Adding a button is a data edit. **OliveTin's own `{{ }}` placeholders must be
+  written as `{{ "{{ x }}" }}` in the template**, or chezmoi evaluates them.
+  Deliberately absent from `units`: gaming mode stops that list, and this is
+  what turns it back off.
 
 # Emulation library sync (mars ↔ mercury)
 

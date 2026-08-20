@@ -1,5 +1,5 @@
 {{- $roles := (index .hosts .hostname).roles -}}
-{{ if or (has "minecraft" $roles) (has "podman" $roles) (has "sunshine" $roles) (has "emulation" $roles) -}}
+{{ if or (has "minecraft" $roles) (has "podman" $roles) (has "sunshine" $roles) (has "emulation" $roles) (has "server" $roles) -}}
 #!/bin/bash
 set -euo pipefail
 
@@ -17,5 +17,8 @@ systemctl --user enable --now app-dev.lizardbyte.app.Sunshine.service
 {{ end -}}
 {{ if has "emulation" $roles -}}
 systemctl --user enable --now syncthing.service
+{{ end -}}
+{{ if has "server" $roles -}}
+systemctl --user enable --now olivetin.service
 {{ end -}}
 {{ end }}
