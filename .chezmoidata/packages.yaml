@@ -42,6 +42,7 @@ packages:
     server:
       - cockpit
       - cockpit-podman
+      - olivetin-bin
       - podman
     sunshine:
       - sunshine

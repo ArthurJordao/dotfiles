@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ArthurJordao/dotfiles/schemas/dashboard.schema.json",
+  "title": "chezmoi dashboard data",
+  "description": "Shape of .chezmoidata/dashboard.yaml -- presentation, logins and buttons for OliveTin. Structure only: tools/check-consistency is what cross-references tile keys against endpoints.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["dashboard"],
+  "properties": {
+    "dashboard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["groups", "tiles", "users", "actions"],
+      "properties": {
+        "groups": {
+          "type": "array",
+          "description": "Fieldset render order. A tile whose group is not listed here lands in the trailing ungrouped fieldset.",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "tiles": {
+          "type": "object",
+          "description": "Keyed by endpoint name. An endpoint with no entry still gets a plain tile.",
+          "propertyNames": {"pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?$"},
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "group": {"type": "string", "minLength": 1},
+              "label": {"type": "string", "minLength": 1, "description": "Display name. Defaults to the endpoint name."},
+              "description": {"type": "string", "minLength": 1}
+            }
+          }
+        },
+        "users": {
+          "type": "object",
+          "description": "OliveTin local logins. The password hash itself lives in 1Password, never here.",
+          "minProperties": 1,
+          "propertyNames": {"pattern": "^[a-z][a-z0-9_-]*$"},
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["group", "secret"],
+            "properties": {
+              "group": {
+                "description": "Which ACL applies. Both names are hard-coded in config.yaml.tmpl.",
+                "oneOf": [
+                  {"const": "admins", "description": "Every action, including ones added later."},
+                  {"const": "family", "description": "Only actions marked `family: true`."}
+                ]
+              },
+              "secret": {
+                "type": "string",
+                "pattern": "^[A-Z][A-Z0-9_]*$",
+                "description": "Field name in the `olivetin` 1Password item holding the argon2id hash. Must be inside a section."
+              }
+            }
+          }
+        },
+        "actions": {
+          "type": "array",
+          "description": "Buttons. Adding one is a data edit; the template ranges over this list.",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["title", "shell"],
+            "properties": {
+              "title": {"type": "string", "minLength": 1, "description": "OliveTin's identity for the action -- must be unique."},
+              "shell": {"type": "string", "minLength": 1},
+              "icon": {"type": "string", "minLength": 1, "description": "HTML entity or emoji shown on the button."},
+              "timeout": {"type": "integer", "minimum": 1, "description": "Seconds. OliveTin kills the command past this."},
+              "confirm": {"type": "boolean", "default": false, "description": "Adds a confirmation argument before it runs."},
+              "family": {"type": "boolean", "default": false, "description": "true also grants the `family` ACL. admins always have it."}
+            }
+          }
+        }
+      }
+    }
+  }
+}

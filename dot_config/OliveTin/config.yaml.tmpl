@@ -1,0 +1,157 @@
+{{- $me := index .hosts .hostname -}}
+{{- $user := index $me "user" | default "" -}}
+{{- $op := onepasswordItemFields .secrets.items.olivetin .secrets.vault -}}
+# GENERATED from .chezmoidata/ — edit hosts.yaml and dashboard.yaml, not this.
+#
+# OliveTin's own {{ "{{ }}" }} placeholders must be emitted as literals here:
+# chezmoi would otherwise evaluate them and fail the render.
+logLevel: INFO
+pageTitle: {{ .hostname }}
+
+# Loopback only — Caddy is the way in.
+listenAddressSingleHTTPFrontend: 127.0.0.1:{{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "dash") }}
+
+authRequireGuestsToLogin: true
+
+authLocalUsers:
+  enabled: true
+  users:
+{{- range $username, $user := .dashboard.users }}
+    - username: {{ $username }}
+      usergroup: {{ $user.group }}
+      password: '{{ (index $op $user.secret).value }}'
+{{- end }}
+
+# Deny by default; an ACL grants.
+defaultPermissions:
+  view: false
+  exec: false
+  logs: false
+
+accessControlLists:
+  # addToEveryAction means a newly added button is never accidentally hidden
+  # from admins, nor accidentally exposed to anyone else.
+  - name: admins
+    matchUsergroups: [admins]
+    permissions: {view: true, exec: true, logs: true}
+    addToEveryAction: true
+  - name: family
+    matchUsergroups: [family]
+    permissions: {view: true, exec: true, logs: true}
+
+actions:
+{{- range .dashboard.actions }}
+  - title: {{ .title }}
+    shell: {{ .shell }}
+{{- with index . "icon" }}
+    icon: '{{ . }}'
+{{- end }}
+{{- with index . "timeout" }}
+    timeout: {{ . }}
+{{- end }}
+{{- if index . "family" }}
+    acls: [family]
+{{- end }}
+{{- if index . "confirm" }}
+    arguments:
+      - name: confirm
+        type: confirmation
+        title: 'Really run: {{ .title }}?'
+{{- end }}
+{{- end }}
+  # Feeds the container entity. Runs as turisa, so podman needs no socket.
+  - title: Refresh containers
+    shell: >-
+      mkdir -p /home/{{ $user }}/.local/state/olivetin &&
+      podman ps -a --format json |
+      python3 -c 'import json,sys; print(json.dumps([{"name": c["Names"][0], "state": c["State"], "image": c["Image"]} for c in json.load(sys.stdin)]))'
+      > /home/{{ $user }}/.local/state/olivetin/containers.json
+    timeout: 30
+    execOnStartup: true
+    execOnCron: '* * * * *'
+    hidden: true
+  - title: 'Start {{ "{{ container.name }}" }}'
+    shell: 'podman start {{ "{{ container.name }}" }}'
+    entity: container
+    timeout: 60
+  - title: 'Stop {{ "{{ container.name }}" }}'
+    shell: 'podman stop {{ "{{ container.name }}" }}'
+    entity: container
+    timeout: 60
+  - title: 'Logs {{ "{{ container.name }}" }}'
+    shell: 'podman logs --tail 200 {{ "{{ container.name }}" }}'
+    entity: container
+    timeout: 30
+
+entities:
+  # Written by the Refresh containers action. Deliberately outside the config
+  # dir: chezmoi manages that, and would fight OliveTin over a file it rewrites
+  # every minute.
+  - file: /home/{{ $user }}/.local/state/olivetin/containers.json
+    name: container
+
+dashboards:
+  - title: Gaming mode
+    contents:
+{{- range .dashboard.actions }}
+      - title: {{ .title }}
+{{- end }}
+  - title: Services
+    contents:
+{{- range $group := .dashboard.groups }}
+{{- $members := list }}
+{{- range $hostname, $host := $.hosts }}
+{{- range (index $host "endpoints" | default list) }}
+{{- $tile := index $.dashboard.tiles .name | default dict }}
+{{- if and (hasKey . "port") (eq (index $tile "group" | default "") $group) }}
+{{- $members = append $members . }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if $members }}
+      - type: fieldset
+        title: {{ $group }}
+        contents:
+{{- range $members }}
+{{- $tile := index $.dashboard.tiles .name | default dict }}
+          - type: display
+            title: |
+              <a href="https://{{ .name }}.{{ $.domain }}">{{ index $tile "label" | default .name }}</a>
+              {{- with index $tile "description" }}<br /><small>{{ . }}</small>{{ end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- $other := list }}
+{{- range $hostname, $host := $.hosts }}
+{{- range (index $host "endpoints" | default list) }}
+{{- $tile := index $.dashboard.tiles .name | default dict }}
+{{- if and (hasKey . "port") (not (index $tile "group")) }}
+{{- $other = append $other . }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if $other }}
+      - type: fieldset
+        title: Other
+        contents:
+{{- range $other }}
+{{- $tile := index $.dashboard.tiles .name | default dict }}
+          - type: display
+            title: |
+              <a href="https://{{ .name }}.{{ $.domain }}">{{ index $tile "label" | default .name }}</a>
+{{- end }}
+{{- end }}
+  - title: Containers
+    contents:
+      - type: fieldset
+        entity: container
+        title: '{{ "{{ container.name }}" }}'
+        contents:
+          - type: display
+            title: |
+              <strong>{{ "{{ container.state }}" }}</strong><br />
+              <small>{{ "{{ container.image }}" }}</small>
+            cssClass: '{{ "{{ container.state }}" }}'
+          - title: 'Start {{ "{{ container.name }}" }}'
+          - title: 'Stop {{ "{{ container.name }}" }}'
+          - title: 'Logs {{ "{{ container.name }}" }}'

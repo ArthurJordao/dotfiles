@@ -313,7 +313,8 @@ without being declared as endpoints.
 
 `private_dot_ssh/private_config.tmpl` is a fifth consumer, and the only one reading the scalar
 `user`: one `Host` block per host, aliased by short name, `.local`, `<host>.<domain>`, both IPs
-and every endpoint of that host. A host without `user` gets no block. The `Host *` preamble is
+and every endpoint of that host. `user` is required on every host, unmanaged
+ones included — being reachable by name is what they are declared for. The `Host *` preamble is
 the only hand-written part. Rendered identically everywhere — the block for the host you are on
 is inert, not skipped.
 
@@ -502,6 +503,17 @@ hosts in `.chezmoidata/hosts.yaml` relocates the whole Caddy/CoreDNS/cloudflared
   stream. Sunshine's own `dd_*` auto-resolution options are Windows/macOS only.
 - A prep-cmd runs **without a shell**, so `apps.json` needs absolute paths — no `~`, no `$HOME`,
   and no systemd `%h`. The path is rendered from the host's `user`.
+- **The dashboard is OliveTin**, a systemd *user* unit rather than a container —
+  `gaming-mode` drives `systemctl --user` and the container buttons call
+  `podman` directly. Its whole config is generated: tiles come from `endpoints`,
+  and presentation, logins and buttons from `.chezmoidata/dashboard.yaml`.
+  Adding a button is a data edit. **OliveTin's own `{{ }}` placeholders must be
+  written as `{{ "{{ x }}" }}` in the template**, or chezmoi evaluates them.
+  Deliberately absent from `units`: gaming mode stops that list, and this is
+  what turns it back off. Also absent from `check-live`'s declared/failed-units
+  sweep, so only the `dash` endpoint probe covers it. Keep `olivetin-bin`
+  current: CVE-2026-28790 covers unauthenticated action termination in exactly
+  this guests-must-log-in configuration.
 
 # Emulation library sync (mars ↔ mercury)
 

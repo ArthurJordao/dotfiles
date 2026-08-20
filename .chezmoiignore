@@ -31,7 +31,7 @@ Pictures/**
 
 # Axis 2: role — gated by what the box is FOR.
 
-{{ if not (has "minecraft" $roles) }}
+{{ if not (or (has "minecraft" $roles) (has "server" $roles)) }}
 .config/systemd
 .config/systemd/**
 {{ end }}
@@ -54,6 +54,11 @@ minecraft/**
 .config/sunshine
 .config/sunshine/**
 .local/scripts/sunshine-client-mode
+{{ end }}
+{{ if not (has "server" $roles) }}
+.config/systemd/user/olivetin.service
+.config/OliveTin
+.config/OliveTin/**
 {{ end }}
 {{ if not (has "emulation" $roles) }}
 Emulation

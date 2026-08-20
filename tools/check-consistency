@@ -85,11 +85,12 @@ def fail(rule, msg):
 
 data = json.loads(render("_checker", text=(
     '{{ dict "hosts" .hosts "packages" .packages "syncthing" .syncthing '
-    '"minecraft" .minecraft | toJson }}')))
+    '"minecraft" .minecraft "dashboard" .dashboard | toJson }}')))
 hosts = data["hosts"]
 packages = data.get("packages") or {}
 folders = (data.get("syncthing") or {}).get("folders") or []
 instances = (data.get("minecraft") or {}).get("instances") or []
+dashboard = data.get("dashboard") or {}
 
 files = quadlet_files()
 top_level = set(f.split(os.sep)[0] for f in files)
@@ -236,6 +237,33 @@ for entry in sorted(top_level):
     if not any(claims(entry, q) for q in claimed):
         fail("C11", "dot_config/containers/exact_systemd/%s is in no host's "
                     "`quadlets` -- it deploys to every podman host" % entry)
+
+# C12 -- a tile keyed on nothing: an endpoint that was renamed or removed
+# leaves its presentation behind, and the tile silently stops rendering.
+endpoint_names = set(e["name"] for h in hosts.values()
+                     for e in (h.get("endpoints") or []))
+for tile in sorted(dashboard.get("tiles") or {}):
+    if tile not in endpoint_names:
+        fail("C12", "dashboard.tiles[%r] names no endpoint in hosts.yaml" % tile)
+
+# C13 -- OliveTin identifies an action by its title, so a duplicate makes one
+# of them unreachable rather than erroring.
+seen = set()
+for action in dashboard.get("actions") or []:
+    title = action.get("title")
+    if title in seen:
+        fail("C13", "dashboard.actions has two actions titled %r -- OliveTin "
+                    "keys on the title" % title)
+    seen.add(title)
+
+# C14 -- a tile grouped under a name `dashboard.groups` does not list renders
+# nowhere: no group fieldset matches it, and the ungrouped fallback skips it.
+groups = set(dashboard.get("groups") or [])
+for tile, cfg in sorted((dashboard.get("tiles") or {}).items()):
+    group = (cfg or {}).get("group")
+    if group and group not in groups:
+        fail("C14", "dashboard.tiles[%r] has group %r, which dashboard.groups "
+                    "does not list -- the tile renders nowhere" % (tile, group))
 
 if failures:
     for line in failures:
