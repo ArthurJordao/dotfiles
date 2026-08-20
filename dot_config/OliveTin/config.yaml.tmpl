@@ -1,5 +1,6 @@
 {{- $me := index .hosts .hostname -}}
 {{- $user := index $me "user" | default "" -}}
+{{- $roles := index $me "roles" | default list -}}
 {{- $op := onepasswordItemFields .secrets.items.olivetin .secrets.vault -}}
 # GENERATED from .chezmoidata/ — edit hosts.yaml and dashboard.yaml, not this.
 #
@@ -88,6 +89,32 @@ actions:
     entity: container
     timeout: 30
 
+{{- if has "minecraft" $roles }}
+
+  # Instances are mutually exclusive, so `use` implicitly stops the others; it
+  # also syncs the enabled unit so the right server returns after a reboot.
+  # Choices restrict the value to this list -- nothing free-form reaches sh.
+  - title: Start Minecraft server
+    shell: minecraft use {{ "{{ instance }}" }}
+    timeout: 120
+    acls: [family]
+    arguments:
+      - name: instance
+        title: Server
+        choices:
+{{- range .minecraft.instances }}
+          - value: {{ .name }}
+{{- end }}
+  - title: Stop Minecraft server
+    shell: minecraft stop
+    timeout: 120
+    acls: [family]
+  - title: Minecraft status
+    shell: minecraft status
+    timeout: 15
+    acls: [family]
+{{- end }}
+
 entities:
   # Written by the Refresh containers action. NDJSON, one object per line --
   # OliveTin parses entity files line by line, and podman's `--format json`
@@ -102,6 +129,13 @@ dashboards:
     contents:
 {{- range .dashboard.actions }}
       - title: {{ .title }}
+{{- end }}
+{{- if has "minecraft" $roles }}
+  - title: Minecraft
+    contents:
+      - title: Start Minecraft server
+      - title: Stop Minecraft server
+      - title: Minecraft status
 {{- end }}
   - title: Services
     contents:
