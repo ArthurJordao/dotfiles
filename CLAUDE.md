@@ -509,7 +509,10 @@ hosts in `.chezmoidata/hosts.yaml` relocates the whole Caddy/CoreDNS/cloudflared
   Adding a button is a data edit. **OliveTin's own `{{ }}` placeholders must be
   written as `{{ "{{ x }}" }}` in the template**, or chezmoi evaluates them.
   Deliberately absent from `units`: gaming mode stops that list, and this is
-  what turns it back off.
+  what turns it back off. Also absent from `check-live`'s declared/failed-units
+  sweep, so only the `dash` endpoint probe covers it. Keep `olivetin-bin`
+  current: CVE-2026-28790 covers unauthenticated action termination in exactly
+  this guests-must-log-in configuration.
 
 # Emulation library sync (mars ↔ mercury)
 
