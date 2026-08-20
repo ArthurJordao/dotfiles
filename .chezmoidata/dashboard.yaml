@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=../schemas/dashboard.schema.json
+#
+# Presentation, logins and buttons for OliveTin. The fifth flat list: like
+# quadlets/units/endpoints/syncthing.folders, nothing errors when it disagrees
+# with reality, so tools/check-consistency C12/C13 cross-reference it.
+#
+# `tiles` is keyed by ENDPOINT NAME -- the URL comes from hosts.yaml, never from
+# here. An endpoint with no entry still gets a plain, ungrouped tile.
+dashboard:
+  groups: [Media, Books, Infra]
+
+  tiles:
+    books: {group: Books, label: Calibre, description: Library}
+    dash: {group: Infra, label: This dashboard}
+    dns: {group: Infra, label: CoreDNS, description: Split-horizon DNS}
+    immich: {group: Media, label: Immich, description: Photos}
+    music: {group: Media, label: Navidrome, description: Music}
+    shelfmark: {group: Books, label: Shelfmark, description: Reading sync}
+    slskd: {group: Media, label: slskd, description: Soulseek}
+    soulsync: {group: Media, label: SoulSync}
+    sunshine: {group: Infra, label: Sunshine, description: Game streaming}
+
+  users:
+    arthur: {group: admins, secret: ARTHUR_PASSWORD_HASH}
+    isa: {group: family, secret: ISA_PASSWORD_HASH}
+
+  actions:
+    - {title: Gaming mode on, shell: gaming-mode on, timeout: 180, confirm: true, family: true}
+    - {title: Gaming mode off, shell: gaming-mode off, timeout: 180, family: true}
+    - {title: Gaming mode status, shell: gaming-mode status, timeout: 15, family: true}
