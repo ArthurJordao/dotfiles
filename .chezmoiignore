@@ -59,6 +59,7 @@ minecraft/**
 .config/systemd/user/olivetin.service
 .config/OliveTin
 .config/OliveTin/**
+.local/scripts/dashboard-status
 {{ end }}
 {{ if not (has "emulation" $roles) }}
 Emulation

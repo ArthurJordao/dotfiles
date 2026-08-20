@@ -1,6 +1,7 @@
 {{- $me := index .hosts .hostname -}}
 {{- $user := index $me "user" | default "" -}}
 {{- $roles := index $me "roles" | default list -}}
+{{- $pal := index .palettes .theme.active -}}
 {{- $op := onepasswordItemFields .secrets.items.olivetin .secrets.vault -}}
 # GENERATED from .chezmoidata/ — edit hosts.yaml and dashboard.yaml, not this.
 #
@@ -86,6 +87,18 @@ actions:
 {{- end }}
 {{- end }}
 {{- end }}
+  # Feeds the status entity. Colours are passed in so the palette stays in
+  # chezmoi data rather than in the script.
+  - title: Refresh status
+    shell: >-
+      mkdir -p /home/{{ $user }}/.local/state/olivetin &&
+      GOOD='{{ $pal.base0B }}' BAD='{{ $pal.base08 }}' WARN='{{ $pal.base0A }}'
+      dashboard-status > /home/{{ $user }}/.local/state/olivetin/status.json
+    timeout: 30
+    execOnStartup: true
+    execOnCron: '* * * * *'
+    acls: [cron]
+    hidden: true
   # Feeds the container entity. Runs as turisa, so podman needs no socket.
   - title: Refresh containers
     shell: >-
@@ -122,12 +135,23 @@ entities:
   # emits an array where docker's emits NDJSON. Deliberately outside the config
   # dir: chezmoi manages that, and would fight OliveTin over a file it rewrites
   # every minute.
+  - file: /home/{{ $user }}/.local/state/olivetin/status.json
+    name: status
   - file: /home/{{ $user }}/.local/state/olivetin/containers.json
     name: container
 
 dashboards:
   - title: Services
     contents:
+      - type: fieldset
+        title: Status
+        contents:
+          - type: display
+            entity: status
+            title: |
+              <iconify-icon icon="{{ "{{ status.icon }}" }}" style="font-size:1.8em;color:{{ "{{ status.color }}" }}"></iconify-icon>
+              <div style="font-weight:600">{{ "{{ status.name }}" }}</div>
+              <div style="opacity:.7;font-size:.85em">{{ "{{ status.state }}" }}</div>
 {{- /* Only endpoints with a port have a web UI to link to. */ -}}
 {{- $ported := dict }}
 {{- range $hostname, $host := .hosts }}
@@ -181,6 +205,15 @@ dashboards:
 {{- end }}
   - title: Controls
     contents:
+      - type: fieldset
+        title: Status
+        contents:
+          - type: display
+            entity: status
+            title: |
+              <iconify-icon icon="{{ "{{ status.icon }}" }}" style="font-size:1.8em;color:{{ "{{ status.color }}" }}"></iconify-icon>
+              <div style="font-weight:600">{{ "{{ status.name }}" }}</div>
+              <div style="opacity:.7;font-size:.85em">{{ "{{ status.state }}" }}</div>
 {{- range $group, $items := .dashboard.actions }}
 {{- $members := list }}
 {{- range $items }}
