@@ -195,24 +195,12 @@ dashboards:
 {{- end }}
   - title: Controls
     contents:
-{{- /* Status lives in its OWN entity-bound fieldset. A linked action inside an
-       entity-bound fieldset only counts as placed when the action is bound to
-       that same entity, so putting plain buttons in here would make OliveTin
-       treat them as dashboard-less and keep its built-in Actions view. */}}
-      - type: fieldset
-        entity: status
-        title: Status
-        contents:
-          - type: display
-            title: |
-              <div style="display:flex;gap:1.6em;flex-wrap:wrap;align-items:center;justify-content:center;font-size:.95em">
-{{- range $group, $fields := .dashboard.status }}
-{{- range $fields }}
-              <span><iconify-icon icon="{{ .icon }}" style="color:{{ printf "{{ status.%s_color }}" .field }};vertical-align:-.15em"></iconify-icon>
-              {{ .label }} <b style="color:{{ printf "{{ status.%s_color }}" .field }}">{{ printf "{{ status.%s }}" .field }}</b></span>
-{{- end }}
-{{- end }}
-              </div>
+{{- /* Each group gets a status fieldset (entity-bound) directly above a plain
+       fieldset of buttons. They must not share one: a linked action inside an
+       entity-bound fieldset only counts as placed when the action carries the
+       same entity, and plain buttons in there make OliveTin keep its built-in
+       Actions view. The button fieldset is left untitled so the pair reads as
+       one section. */}}
 {{- range $group, $items := .dashboard.actions }}
 {{- $members := list }}
 {{- range $items }}
@@ -222,8 +210,25 @@ dashboards:
 {{- end }}
 {{- end }}
 {{- if $members }}
+{{- $st := index $.dashboard.status $group }}
+{{- if $st }}
       - type: fieldset
+        entity: status
         title: {{ $group }}
+        contents:
+          - type: display
+            title: |
+              <div style="display:flex;gap:1.6em;flex-wrap:wrap;align-items:center;justify-content:center;font-size:.95em">
+{{- range $st }}
+              <span><iconify-icon icon="{{ .icon }}" style="color:{{ printf "{{ status.%s_color }}" .field }};vertical-align:-.15em"></iconify-icon>
+              {{ .label }} <b style="color:{{ printf "{{ status.%s_color }}" .field }}">{{ printf "{{ status.%s }}" .field }}</b></span>
+{{- end }}
+              </div>
+{{- end }}
+      - type: fieldset
+{{- if not $st }}
+        title: {{ $group }}
+{{- end }}
         contents:
 {{- range $members }}
           - title: {{ .title }}
