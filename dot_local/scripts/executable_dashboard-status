@@ -22,8 +22,15 @@ else
     gm="off"; gm_color="$GOOD"
 fi
 
-failed=$(systemctl --user list-units --failed --plain --no-legend 2>/dev/null | wc -l | tr -d ' ')
-if [ "$failed" -gt 0 ]; then failed_color="$BAD"; else failed="none"; failed_color="$GOOD"; fi
+# app-* is the desktop session's launcher namespace -- on a box that is also a
+# workstation those come and go, and counting them makes this cry wolf.
+mapfile -t bad_units < <(systemctl --user list-units --failed --plain --no-legend 2>/dev/null |
+                         awk '{print $1}' | grep -v '^app-' | sed 's/\.service$//')
+case ${#bad_units[@]} in
+    0) failed="none"; failed_color="$GOOD" ;;
+    1) failed="${bad_units[0]}"; failed_color="$BAD" ;;
+    *) failed="${#bad_units[@]} units"; failed_color="$BAD" ;;
+esac
 
 # Warn late: disks fill slowly and a nag is worse than no signal.
 disk_color() {
