@@ -38,6 +38,10 @@ accessControlLists:
   - name: family
     matchUsergroups: [family]
     permissions: {view: true, exec: true, logs: true}
+  # Cron and startup actions run as the user "cron" and match no other ACL.
+  - name: cron
+    matchUsernames: [cron]
+    permissions: {exec: true}
 
 actions:
 {{- range .dashboard.actions }}
@@ -69,6 +73,7 @@ actions:
     timeout: 30
     execOnStartup: true
     execOnCron: '* * * * *'
+    acls: [cron]
     hidden: true
   - title: 'Start {{ "{{ container.name }}" }}'
     shell: 'podman start {{ "{{ container.name }}" }}'
