@@ -27,4 +27,4 @@ dashboard:
   actions:
     - {title: Gaming mode on, icon: "mdi:gamepad-variant", shell: gaming-mode on, timeout: 180, confirm: true, family: true}
     - {title: Gaming mode off, icon: "mdi:server", shell: gaming-mode off, timeout: 180, family: true}
-    - {title: Gaming mode status, icon: "mdi:information", shell: gaming-mode status, timeout: 15, family: true}
+    - {title: Gaming mode status, icon: "mdi:information", shell: gaming-mode status, timeout: 15, family: true, popup: true}

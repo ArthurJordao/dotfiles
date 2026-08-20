@@ -57,6 +57,9 @@ actions:
 {{- if index . "family" }}
     acls: [family]
 {{- end }}
+{{- if index . "popup" }}
+    popupOnStart: execution-dialog-stdout-only
+{{- end }}
 {{- if index . "confirm" }}
     arguments:
       - name: confirm
@@ -91,6 +94,7 @@ actions:
     shell: 'podman logs --tail 200 {{ "{{ container.name }}" }}'
     entity: container
     timeout: 30
+    popupOnStart: execution-dialog-stdout-only
 
 {{- if has "minecraft" $roles }}
 
@@ -119,6 +123,7 @@ actions:
     shell: minecraft status
     timeout: 15
     acls: [family]
+    popupOnStart: execution-dialog-stdout-only
 {{- end }}
 
 entities:
@@ -131,18 +136,6 @@ entities:
     name: container
 
 dashboards:
-  - title: Gaming mode
-    contents:
-{{- range .dashboard.actions }}
-      - title: {{ .title }}
-{{- end }}
-{{- if has "minecraft" $roles }}
-  - title: Minecraft
-    contents:
-      - title: Start Minecraft server
-      - title: Stop Minecraft server
-      - title: Minecraft status
-{{- end }}
   - title: Services
     contents:
 {{- range $group := .dashboard.groups }}
@@ -195,6 +188,18 @@ dashboards:
               <div style="font-weight:600">{{ index $tile "label" | default .name }}</div>
               </a>
 {{- end }}
+{{- end }}
+  - title: Gaming mode
+    contents:
+{{- range .dashboard.actions }}
+      - title: {{ .title }}
+{{- end }}
+{{- if has "minecraft" $roles }}
+  - title: Minecraft
+    contents:
+      - title: Start Minecraft server
+      - title: Stop Minecraft server
+      - title: Minecraft status
 {{- end }}
   - title: Containers
     contents:

@@ -72,7 +72,8 @@
               "icon": {"type": "string", "pattern": "^[a-z0-9-]+:[a-z0-9-]+$", "description": "Iconify name, `prefix:name`. The template wraps it in <iconify-icon>."},
               "timeout": {"type": "integer", "minimum": 1, "description": "Seconds. OliveTin kills the command past this."},
               "confirm": {"type": "boolean", "default": false, "description": "Adds a confirmation argument before it runs."},
-              "family": {"type": "boolean", "default": false, "description": "true also grants the `family` ACL. admins always have it."}
+              "family": {"type": "boolean", "default": false, "description": "true also grants the `family` ACL. admins always have it."},
+              "popup": {"type": "boolean", "default": false, "description": "true shows the command's stdout in a modal as it runs, instead of leaving it behind a click through to the logs. For informational buttons."}
             }
           }
         }
