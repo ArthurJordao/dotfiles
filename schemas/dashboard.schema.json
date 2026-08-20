@@ -5,31 +5,58 @@
   "description": "Shape of .chezmoidata/dashboard.yaml -- presentation, logins and buttons for OliveTin. Structure only: tools/check-consistency is what cross-references tile keys against endpoints.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["dashboard"],
+  "required": [
+    "dashboard"
+  ],
   "properties": {
     "dashboard": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["groups", "tiles", "users", "actions"],
+      "required": [
+        "groups",
+        "action_groups",
+        "tiles",
+        "users",
+        "actions"
+      ],
       "properties": {
         "groups": {
           "type": "array",
           "description": "Fieldset render order. A tile whose group is not listed here lands in the trailing ungrouped fieldset.",
           "uniqueItems": true,
-          "items": {"type": "string", "minLength": 1}
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "tiles": {
           "type": "object",
           "description": "Keyed by endpoint name. An endpoint with no entry still gets a plain tile.",
-          "propertyNames": {"pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?$"},
+          "propertyNames": {
+            "pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?$"
+          },
           "additionalProperties": {
             "type": "object",
             "additionalProperties": false,
             "properties": {
-              "group": {"type": "string", "minLength": 1},
-              "label": {"type": "string", "minLength": 1, "description": "Display name. Defaults to the endpoint name."},
-              "description": {"type": "string", "minLength": 1},
-              "icon": {"type": "string", "pattern": "^[a-z0-9-]+:[a-z0-9-]+$", "description": "Iconify name, `prefix:name`, from https://icon-sets.iconify.design -- `selfhst:` covers most self-hosted apps. The template wraps it in <iconify-icon>. A name that does not exist renders blank, so check it before adding."}
+              "group": {
+                "type": "string",
+                "minLength": 1
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Display name. Defaults to the endpoint name."
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1
+              },
+              "icon": {
+                "type": "string",
+                "pattern": "^[a-z0-9-]+:[a-z0-9-]+$",
+                "description": "Iconify name, `prefix:name`, from https://icon-sets.iconify.design -- `selfhst:` covers most self-hosted apps. The template wraps it in <iconify-icon>. A name that does not exist renders blank, so check it before adding."
+              }
             }
           }
         },
@@ -37,17 +64,28 @@
           "type": "object",
           "description": "OliveTin local logins. The password hash itself lives in 1Password, never here.",
           "minProperties": 1,
-          "propertyNames": {"pattern": "^[a-z][a-z0-9_-]*$"},
+          "propertyNames": {
+            "pattern": "^[a-z][a-z0-9_-]*$"
+          },
           "additionalProperties": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["group", "secret"],
+            "required": [
+              "group",
+              "secret"
+            ],
             "properties": {
               "group": {
                 "description": "Which ACL applies. Both names are hard-coded in config.yaml.tmpl.",
                 "oneOf": [
-                  {"const": "admins", "description": "Every action, including ones added later."},
-                  {"const": "family", "description": "Only actions marked `family: true`."}
+                  {
+                    "const": "admins",
+                    "description": "Every action, including ones added later."
+                  },
+                  {
+                    "const": "family",
+                    "description": "Only actions marked `family: true`."
+                  }
                 ]
               },
               "secret": {
@@ -65,16 +103,96 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["title", "shell"],
+            "required": [
+              "title",
+              "shell",
+              "group"
+            ],
             "properties": {
-              "title": {"type": "string", "minLength": 1, "description": "OliveTin's identity for the action -- must be unique."},
-              "shell": {"type": "string", "minLength": 1},
-              "icon": {"type": "string", "pattern": "^[a-z0-9-]+:[a-z0-9-]+$", "description": "Iconify name, `prefix:name`. The template wraps it in <iconify-icon>."},
-              "timeout": {"type": "integer", "minimum": 1, "description": "Seconds. OliveTin kills the command past this."},
-              "confirm": {"type": "boolean", "default": false, "description": "Adds a confirmation argument before it runs."},
-              "family": {"type": "boolean", "default": false, "description": "true also grants the `family` ACL. admins always have it."},
-              "popup": {"type": "boolean", "default": false, "description": "true shows the command's stdout in a modal as it runs, instead of leaving it behind a click through to the logs. For informational buttons."}
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "description": "OliveTin's identity for the action -- must be unique."
+              },
+              "shell": {
+                "type": "string",
+                "minLength": 1
+              },
+              "icon": {
+                "type": "string",
+                "pattern": "^[a-z0-9-]+:[a-z0-9-]+$",
+                "description": "Iconify name, `prefix:name`. The template wraps it in <iconify-icon>."
+              },
+              "timeout": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Seconds. OliveTin kills the command past this."
+              },
+              "confirm": {
+                "type": "boolean",
+                "default": false,
+                "description": "Adds a confirmation argument before it runs."
+              },
+              "family": {
+                "type": "boolean",
+                "default": false,
+                "description": "true also grants the `family` ACL. admins always have it."
+              },
+              "popup": {
+                "type": "boolean",
+                "default": false,
+                "description": "true shows the command's stdout in a modal as it runs, instead of leaving it behind a click through to the logs. For informational buttons."
+              },
+              "group": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Which Controls fieldset this button sits in. Must appear in `action_groups`."
+              },
+              "role": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Only render this action on a host with this role. Omit for actions that work anywhere."
+              },
+              "argument": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "title",
+                  "choices_from"
+                ],
+                "description": "A dropdown. Reference the value from `shell` as OliveTin's own {{ name }} placeholder.",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]*$"
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "choices_from": {
+                    "description": "Where the choices come from -- a named source, never a literal list, so the values cannot drift from the data that defines them.",
+                    "oneOf": [
+                      {
+                        "const": "minecraft-instances",
+                        "description": "Instance names from .chezmoidata/minecraft.yaml."
+                      }
+                    ]
+                  }
+                }
+              }
             }
+          }
+        },
+        "action_groups": {
+          "type": "array",
+          "uniqueItems": true,
+          "minItems": 1,
+          "description": "Fieldset order on the Controls dashboard. An action whose `group` is not listed here renders nowhere -- check-consistency C15.",
+          "items": {
+            "type": "string",
+            "minLength": 1
           }
         }
       }

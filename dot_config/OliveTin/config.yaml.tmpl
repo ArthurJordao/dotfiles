@@ -46,8 +46,10 @@ accessControlLists:
 
 actions:
 {{- range .dashboard.actions }}
+{{- $role := index . "role" | default "" }}
+{{- if or (eq $role "") (has $role $roles) }}
   - title: {{ .title }}
-    shell: {{ .shell }}
+    shell: '{{ .shell }}'
 {{- with index . "icon" }}
     icon: '<iconify-icon icon="{{ . }}"></iconify-icon>'
 {{- end }}
@@ -60,11 +62,26 @@ actions:
 {{- if index . "popup" }}
     popupOnStart: execution-dialog-stdout-only
 {{- end }}
-{{- if index . "confirm" }}
+{{- $arg := index . "argument" }}
+{{- if or $arg (index . "confirm") }}
     arguments:
+{{- with $arg }}
+      # choices restricts the value to this list, so nothing free-form reaches sh.
+      - name: {{ .name }}
+        title: {{ .title }}
+        choices:
+{{- if eq .choices_from "minecraft-instances" }}
+{{- range $.minecraft.instances }}
+          - value: {{ .name }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if index . "confirm" }}
       - name: confirm
         type: confirmation
         title: 'Really run: {{ .title }}?'
+{{- end }}
+{{- end }}
 {{- end }}
 {{- end }}
   # Feeds the container entity. Runs as turisa, so podman needs no socket.
@@ -96,35 +113,6 @@ actions:
     timeout: 30
     popupOnStart: execution-dialog-stdout-only
 
-{{- if has "minecraft" $roles }}
-
-  # Instances are mutually exclusive, so `use` implicitly stops the others; it
-  # also syncs the enabled unit so the right server returns after a reboot.
-  # Choices restrict the value to this list -- nothing free-form reaches sh.
-  - title: Start Minecraft server
-    icon: '<iconify-icon icon="selfhst:minecraft"></iconify-icon>'
-    shell: minecraft use {{ "{{ instance }}" }}
-    timeout: 120
-    acls: [family]
-    arguments:
-      - name: instance
-        title: Server
-        choices:
-{{- range .minecraft.instances }}
-          - value: {{ .name }}
-{{- end }}
-  - title: Stop Minecraft server
-    icon: '<iconify-icon icon="mdi:stop"></iconify-icon>'
-    shell: minecraft stop
-    timeout: 120
-    acls: [family]
-  - title: Minecraft status
-    icon: '<iconify-icon icon="mdi:information"></iconify-icon>'
-    shell: minecraft status
-    timeout: 15
-    acls: [family]
-    popupOnStart: execution-dialog-stdout-only
-{{- end }}
 
 entities:
   # Written by the Refresh containers action. NDJSON, one object per line --
@@ -189,17 +177,24 @@ dashboards:
               </a>
 {{- end }}
 {{- end }}
-  - title: Gaming mode
+  - title: Controls
     contents:
-{{- range .dashboard.actions }}
-      - title: {{ .title }}
+{{- range $group := .dashboard.action_groups }}
+{{- $members := list }}
+{{- range $.dashboard.actions }}
+{{- $role := index . "role" | default "" }}
+{{- if and (eq (index . "group" | default "") $group) (or (eq $role "") (has $role $roles)) }}
+{{- $members = append $members . }}
 {{- end }}
-{{- if has "minecraft" $roles }}
-  - title: Minecraft
-    contents:
-      - title: Start Minecraft server
-      - title: Stop Minecraft server
-      - title: Minecraft status
+{{- end }}
+{{- if $members }}
+      - type: fieldset
+        title: {{ $group }}
+        contents:
+{{- range $members }}
+          - title: {{ .title }}
+{{- end }}
+{{- end }}
 {{- end }}
   - title: Containers
     contents:

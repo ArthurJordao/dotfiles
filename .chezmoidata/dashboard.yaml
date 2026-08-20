@@ -24,7 +24,23 @@ dashboard:
     arthur: {group: admins, secret: ARTHUR_PASSWORD_HASH}
     isa: {group: family, secret: ISA_PASSWORD_HASH}
 
+  action_groups: [Gaming mode, Minecraft]
+
+  # `shell` is data, never a template, so OliveTin's own {{ arg }} placeholders
+  # are written literally here. `role` keeps an action off hosts that lack it.
   actions:
-    - {title: Gaming mode on, icon: "mdi:gamepad-variant", shell: gaming-mode on, timeout: 180, confirm: true, family: true}
-    - {title: Gaming mode off, icon: "mdi:server", shell: gaming-mode off, timeout: 180, family: true}
-    - {title: Gaming mode status, icon: "mdi:information", shell: gaming-mode status, timeout: 15, family: true, popup: true}
+    - {title: Gaming mode on, group: Gaming mode, icon: "mdi:gamepad-variant", shell: gaming-mode on, timeout: 180, confirm: true, family: true}
+    - {title: Gaming mode off, group: Gaming mode, icon: "mdi:server", shell: gaming-mode off, timeout: 180, family: true}
+    - {title: Gaming mode status, group: Gaming mode, icon: "mdi:information", shell: gaming-mode status, timeout: 15, family: true, popup: true}
+    # `use` implicitly stops the others (instances are mutually exclusive) and
+    # syncs the enabled unit, so the right server returns after a reboot.
+    - title: Start Minecraft server
+      group: Minecraft
+      role: minecraft
+      icon: "selfhst:minecraft"
+      shell: "minecraft use {{ instance }}"
+      timeout: 120
+      family: true
+      argument: {name: instance, title: Server, choices_from: minecraft-instances}
+    - {title: Stop Minecraft server, group: Minecraft, role: minecraft, icon: "mdi:stop", shell: minecraft stop, timeout: 120, family: true}
+    - {title: Minecraft status, group: Minecraft, role: minecraft, icon: "mdi:information", shell: minecraft status, timeout: 15, family: true, popup: true}
