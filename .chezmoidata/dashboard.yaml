@@ -55,3 +55,15 @@ dashboard:
         argument: {name: instance, title: Server, choices_from: minecraft-instances}
       - {title: Stop Minecraft server, role: minecraft, icon: "mdi:stop", shell: minecraft stop, timeout: 120, family: true}
       - {title: Minecraft status, role: minecraft, icon: "mdi:information", shell: minecraft status, timeout: 15, family: true, popup: true}
+      # The timer runs this daily; the button is for "before I install a mod".
+      - {title: Backup Minecraft now, role: minecraft, icon: "mdi:content-save", shell: "systemctl --user start minecraft-backup.service && journalctl --user -u minecraft-backup.service -n 20 --no-pager", timeout: 900, confirm: true, family: true, popup: true}
+
+    Server:
+      - {title: Disk space, icon: "mdi:harddisk", shell: "df -h / /mnt/x9pro", timeout: 15, family: true, popup: true}
+      # check-live reads gaming-mode's state file, so a stopped stack reports as
+      # intentional rather than as drift.
+      - {title: Stack health, icon: "mdi:heart-pulse", shell: check-live, timeout: 120, popup: true}
+      - {title: Uptime, icon: "mdi:speedometer", shell: "uptime && free -h", timeout: 15, family: true, popup: true}
+      # The timer already does this; the button is "pull now". It restarts
+      # whatever it updates, hence the confirmation.
+      - {title: Update containers, icon: "mdi:update", shell: "systemctl --user start podman-auto-update.service && journalctl --user -u podman-auto-update.service -n 30 --no-pager", timeout: 600, confirm: true, popup: true}
