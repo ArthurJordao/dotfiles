@@ -38,6 +38,9 @@
     "host": {
       "type": "object",
       "additionalProperties": false,
+      "required": [
+        "user"
+      ],
       "allOf": [
         {
           "$comment": "Everything chezmoi needs to apply is required on a managed host and optional on an unmanaged one, which has no target to apply to. Declaring one anyway is inert rather than invalid, and tools/check-consistency reports it.",
@@ -158,7 +161,7 @@
         },
         "user": {
           "type": "string",
-          "description": "Login account on that machine. Only consumer is ~/.ssh/config: a host without it gets no Host block, so it cannot be reached by short name.",
+          "description": "Login account on that machine. Required on every host, unmanaged ones included -- an unmanaged host is in this file to be reachable, and without this it gets no ~/.ssh/config Host block, which is the only thing it was declared for. Managed hosts additionally render it into absolute home paths: dot_config/sunshine/modify_apps.json.tmpl and dot_config/OliveTin/config.yaml.tmpl both do.",
           "pattern": "^[a-z_][a-z0-9_-]*$"
         },
         "ip": {

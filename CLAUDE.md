@@ -313,7 +313,8 @@ without being declared as endpoints.
 
 `private_dot_ssh/private_config.tmpl` is a fifth consumer, and the only one reading the scalar
 `user`: one `Host` block per host, aliased by short name, `.local`, `<host>.<domain>`, both IPs
-and every endpoint of that host. A host without `user` gets no block. The `Host *` preamble is
+and every endpoint of that host. `user` is required on every host, unmanaged
+ones included — being reachable by name is what they are declared for. The `Host *` preamble is
 the only hand-written part. Rendered identically everywhere — the block for the host you are on
 is inert, not skipped.
 
