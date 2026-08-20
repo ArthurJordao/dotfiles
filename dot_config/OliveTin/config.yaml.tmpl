@@ -58,8 +58,36 @@ actions:
         title: 'Really run: {{ .title }}?'
 {{- end }}
 {{- end }}
+  # Feeds the container entity. Runs as turisa, so podman needs no socket.
+  - title: Refresh containers
+    shell: >-
+      mkdir -p /home/{{ $me.user }}/.local/state/olivetin &&
+      podman ps -a --format json |
+      python3 -c 'import json,sys; print(json.dumps([{"name": c["Names"][0], "state": c["State"], "image": c["Image"]} for c in json.load(sys.stdin)]))'
+      > /home/{{ $me.user }}/.local/state/olivetin/containers.json
+    timeout: 30
+    execOnStartup: true
+    execOnCron: '* * * * *'
+    hidden: true
+  - title: 'Start {{ "{{ container.name }}" }}'
+    shell: 'podman start {{ "{{ container.name }}" }}'
+    entity: container
+    timeout: 60
+  - title: 'Stop {{ "{{ container.name }}" }}'
+    shell: 'podman stop {{ "{{ container.name }}" }}'
+    entity: container
+    timeout: 60
+  - title: 'Logs {{ "{{ container.name }}" }}'
+    shell: 'podman logs --tail 200 {{ "{{ container.name }}" }}'
+    entity: container
+    timeout: 30
 
-entities: []
+entities:
+  # Written by the Refresh containers action. Deliberately outside the config
+  # dir: chezmoi manages that, and would fight OliveTin over a file it rewrites
+  # every minute.
+  - file: /home/{{ $me.user }}/.local/state/olivetin/containers.json
+    name: container
 
 dashboards:
   - title: Gaming mode
@@ -105,3 +133,17 @@ dashboards:
               <a href="https://{{ .name }}.{{ $.domain }}">{{ index $tile "label" | default .name }}</a>
 {{- end }}
 {{- end }}
+  - title: Containers
+    contents:
+      - type: fieldset
+        entity: container
+        title: '{{ "{{ container.name }}" }}'
+        contents:
+          - type: display
+            title: |
+              <strong>{{ "{{ container.state }}" }}</strong><br />
+              <small>{{ "{{ container.image }}" }}</small>
+            cssClass: '{{ "{{ container.state }}" }}'
+          - title: 'Start {{ "{{ container.name }}" }}'
+          - title: 'Stop {{ "{{ container.name }}" }}'
+          - title: 'Logs {{ "{{ container.name }}" }}'
