@@ -12,6 +12,9 @@
 # A field name looked up dynamically (`index $op $user.secret`) never appears
 # as a literal in a template, so its name is harvested from the `secret:`
 # values in .chezmoidata/*.yaml instead.
+# The harvested pool is global, not scoped per item -- a template that ranges
+# over one item's fields (secrets.fish.tmpl over `shell`) sees every field name
+# harvested from every source, including other items'.
 # Every field needs a `section` -- onepasswordItemFields drops the ones without,
 # leaving an empty map and `no entry for key "value"` at every lookup.
 set -uo pipefail
