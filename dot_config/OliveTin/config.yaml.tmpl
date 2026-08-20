@@ -143,15 +143,16 @@ entities:
 dashboards:
   - title: Services
     contents:
+      # entity goes on the fieldset, not the display -- a display does not
+      # iterate on its own, it just prints the placeholders literally.
       - type: fieldset
-        title: Status
+        entity: status
+        title: '{{ "{{ status.name }}" }}'
         contents:
           - type: display
-            entity: status
             title: |
               <iconify-icon icon="{{ "{{ status.icon }}" }}" style="font-size:1.8em;color:{{ "{{ status.color }}" }}"></iconify-icon>
-              <div style="font-weight:600">{{ "{{ status.name }}" }}</div>
-              <div style="opacity:.7;font-size:.85em">{{ "{{ status.state }}" }}</div>
+              <div style="font-weight:600;color:{{ "{{ status.color }}" }}">{{ "{{ status.state }}" }}</div>
 {{- /* Only endpoints with a port have a web UI to link to. */ -}}
 {{- $ported := dict }}
 {{- range $hostname, $host := .hosts }}
@@ -205,15 +206,16 @@ dashboards:
 {{- end }}
   - title: Controls
     contents:
+      # entity goes on the fieldset, not the display -- a display does not
+      # iterate on its own, it just prints the placeholders literally.
       - type: fieldset
-        title: Status
+        entity: status
+        title: '{{ "{{ status.name }}" }}'
         contents:
           - type: display
-            entity: status
             title: |
               <iconify-icon icon="{{ "{{ status.icon }}" }}" style="font-size:1.8em;color:{{ "{{ status.color }}" }}"></iconify-icon>
-              <div style="font-weight:600">{{ "{{ status.name }}" }}</div>
-              <div style="opacity:.7;font-size:.85em">{{ "{{ status.state }}" }}</div>
+              <div style="font-weight:600;color:{{ "{{ status.color }}" }}">{{ "{{ status.state }}" }}</div>
 {{- range $group, $items := .dashboard.actions }}
 {{- $members := list }}
 {{- range $items }}
