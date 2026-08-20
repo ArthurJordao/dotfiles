@@ -38,11 +38,35 @@ accessControlLists:
     matchUsergroups: [family]
     permissions: {view: true, exec: true, logs: false}
 
-actions: []
+actions:
+{{- range .dashboard.actions }}
+  - title: {{ .title }}
+    shell: {{ .shell }}
+{{- with index . "icon" }}
+    icon: '{{ . }}'
+{{- end }}
+{{- with index . "timeout" }}
+    timeout: {{ . }}
+{{- end }}
+{{- if index . "family" }}
+    acls: [family]
+{{- end }}
+{{- if index . "confirm" }}
+    arguments:
+      - name: confirm
+        type: confirmation
+        title: 'Really run: {{ .title }}?'
+{{- end }}
+{{- end }}
 
 entities: []
 
 dashboards:
+  - title: Gaming mode
+    contents:
+{{- range .dashboard.actions }}
+      - title: {{ .title }}
+{{- end }}
   - title: Services
     contents:
 {{- range $group := .dashboard.groups }}
