@@ -13,6 +13,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
+        "palette",
         "tiles",
         "users",
         "actions"
@@ -178,6 +179,11 @@
               }
             }
           }
+        },
+        "palette": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Palette in .chezmoidata/palettes.yaml that theme.css is generated from. Independent of theme.active on purpose -- the dashboard may be dark while the fleet is light."
         }
       }
     }
