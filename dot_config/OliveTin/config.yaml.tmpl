@@ -7,10 +7,6 @@
 # OliveTin's own {{ "{{ }}" }} placeholders must be emitted as literals here:
 # chezmoi would otherwise evaluate them and fail the render.
 logLevel: INFO
-# The webui caches the theme hard -- switching palettes otherwise needs the
-# browser's site data cleared, not just a reload.
-themeName: catppuccin
-themeCacheDisabled: true
 pageTitle: {{ .hostname }}
 
 # Loopback only — Caddy is the way in.

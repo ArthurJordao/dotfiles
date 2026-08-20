@@ -7,11 +7,6 @@
 # `tiles` is keyed by ENDPOINT NAME -- the URL comes from hosts.yaml, never from
 # here. An endpoint with no entry still gets a plain, ungrouped tile.
 dashboard:
-  # Which palette from palettes.yaml the OliveTin theme is generated from.
-  # Declared separately from theme.active on purpose: the dashboard may diverge
-  # from the fleet. It happens to match today.
-  palette: catppuccin-latte
-
   # Keyed by fieldset, then by ENDPOINT NAME -- the URL still comes from
   # hosts.yaml, never from here. Fieldsets render in sorted key order. An
   # endpoint listed in no group still gets a plain tile under "Other", so a new
