@@ -2,6 +2,7 @@
 {{- $user := index $me "user" | default "" -}}
 {{- $roles := index $me "roles" | default list -}}
 {{- $pal := index .palettes .theme.active -}}
+{{- $statusRefresh := printf "mkdir -p /home/%s/.local/state/olivetin && GOOD='%s' BAD='%s' WARN='%s' dashboard-status > /home/%s/.local/state/olivetin/status.json" $user $pal.base0B $pal.base08 $pal.base0A $user -}}
 {{- $op := onepasswordItemFields .secrets.items.olivetin .secrets.vault -}}
 # GENERATED from .chezmoidata/ — edit hosts.yaml and dashboard.yaml, not this.
 #
@@ -64,6 +65,7 @@ actions:
 {{- if index . "popup" }}
     popupOnStart: execution-dialog-stdout-only
 {{- end }}
+    shellAfterCompleted: "{{ $statusRefresh }}"
 {{- $arg := index . "argument" }}
 {{- if or $arg (index . "confirm") }}
     arguments:
@@ -90,10 +92,7 @@ actions:
   # Feeds the status entity. Colours are passed in so the palette stays in
   # chezmoi data rather than in the script.
   - title: Refresh status
-    shell: >-
-      mkdir -p /home/{{ $user }}/.local/state/olivetin &&
-      GOOD='{{ $pal.base0B }}' BAD='{{ $pal.base08 }}' WARN='{{ $pal.base0A }}'
-      dashboard-status > /home/{{ $user }}/.local/state/olivetin/status.json
+    shell: "{{ $statusRefresh }}"
     timeout: 30
     execOnStartup: true
     execOnCron: '* * * * *'
@@ -230,6 +229,10 @@ dashboards:
 {{- end }}
   - title: Containers
     contents:
+{{- /* Listed so no action is dashboard-less: that is what keeps OliveTin's
+       built-in "Actions" view in the sidebar. Both are hidden. */}}
+      - title: Refresh status
+      - title: Refresh containers
       - type: fieldset
         entity: container
         title: '{{ "{{ container.name }}" }}'
