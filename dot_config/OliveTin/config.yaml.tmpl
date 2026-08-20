@@ -128,27 +128,31 @@ entities:
 dashboards:
   - title: Services
     contents:
-{{- range $group := .dashboard.groups }}
-{{- $members := list }}
-{{- range $hostname, $host := $.hosts }}
+{{- /* Only endpoints with a port have a web UI to link to. */ -}}
+{{- $ported := dict }}
+{{- range $hostname, $host := .hosts }}
 {{- range (index $host "endpoints" | default list) }}
-{{- $tile := index $.dashboard.tiles .name | default dict }}
-{{- if and (hasKey . "port") (eq (index $tile "group" | default "") $group) }}
-{{- $members = append $members . }}
+{{- if hasKey . "port" }}{{ $_ := set $ported .name true }}{{ end }}
 {{- end }}
 {{- end }}
+{{- $tiled := dict }}
+{{- range $group, $members := .dashboard.tiles }}
+{{- range $name, $tile := $members }}{{ $_ := set $tiled $name true }}{{ end }}
+{{- $shown := list }}
+{{- range $name, $tile := $members }}
+{{- if hasKey $ported $name }}{{ $shown = append $shown $name }}{{ end }}
 {{- end }}
-{{- if $members }}
+{{- if $shown }}
       - type: fieldset
         title: {{ $group }}
         contents:
-{{- range $members }}
-{{- $tile := index $.dashboard.tiles .name | default dict }}
+{{- range $name := $shown }}
+{{- $tile := index $members $name }}
           - type: display
             title: |
-              <a href="https://{{ .name }}.{{ $.domain }}" style="text-decoration:none;display:block">
+              <a href="https://{{ $name }}.{{ $.domain }}" style="text-decoration:none;display:block">
               <iconify-icon icon="{{ index $tile "icon" | default "mdi:link-variant" }}" style="font-size:2.6em"></iconify-icon>
-              <div style="font-weight:600">{{ index $tile "label" | default .name }}</div>
+              <div style="font-weight:600">{{ index $tile "label" | default $name }}</div>
               {{- with index $tile "description" }}
               <div style="opacity:.7;font-size:.85em">{{ . }}</div>
               {{- end }}
@@ -156,26 +160,22 @@ dashboards:
 {{- end }}
 {{- end }}
 {{- end }}
+{{- /* An endpoint in no group still gets a tile, so a new service is never
+       silently missing from the dashboard. */ -}}
 {{- $other := list }}
-{{- range $hostname, $host := $.hosts }}
-{{- range (index $host "endpoints" | default list) }}
-{{- $tile := index $.dashboard.tiles .name | default dict }}
-{{- if and (hasKey . "port") (not (index $tile "group")) }}
-{{- $other = append $other . }}
-{{- end }}
-{{- end }}
+{{- range $name := (keys $ported | sortAlpha) }}
+{{- if not (hasKey $tiled $name) }}{{ $other = append $other $name }}{{ end }}
 {{- end }}
 {{- if $other }}
       - type: fieldset
         title: Other
         contents:
-{{- range $other }}
-{{- $tile := index $.dashboard.tiles .name | default dict }}
+{{- range $name := $other }}
           - type: display
             title: |
-              <a href="https://{{ .name }}.{{ $.domain }}" style="text-decoration:none;display:block">
-              <iconify-icon icon="{{ index $tile "icon" | default "mdi:link-variant" }}" style="font-size:2.6em"></iconify-icon>
-              <div style="font-weight:600">{{ index $tile "label" | default .name }}</div>
+              <a href="https://{{ $name }}.{{ $.domain }}" style="text-decoration:none;display:block">
+              <iconify-icon icon="mdi:link-variant" style="font-size:2.6em"></iconify-icon>
+              <div style="font-weight:600">{{ $name }}</div>
               </a>
 {{- end }}
 {{- end }}

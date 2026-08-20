@@ -242,9 +242,11 @@ for entry in sorted(top_level):
 # leaves its presentation behind, and the tile silently stops rendering.
 endpoint_names = set(e["name"] for h in hosts.values()
                      for e in (h.get("endpoints") or []))
-for tile in sorted(dashboard.get("tiles") or {}):
-    if tile not in endpoint_names:
-        fail("C12", "dashboard.tiles[%r] names no endpoint in hosts.yaml" % tile)
+for group, members in sorted((dashboard.get("tiles") or {}).items()):
+    for tile in sorted(members or {}):
+        if tile not in endpoint_names:
+            fail("C12", "dashboard.tiles[%r][%r] names no endpoint in hosts.yaml"
+                        % (group, tile))
 
 # C13 -- OliveTin identifies an action by its title, so a duplicate makes one
 # of them unreachable rather than erroring.
@@ -257,20 +259,11 @@ for action in all_actions:
                     "keys on the title" % title)
     seen.add(title)
 
-# C14 -- a tile grouped under a name `dashboard.groups` does not list renders
-# nowhere: no group fieldset matches it, and the ungrouped fallback skips it.
-groups = set(dashboard.get("groups") or [])
-for tile, cfg in sorted((dashboard.get("tiles") or {}).items()):
-    group = (cfg or {}).get("group")
-    if group and group not in groups:
-        fail("C14", "dashboard.tiles[%r] has group %r, which dashboard.groups "
-                    "does not list -- the tile renders nowhere" % (tile, group))
-
-# C15 -- an action gated on a role no host declares is dead config.
+# C14 -- an action gated on a role no host declares is dead config.
 for action in all_actions:
     role = action.get("role")
     if role and role not in all_roles:
-        fail("C15", "dashboard.actions[%r] is gated on role %r, which no host "
+        fail("C14", "dashboard.actions[%r] is gated on role %r, which no host "
                     "declares" % (action.get("title"), role))
 
 if failures:

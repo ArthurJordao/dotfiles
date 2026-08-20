@@ -7,18 +7,25 @@
 # `tiles` is keyed by ENDPOINT NAME -- the URL comes from hosts.yaml, never from
 # here. An endpoint with no entry still gets a plain, ungrouped tile.
 dashboard:
-  groups: [Media, Books, Infra]
-
+  # Keyed by fieldset, then by ENDPOINT NAME -- the URL still comes from
+  # hosts.yaml, never from here. Fieldsets render in sorted key order. An
+  # endpoint listed in no group still gets a plain tile under "Other", so a new
+  # service is never silently missing.
   tiles:
-    books: {icon: "selfhst:calibre-web", group: Books, label: Calibre, description: Library}
-    dash: {icon: "mdi:view-dashboard", group: Infra, label: This dashboard}
-    dns: {icon: "selfhst:coredns", group: Infra, label: CoreDNS, description: Split-horizon DNS}
-    immich: {icon: "selfhst:immich", group: Media, label: Immich, description: Photos}
-    music: {icon: "selfhst:navidrome", group: Media, label: Navidrome, description: Music}
-    shelfmark: {icon: "selfhst:shelfmark", group: Books, label: Shelfmark, description: Reading sync}
-    slskd: {icon: "selfhst:slskd", group: Media, label: slskd, description: Soulseek}
-    soulsync: {icon: "mdi:playlist-music", group: Media, label: SoulSync}
-    sunshine: {icon: "selfhst:sunshine", group: Infra, label: Sunshine, description: Game streaming}
+    Books:
+      books: {icon: "selfhst:calibre-web", label: Calibre, description: Library}
+      shelfmark: {icon: "selfhst:shelfmark", label: Shelfmark, description: Reading sync}
+
+    Infra:
+      dash: {icon: "mdi:view-dashboard", label: This dashboard}
+      dns: {icon: "selfhst:coredns", label: CoreDNS, description: Split-horizon DNS}
+      sunshine: {icon: "selfhst:sunshine", label: Sunshine, description: Game streaming}
+
+    Media:
+      immich: {icon: "selfhst:immich", label: Immich, description: Photos}
+      music: {icon: "selfhst:navidrome", label: Navidrome, description: Music}
+      slskd: {icon: "selfhst:slskd", label: slskd, description: Soulseek}
+      soulsync: {icon: "mdi:playlist-music", label: SoulSync}
 
   users:
     arthur: {group: admins, secret: ARTHUR_PASSWORD_HASH}
@@ -41,7 +48,7 @@ dashboard:
       # syncs the enabled unit, so the right server returns after a reboot.
       - title: Start Minecraft server
         role: minecraft
-        icon: "selfhst:minecraft"
+        icon: "mdi:minecraft"
         shell: "minecraft use {{ instance }}"
         timeout: 120
         family: true
