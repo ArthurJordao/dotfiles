@@ -8,8 +8,9 @@
 # here. An endpoint with no entry still gets a plain, ungrouped tile.
 dashboard:
   # Which palette from palettes.yaml the OliveTin theme is generated from.
-  # Set it to theme.active if you want the dashboard to follow the fleet.
-  palette: catppuccin-mocha
+  # Declared separately from theme.active on purpose: the dashboard may diverge
+  # from the fleet. It happens to match today.
+  palette: catppuccin-latte
 
   # Keyed by fieldset, then by ENDPOINT NAME -- the URL still comes from
   # hosts.yaml, never from here. Fieldsets render in sorted key order. An
