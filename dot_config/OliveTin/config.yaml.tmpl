@@ -77,14 +77,17 @@ actions:
     acls: [cron]
     hidden: true
   - title: 'Start {{ "{{ container.name }}" }}'
+    icon: '▶️'
     shell: 'podman start {{ "{{ container.name }}" }}'
     entity: container
     timeout: 60
   - title: 'Stop {{ "{{ container.name }}" }}'
+    icon: '⏹️'
     shell: 'podman stop {{ "{{ container.name }}" }}'
     entity: container
     timeout: 60
   - title: 'Logs {{ "{{ container.name }}" }}'
+    icon: '📜'
     shell: 'podman logs --tail 200 {{ "{{ container.name }}" }}'
     entity: container
     timeout: 30
@@ -95,6 +98,7 @@ actions:
   # also syncs the enabled unit so the right server returns after a reboot.
   # Choices restrict the value to this list -- nothing free-form reaches sh.
   - title: Start Minecraft server
+    icon: '⛏️'
     shell: minecraft use {{ "{{ instance }}" }}
     timeout: 120
     acls: [family]
@@ -106,10 +110,12 @@ actions:
           - value: {{ .name }}
 {{- end }}
   - title: Stop Minecraft server
+    icon: '⏹️'
     shell: minecraft stop
     timeout: 120
     acls: [family]
   - title: Minecraft status
+    icon: 'ℹ️'
     shell: minecraft status
     timeout: 15
     acls: [family]
@@ -157,8 +163,13 @@ dashboards:
 {{- $tile := index $.dashboard.tiles .name | default dict }}
           - type: display
             title: |
-              <a href="https://{{ .name }}.{{ $.domain }}">{{ index $tile "label" | default .name }}</a>
-              {{- with index $tile "description" }}<br /><small>{{ . }}</small>{{ end }}
+              <a href="https://{{ .name }}.{{ $.domain }}" style="text-decoration:none;display:block">
+              <div style="font-size:2.4em;line-height:1.2">{{ index $tile "icon" | default "🔗" }}</div>
+              <div style="font-weight:600">{{ index $tile "label" | default .name }}</div>
+              {{- with index $tile "description" }}
+              <div style="opacity:.7;font-size:.85em">{{ . }}</div>
+              {{- end }}
+              </a>
 {{- end }}
 {{- end }}
 {{- end }}
@@ -179,7 +190,10 @@ dashboards:
 {{- $tile := index $.dashboard.tiles .name | default dict }}
           - type: display
             title: |
-              <a href="https://{{ .name }}.{{ $.domain }}">{{ index $tile "label" | default .name }}</a>
+              <a href="https://{{ .name }}.{{ $.domain }}" style="text-decoration:none;display:block">
+              <div style="font-size:2.4em;line-height:1.2">{{ index $tile "icon" | default "🔗" }}</div>
+              <div style="font-weight:600">{{ index $tile "label" | default .name }}</div>
+              </a>
 {{- end }}
 {{- end }}
   - title: Containers
@@ -190,8 +204,9 @@ dashboards:
         contents:
           - type: display
             title: |
-              <strong>{{ "{{ container.state }}" }}</strong><br />
-              <small>{{ "{{ container.image }}" }}</small>
+              <div style="font-size:1.6em;line-height:1.2">📦</div>
+              <div style="font-weight:600">{{ "{{ container.state }}" }}</div>
+              <div style="opacity:.7;font-size:.8em;word-break:break-all">{{ "{{ container.image }}" }}</div>
             cssClass: '{{ "{{ container.state }}" }}'
           - title: 'Start {{ "{{ container.name }}" }}'
           - title: 'Stop {{ "{{ container.name }}" }}'

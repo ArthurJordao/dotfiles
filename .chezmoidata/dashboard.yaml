@@ -10,21 +10,21 @@ dashboard:
   groups: [Media, Books, Infra]
 
   tiles:
-    books: {group: Books, label: Calibre, description: Library}
-    dash: {group: Infra, label: This dashboard}
-    dns: {group: Infra, label: CoreDNS, description: Split-horizon DNS}
-    immich: {group: Media, label: Immich, description: Photos}
-    music: {group: Media, label: Navidrome, description: Music}
-    shelfmark: {group: Books, label: Shelfmark, description: Reading sync}
-    slskd: {group: Media, label: slskd, description: Soulseek}
-    soulsync: {group: Media, label: SoulSync}
-    sunshine: {group: Infra, label: Sunshine, description: Game streaming}
+    books: {icon: "📚", group: Books, label: Calibre, description: Library}
+    dash: {icon: "🎛️", group: Infra, label: This dashboard}
+    dns: {icon: "🌐", group: Infra, label: CoreDNS, description: Split-horizon DNS}
+    immich: {icon: "📷", group: Media, label: Immich, description: Photos}
+    music: {icon: "🎵", group: Media, label: Navidrome, description: Music}
+    shelfmark: {icon: "🔖", group: Books, label: Shelfmark, description: Reading sync}
+    slskd: {icon: "🎧", group: Media, label: slskd, description: Soulseek}
+    soulsync: {icon: "🔄", group: Media, label: SoulSync}
+    sunshine: {icon: "🎮", group: Infra, label: Sunshine, description: Game streaming}
 
   users:
     arthur: {group: admins, secret: ARTHUR_PASSWORD_HASH}
     isa: {group: family, secret: ISA_PASSWORD_HASH}
 
   actions:
-    - {title: Gaming mode on, shell: gaming-mode on, timeout: 180, confirm: true, family: true}
-    - {title: Gaming mode off, shell: gaming-mode off, timeout: 180, family: true}
-    - {title: Gaming mode status, shell: gaming-mode status, timeout: 15, family: true}
+    - {title: Gaming mode on, icon: "🎮", shell: gaming-mode on, timeout: 180, confirm: true, family: true}
+    - {title: Gaming mode off, icon: "🔄", shell: gaming-mode off, timeout: 180, family: true}
+    - {title: Gaming mode status, icon: "ℹ️", shell: gaming-mode status, timeout: 15, family: true}
