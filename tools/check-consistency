@@ -266,6 +266,13 @@ for action in all_actions:
         fail("C14", "dashboard.actions[%r] is gated on role %r, which no host "
                     "declares" % (action.get("title"), role))
 
+# C15 -- a status block keyed on a group that has no buttons renders nowhere:
+# the Controls dashboard builds its fieldsets from `actions`.
+for group in sorted(dashboard.get("status") or {}):
+    if group not in (dashboard.get("actions") or {}):
+        fail("C15", "dashboard.status[%r] names no group in dashboard.actions "
+                    "-- the status line renders nowhere" % group)
+
 if failures:
     for line in failures:
         print(line)

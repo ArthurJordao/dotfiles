@@ -1,45 +1,40 @@
 #!/usr/bin/env bash
-# dashboard-status — one JSON object per line for OliveTin's `status` entity.
+# dashboard-status — ONE JSON object for OliveTin's `status` entity.
 #
-# Fields: name, state, icon (an Iconify name), color. Colors come in from the
-# environment so the palette stays in chezmoi data, not in this script.
+# One row on purpose: OliveTin repeats the whole fieldset per entity row, so a
+# row each would mean a heading each. Colors come in from the environment, so
+# the palette stays in chezmoi data rather than in this script.
 set -uo pipefail
 
 GOOD="${GOOD:-green}"
 BAD="${BAD:-red}"
 WARN="${WARN:-orange}"
 
-emit() {
-    printf '{"name":"%s","state":"%s","icon":"%s","color":"%s"}\n' "$1" "$2" "$3" "$4"
-}
-
 # Minecraft — instances are mutually exclusive, so at most one is active.
-inst=$(systemctl --user list-units --plain --no-legend --state=active 'minecraft@*.service' 2>/dev/null |
-       awk '{print $1}' | head -1 | sed 's/^minecraft@//; s/\.service$//')
-if [ -n "$inst" ]; then
-    emit "Minecraft" "$inst" "mdi:minecraft" "$GOOD"
-else
-    emit "Minecraft" "stopped" "mdi:minecraft" "$WARN"
-fi
+mc=$(systemctl --user list-units --plain --no-legend --state=active 'minecraft@*.service' 2>/dev/null |
+     awk '{print $1}' | head -1 | sed 's/^minecraft@//; s/\.service$//')
+if [ -n "$mc" ]; then mc_color="$GOOD"; else mc="stopped"; mc_color="$WARN"; fi
 
 # Gaming mode — the state file exists only while it is on.
 if [ -f "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/gaming-mode.units" ]; then
-    emit "Gaming mode" "on — stack stopped" "mdi:gamepad-variant" "$WARN"
+    gm="on"; gm_color="$WARN"
 else
-    emit "Gaming mode" "off" "mdi:gamepad-variant" "$GOOD"
+    gm="off"; gm_color="$GOOD"
 fi
 
-# Failed user units, ours or otherwise.
 failed=$(systemctl --user list-units --failed --plain --no-legend 2>/dev/null | wc -l | tr -d ' ')
-if [ "$failed" -gt 0 ]; then
-    emit "Failed units" "$failed" "mdi:alert-circle" "$BAD"
-else
-    emit "Failed units" "none" "mdi:check-circle" "$GOOD"
-fi
+if [ "$failed" -gt 0 ]; then failed_color="$BAD"; else failed="none"; failed_color="$GOOD"; fi
 
-# Disks. Warn late: these fill slowly and a nag is worse than no signal.
-while read -r mount pct; do
-    n=${pct%\%}
-    if [ "$n" -ge 90 ]; then c="$BAD"; elif [ "$n" -ge 75 ]; then c="$WARN"; else c="$GOOD"; fi
-    emit "Disk $mount" "$pct used" "mdi:harddisk" "$c"
-done < <(df --output=target,pcent / /mnt/x9pro 2>/dev/null | tail -n +2 | awk '{print $1, $2}')
+# Warn late: disks fill slowly and a nag is worse than no signal.
+disk_color() {
+    local n=${1%\%}
+    if [ "$n" -ge 90 ]; then printf '%s' "$BAD"
+    elif [ "$n" -ge 75 ]; then printf '%s' "$WARN"
+    else printf '%s' "$GOOD"; fi
+}
+root=$(df --output=pcent / 2>/dev/null | tail -1 | tr -d ' ')
+ext=$(df --output=pcent /mnt/x9pro 2>/dev/null | tail -1 | tr -d ' ')
+
+printf '{"mc":"%s","mc_color":"%s","gm":"%s","gm_color":"%s","failed":"%s","failed_color":"%s","root":"%s","root_color":"%s","ext":"%s","ext_color":"%s"}\n' \
+    "$mc" "$mc_color" "$gm" "$gm_color" "$failed" "$failed_color" \
+    "$root" "$(disk_color "$root")" "$ext" "$(disk_color "$ext")"

@@ -31,6 +31,19 @@ dashboard:
     arthur: {group: admins, secret: ARTHUR_PASSWORD_HASH}
     isa: {group: family, secret: ISA_PASSWORD_HASH}
 
+  # Status shown at the top of a Controls fieldset, beside the buttons that
+  # change it. Keys match `actions`; `field` names come from dashboard-status,
+  # which also emits a <field>_color for each.
+  status:
+    Gaming mode:
+      - {field: gm, label: Gaming mode, icon: "mdi:gamepad-variant"}
+    Minecraft:
+      - {field: mc, label: Server, icon: "mdi:minecraft"}
+    Server:
+      - {field: failed, label: Failed units, icon: "mdi:alert-circle"}
+      - {field: root, label: "/", icon: "mdi:harddisk"}
+      - {field: ext, label: x9pro, icon: "mdi:harddisk"}
+
   # Keyed by the Controls fieldset the buttons sit in -- the group is the key,
   # so it cannot name a section that does not exist. Fieldsets render in sorted
   # key order.
@@ -41,7 +54,6 @@ dashboard:
     Gaming mode:
       - {title: Gaming mode on, icon: "mdi:gamepad-variant", shell: gaming-mode on, timeout: 180, confirm: true, family: true}
       - {title: Gaming mode off, icon: "mdi:server", shell: gaming-mode off, timeout: 180, family: true}
-      - {title: Gaming mode status, icon: "mdi:information", shell: gaming-mode status, timeout: 15, family: true, popup: true}
 
     Minecraft:
       # `use` implicitly stops the others (instances are mutually exclusive) and
@@ -54,7 +66,6 @@ dashboard:
         family: true
         argument: {name: instance, title: Server, choices_from: minecraft-instances}
       - {title: Stop Minecraft server, role: minecraft, icon: "mdi:stop", shell: minecraft stop, timeout: 120, family: true}
-      - {title: Minecraft status, role: minecraft, icon: "mdi:information", shell: minecraft status, timeout: 15, family: true, popup: true}
       # The timer runs this daily; the button is for "before I install a mod".
       - {title: Backup Minecraft now, role: minecraft, icon: "mdi:content-save", shell: "systemctl --user start minecraft-backup.service && journalctl --user -u minecraft-backup.service -n 20 --no-pager", timeout: 900, confirm: true, family: true, popup: true}
 
