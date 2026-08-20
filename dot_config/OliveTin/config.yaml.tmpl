@@ -68,7 +68,7 @@ actions:
     shell: >-
       mkdir -p /home/{{ $user }}/.local/state/olivetin &&
       podman ps -a --format json |
-      python3 -c 'import json,sys; print(json.dumps([{"name": c["Names"][0], "state": c["State"], "image": c["Image"]} for c in json.load(sys.stdin)]))'
+      python3 -c 'import json,sys; sys.stdout.writelines(json.dumps({"name": c["Names"][0], "state": c["State"], "image": c["Image"]}) + "\n" for c in json.load(sys.stdin))'
       > /home/{{ $user }}/.local/state/olivetin/containers.json
     timeout: 30
     execOnStartup: true
@@ -89,7 +89,9 @@ actions:
     timeout: 30
 
 entities:
-  # Written by the Refresh containers action. Deliberately outside the config
+  # Written by the Refresh containers action. NDJSON, one object per line --
+  # OliveTin parses entity files line by line, and podman's `--format json`
+  # emits an array where docker's emits NDJSON. Deliberately outside the config
   # dir: chezmoi manages that, and would fight OliveTin over a file it rewrites
   # every minute.
   - file: /home/{{ $user }}/.local/state/olivetin/containers.json
