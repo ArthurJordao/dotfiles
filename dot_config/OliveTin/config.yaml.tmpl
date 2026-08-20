@@ -2,7 +2,11 @@
 {{- $user := index $me "user" | default "" -}}
 {{- $roles := index $me "roles" | default list -}}
 {{- $pal := index .palettes .theme.active -}}
-{{- $statusRefresh := printf "mkdir -p /home/%s/.local/state/olivetin && GOOD='%s' BAD='%s' WARN='%s' dashboard-status > /home/%s/.local/state/olivetin/status.json" $user $pal.base0B $pal.base08 $pal.base0A $user -}}
+{{- $specs := "" -}}
+{{- range (index $me "endpoints" | default list) -}}
+{{- if hasKey . "port" }}{{ $specs = printf "%s %s:%v" $specs .name .port }}{{ end -}}
+{{- end -}}
+{{- $statusRefresh := printf "mkdir -p /home/%s/.local/state/olivetin && GOOD='%s' BAD='%s' WARN='%s' dashboard-status%s > /home/%s/.local/state/olivetin/status.json" $user $pal.base0B $pal.base08 $pal.base0A $specs $user -}}
 {{- $op := onepasswordItemFields .secrets.items.olivetin .secrets.vault -}}
 # GENERATED from .chezmoidata/ — edit hosts.yaml and dashboard.yaml, not this.
 #
@@ -158,6 +162,7 @@ dashboards:
 {{- end }}
 {{- if $shown }}
       - type: fieldset
+        entity: status
         title: {{ $group }}
         contents:
 {{- range $name := $shown }}
@@ -170,6 +175,8 @@ dashboards:
               {{- with index $tile "description" }}
               <div style="opacity:.7;font-size:.85em">{{ . }}</div>
               {{- end }}
+              {{- $key := replace "-" "_" $name }}
+              <div style="font-size:.8em;font-weight:600;color:{{ printf "{{ status.svc_%s_color }}" $key }}">{{ printf "{{ status.svc_%s }}" $key }}</div>
               </a>
 {{- end }}
 {{- end }}

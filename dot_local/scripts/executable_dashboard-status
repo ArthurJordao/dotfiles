@@ -42,6 +42,20 @@ disk_color() {
 root=$(df --output=pcent / 2>/dev/null | tail -1 | tr -d ' ')
 ext=$(df --output=pcent /mnt/x9pro 2>/dev/null | tail -1 | tr -d ' ')
 
-printf '{"mc":"%s","mc_color":"%s","gm":"%s","gm_color":"%s","failed":"%s","failed_color":"%s","root":"%s","root_color":"%s","ext":"%s","ext_color":"%s"}\n' \
-    "$mc" "$mc_color" "$gm" "$gm_color" "$failed" "$failed_color" \
+# Service probes. Each argument is name:port -- a TCP connect on loopback, which
+# answers "is something listening" without caring about TLS or HTTP semantics.
+svc_fields=""
+for spec in "$@"; do
+    name=${spec%%:*}
+    port=${spec##*:}
+    key=${name//-/_}
+    if timeout 2 bash -c "exec 3<>/dev/tcp/127.0.0.1/$port" 2>/dev/null; then
+        svc_fields="$svc_fields\"svc_$key\":\"up\",\"svc_${key}_color\":\"$GOOD\","
+    else
+        svc_fields="$svc_fields\"svc_$key\":\"down\",\"svc_${key}_color\":\"$BAD\","
+    fi
+done
+
+printf '{%s"mc":"%s","mc_color":"%s","gm":"%s","gm_color":"%s","failed":"%s","failed_color":"%s","root":"%s","root_color":"%s","ext":"%s","ext_color":"%s"}\n' \
+    "$svc_fields" "$mc" "$mc_color" "$gm" "$gm_color" "$failed" "$failed_color" \
     "$root" "$(disk_color "$root")" "$ext" "$(disk_color "$ext")"
