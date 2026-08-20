@@ -14,7 +14,6 @@
       "additionalProperties": false,
       "required": [
         "groups",
-        "action_groups",
         "tiles",
         "users",
         "actions"
@@ -97,102 +96,93 @@
           }
         },
         "actions": {
-          "type": "array",
-          "description": "Buttons. Adding one is a data edit; the template ranges over this list.",
-          "minItems": 1,
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "title",
-              "shell",
-              "group"
-            ],
-            "properties": {
-              "title": {
-                "type": "string",
-                "minLength": 1,
-                "description": "OliveTin's identity for the action -- must be unique."
-              },
-              "shell": {
-                "type": "string",
-                "minLength": 1
-              },
-              "icon": {
-                "type": "string",
-                "pattern": "^[a-z0-9-]+:[a-z0-9-]+$",
-                "description": "Iconify name, `prefix:name`. The template wraps it in <iconify-icon>."
-              },
-              "timeout": {
-                "type": "integer",
-                "minimum": 1,
-                "description": "Seconds. OliveTin kills the command past this."
-              },
-              "confirm": {
-                "type": "boolean",
-                "default": false,
-                "description": "Adds a confirmation argument before it runs."
-              },
-              "family": {
-                "type": "boolean",
-                "default": false,
-                "description": "true also grants the `family` ACL. admins always have it."
-              },
-              "popup": {
-                "type": "boolean",
-                "default": false,
-                "description": "true shows the command's stdout in a modal as it runs, instead of leaving it behind a click through to the logs. For informational buttons."
-              },
-              "group": {
-                "type": "string",
-                "minLength": 1,
-                "description": "Which Controls fieldset this button sits in. Must appear in `action_groups`."
-              },
-              "role": {
-                "type": "string",
-                "minLength": 1,
-                "description": "Only render this action on a host with this role. Omit for actions that work anywhere."
-              },
-              "argument": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": [
-                  "name",
-                  "title",
-                  "choices_from"
-                ],
-                "description": "A dropdown. Reference the value from `shell` as OliveTin's own {{ name }} placeholder.",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "pattern": "^[a-z][a-z0-9_]*$"
-                  },
-                  "title": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "choices_from": {
-                    "description": "Where the choices come from -- a named source, never a literal list, so the values cannot drift from the data that defines them.",
-                    "oneOf": [
-                      {
-                        "const": "minecraft-instances",
-                        "description": "Instance names from .chezmoidata/minecraft.yaml."
-                      }
-                    ]
+          "type": "object",
+          "description": "Buttons, keyed by the Controls fieldset they sit in. The group is the key, so it cannot name a section that does not exist; fieldsets render in sorted key order.",
+          "minProperties": 1,
+          "propertyNames": {
+            "minLength": 1
+          },
+          "additionalProperties": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "title",
+                "shell"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "OliveTin's identity for the action -- must be unique."
+                },
+                "shell": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "icon": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9-]+:[a-z0-9-]+$",
+                  "description": "Iconify name, `prefix:name`. The template wraps it in <iconify-icon>."
+                },
+                "timeout": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Seconds. OliveTin kills the command past this."
+                },
+                "confirm": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Adds a confirmation argument before it runs."
+                },
+                "family": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "true also grants the `family` ACL. admins always have it."
+                },
+                "popup": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "true shows the command's stdout in a modal as it runs, instead of leaving it behind a click through to the logs. For informational buttons."
+                },
+                "role": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Only render this action on a host with this role. Omit for actions that work anywhere."
+                },
+                "argument": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "title",
+                    "choices_from"
+                  ],
+                  "description": "A dropdown. Reference the value from `shell` as OliveTin's own {{ name }} placeholder.",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_]*$"
+                    },
+                    "title": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "choices_from": {
+                      "description": "Where the choices come from -- a named source, never a literal list, so the values cannot drift from the data that defines them.",
+                      "oneOf": [
+                        {
+                          "const": "minecraft-instances",
+                          "description": "Instance names from .chezmoidata/minecraft.yaml."
+                        }
+                      ]
+                    }
                   }
                 }
               }
             }
-          }
-        },
-        "action_groups": {
-          "type": "array",
-          "uniqueItems": true,
-          "minItems": 1,
-          "description": "Fieldset order on the Controls dashboard. An action whose `group` is not listed here renders nowhere -- check-consistency C15.",
-          "items": {
-            "type": "string",
-            "minLength": 1
           }
         }
       }

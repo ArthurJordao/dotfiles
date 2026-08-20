@@ -249,7 +249,8 @@ for tile in sorted(dashboard.get("tiles") or {}):
 # C13 -- OliveTin identifies an action by its title, so a duplicate makes one
 # of them unreachable rather than erroring.
 seen = set()
-for action in dashboard.get("actions") or []:
+all_actions = [a for group in (dashboard.get("actions") or {}).values() for a in group]
+for action in all_actions:
     title = action.get("title")
     if title in seen:
         fail("C13", "dashboard.actions has two actions titled %r -- OliveTin "
@@ -265,21 +266,11 @@ for tile, cfg in sorted((dashboard.get("tiles") or {}).items()):
         fail("C14", "dashboard.tiles[%r] has group %r, which dashboard.groups "
                     "does not list -- the tile renders nowhere" % (tile, group))
 
-# C15 -- an action grouped under a name `dashboard.action_groups` does not list
-# renders nowhere: the Controls dashboard iterates that list to build fieldsets.
-action_groups = set(dashboard.get("action_groups") or [])
-for action in dashboard.get("actions") or []:
-    group = action.get("group")
-    if group and group not in action_groups:
-        fail("C15", "dashboard.actions[%r] has group %r, which "
-                    "dashboard.action_groups does not list -- the button "
-                    "renders nowhere" % (action.get("title"), group))
-
-# C16 -- an action gated on a role no host declares is dead config.
-for action in dashboard.get("actions") or []:
+# C15 -- an action gated on a role no host declares is dead config.
+for action in all_actions:
     role = action.get("role")
     if role and role not in all_roles:
-        fail("C16", "dashboard.actions[%r] is gated on role %r, which no host "
+        fail("C15", "dashboard.actions[%r] is gated on role %r, which no host "
                     "declares" % (action.get("title"), role))
 
 if failures:

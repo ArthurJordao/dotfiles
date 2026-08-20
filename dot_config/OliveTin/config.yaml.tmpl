@@ -45,7 +45,8 @@ accessControlLists:
     permissions: {exec: true}
 
 actions:
-{{- range .dashboard.actions }}
+{{- range $group, $items := .dashboard.actions }}
+{{- range $items }}
 {{- $role := index . "role" | default "" }}
 {{- if or (eq $role "") (has $role $roles) }}
   - title: {{ .title }}
@@ -80,6 +81,7 @@ actions:
       - name: confirm
         type: confirmation
         title: 'Really run: {{ .title }}?'
+{{- end }}
 {{- end }}
 {{- end }}
 {{- end }}
@@ -179,11 +181,11 @@ dashboards:
 {{- end }}
   - title: Controls
     contents:
-{{- range $group := .dashboard.action_groups }}
+{{- range $group, $items := .dashboard.actions }}
 {{- $members := list }}
-{{- range $.dashboard.actions }}
+{{- range $items }}
 {{- $role := index . "role" | default "" }}
-{{- if and (eq (index . "group" | default "") $group) (or (eq $role "") (has $role $roles)) }}
+{{- if or (eq $role "") (has $role $roles) }}
 {{- $members = append $members . }}
 {{- end }}
 {{- end }}
