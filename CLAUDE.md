@@ -485,9 +485,11 @@ hosts in `.chezmoidata/hosts.yaml` relocates the whole Caddy/CoreDNS/cloudflared
   `$XDG_RUNTIME_DIR/systemd/generator/default.target.wants/`, **not** `is-enabled`, which reports
   `generated` for every generated unit. A container is matched to its quadlet through podman's
   `PODMAN_SYSTEMD_UNIT` label, since `navidrome` and `slskd` set `ContainerName=` while the rest
-  carry a `systemd-` prefix. Gaming mode leaves `cloudflare-ddns`, `immich-ml` and `immich-server`
-  in *failed* state — their containers exit non-zero on SIGTERM — so every section consults its
-  state file.
+  carry a `systemd-` prefix. `cloudflare-ddns`, `immich-ml` and
+  `immich-server` set `SuccessExitStatus=143`: their images do not trap SIGTERM, so podman
+  reports 143 and systemd would otherwise mark them failed every time gaming mode stops
+  them. Every section still consults gaming-mode's state file, which is what separates
+  "intentionally stopped" from drift.
 - **Both sunshine configs are `modify_` scripts** — the web UI rewrites `sunshine.conf` and
   `apps.json` whole on every Save, so a plain template would revert it and stay permanently dirty.
   `modify_sunshine.conf.tmpl` owns one line; `modify_apps.json.tmpl` owns the apps named in

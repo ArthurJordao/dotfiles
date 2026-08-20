@@ -20,6 +20,10 @@ Environment=TTL=300
 Environment="UPDATE_CRON=@every 15m"
 
 [Service]
+# This image does not trap SIGTERM, so its PID 1 dies from the signal and
+# podman reports 143 -- a clean stop that systemd would otherwise call a
+# failure, leaving the unit failed every time gaming mode stops it.
+SuccessExitStatus=143
 Restart=always
 
 [Install]
