@@ -29,7 +29,7 @@
               "group": {"type": "string", "minLength": 1},
               "label": {"type": "string", "minLength": 1, "description": "Display name. Defaults to the endpoint name."},
               "description": {"type": "string", "minLength": 1},
-              "icon": {"type": "string", "minLength": 1, "description": "Emoji shown on the tile. Emoji only, so the dashboard needs no bundled assets and no network -- a remote icon CDN would break it offline."}
+              "icon": {"type": "string", "pattern": "^[a-z0-9-]+:[a-z0-9-]+$", "description": "Iconify name, `prefix:name`, from https://icon-sets.iconify.design -- `selfhst:` covers most self-hosted apps. The template wraps it in <iconify-icon>. A name that does not exist renders blank, so check it before adding."}
             }
           }
         },
@@ -69,7 +69,7 @@
             "properties": {
               "title": {"type": "string", "minLength": 1, "description": "OliveTin's identity for the action -- must be unique."},
               "shell": {"type": "string", "minLength": 1},
-              "icon": {"type": "string", "minLength": 1, "description": "HTML entity or emoji shown on the button."},
+              "icon": {"type": "string", "pattern": "^[a-z0-9-]+:[a-z0-9-]+$", "description": "Iconify name, `prefix:name`. The template wraps it in <iconify-icon>."},
               "timeout": {"type": "integer", "minimum": 1, "description": "Seconds. OliveTin kills the command past this."},
               "confirm": {"type": "boolean", "default": false, "description": "Adds a confirmation argument before it runs."},
               "family": {"type": "boolean", "default": false, "description": "true also grants the `family` ACL. admins always have it."}

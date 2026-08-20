@@ -10,21 +10,21 @@ dashboard:
   groups: [Media, Books, Infra]
 
   tiles:
-    books: {icon: "📚", group: Books, label: Calibre, description: Library}
-    dash: {icon: "🎛️", group: Infra, label: This dashboard}
-    dns: {icon: "🌐", group: Infra, label: CoreDNS, description: Split-horizon DNS}
-    immich: {icon: "📷", group: Media, label: Immich, description: Photos}
-    music: {icon: "🎵", group: Media, label: Navidrome, description: Music}
-    shelfmark: {icon: "🔖", group: Books, label: Shelfmark, description: Reading sync}
-    slskd: {icon: "🎧", group: Media, label: slskd, description: Soulseek}
-    soulsync: {icon: "🔄", group: Media, label: SoulSync}
-    sunshine: {icon: "🎮", group: Infra, label: Sunshine, description: Game streaming}
+    books: {icon: "selfhst:calibre-web", group: Books, label: Calibre, description: Library}
+    dash: {icon: "mdi:view-dashboard", group: Infra, label: This dashboard}
+    dns: {icon: "selfhst:coredns", group: Infra, label: CoreDNS, description: Split-horizon DNS}
+    immich: {icon: "selfhst:immich", group: Media, label: Immich, description: Photos}
+    music: {icon: "selfhst:navidrome", group: Media, label: Navidrome, description: Music}
+    shelfmark: {icon: "selfhst:shelfmark", group: Books, label: Shelfmark, description: Reading sync}
+    slskd: {icon: "selfhst:slskd", group: Media, label: slskd, description: Soulseek}
+    soulsync: {icon: "mdi:playlist-music", group: Media, label: SoulSync}
+    sunshine: {icon: "selfhst:sunshine", group: Infra, label: Sunshine, description: Game streaming}
 
   users:
     arthur: {group: admins, secret: ARTHUR_PASSWORD_HASH}
     isa: {group: family, secret: ISA_PASSWORD_HASH}
 
   actions:
-    - {title: Gaming mode on, icon: "🎮", shell: gaming-mode on, timeout: 180, confirm: true, family: true}
-    - {title: Gaming mode off, icon: "🔄", shell: gaming-mode off, timeout: 180, family: true}
-    - {title: Gaming mode status, icon: "ℹ️", shell: gaming-mode status, timeout: 15, family: true}
+    - {title: Gaming mode on, icon: "mdi:gamepad-variant", shell: gaming-mode on, timeout: 180, confirm: true, family: true}
+    - {title: Gaming mode off, icon: "mdi:server", shell: gaming-mode off, timeout: 180, family: true}
+    - {title: Gaming mode status, icon: "mdi:information", shell: gaming-mode status, timeout: 15, family: true}

@@ -49,7 +49,7 @@ actions:
   - title: {{ .title }}
     shell: {{ .shell }}
 {{- with index . "icon" }}
-    icon: '{{ . }}'
+    icon: '<iconify-icon icon="{{ . }}"></iconify-icon>'
 {{- end }}
 {{- with index . "timeout" }}
     timeout: {{ . }}
@@ -77,17 +77,17 @@ actions:
     acls: [cron]
     hidden: true
   - title: 'Start {{ "{{ container.name }}" }}'
-    icon: '▶️'
+    icon: '<iconify-icon icon="mdi:play"></iconify-icon>'
     shell: 'podman start {{ "{{ container.name }}" }}'
     entity: container
     timeout: 60
   - title: 'Stop {{ "{{ container.name }}" }}'
-    icon: '⏹️'
+    icon: '<iconify-icon icon="mdi:stop"></iconify-icon>'
     shell: 'podman stop {{ "{{ container.name }}" }}'
     entity: container
     timeout: 60
   - title: 'Logs {{ "{{ container.name }}" }}'
-    icon: '📜'
+    icon: '<iconify-icon icon="mdi:text-box-outline"></iconify-icon>'
     shell: 'podman logs --tail 200 {{ "{{ container.name }}" }}'
     entity: container
     timeout: 30
@@ -98,7 +98,7 @@ actions:
   # also syncs the enabled unit so the right server returns after a reboot.
   # Choices restrict the value to this list -- nothing free-form reaches sh.
   - title: Start Minecraft server
-    icon: '⛏️'
+    icon: '<iconify-icon icon="selfhst:minecraft"></iconify-icon>'
     shell: minecraft use {{ "{{ instance }}" }}
     timeout: 120
     acls: [family]
@@ -110,12 +110,12 @@ actions:
           - value: {{ .name }}
 {{- end }}
   - title: Stop Minecraft server
-    icon: '⏹️'
+    icon: '<iconify-icon icon="mdi:stop"></iconify-icon>'
     shell: minecraft stop
     timeout: 120
     acls: [family]
   - title: Minecraft status
-    icon: 'ℹ️'
+    icon: '<iconify-icon icon="mdi:information"></iconify-icon>'
     shell: minecraft status
     timeout: 15
     acls: [family]
@@ -164,7 +164,7 @@ dashboards:
           - type: display
             title: |
               <a href="https://{{ .name }}.{{ $.domain }}" style="text-decoration:none;display:block">
-              <div style="font-size:2.4em;line-height:1.2">{{ index $tile "icon" | default "🔗" }}</div>
+              <iconify-icon icon="{{ index $tile "icon" | default "mdi:link-variant" }}" style="font-size:2.6em"></iconify-icon>
               <div style="font-weight:600">{{ index $tile "label" | default .name }}</div>
               {{- with index $tile "description" }}
               <div style="opacity:.7;font-size:.85em">{{ . }}</div>
@@ -191,7 +191,7 @@ dashboards:
           - type: display
             title: |
               <a href="https://{{ .name }}.{{ $.domain }}" style="text-decoration:none;display:block">
-              <div style="font-size:2.4em;line-height:1.2">{{ index $tile "icon" | default "🔗" }}</div>
+              <iconify-icon icon="{{ index $tile "icon" | default "mdi:link-variant" }}" style="font-size:2.6em"></iconify-icon>
               <div style="font-weight:600">{{ index $tile "label" | default .name }}</div>
               </a>
 {{- end }}
@@ -204,7 +204,7 @@ dashboards:
         contents:
           - type: display
             title: |
-              <div style="font-size:1.6em;line-height:1.2">📦</div>
+              <iconify-icon icon="mdi:docker" style="font-size:1.8em"></iconify-icon>
               <div style="font-weight:600">{{ "{{ container.state }}" }}</div>
               <div style="opacity:.7;font-size:.8em;word-break:break-all">{{ "{{ container.image }}" }}</div>
             cssClass: '{{ "{{ container.state }}" }}'
