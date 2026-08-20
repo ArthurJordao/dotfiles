@@ -97,6 +97,7 @@ actions:
     execOnStartup: true
     execOnCron: '* * * * *'
     acls: [cron]
+    hidden: true
   # Feeds the container entity. Runs as turisa, so podman needs no socket.
   - title: Refresh containers
     shell: >-
@@ -108,6 +109,7 @@ actions:
     execOnStartup: true
     execOnCron: '* * * * *'
     acls: [cron]
+    hidden: true
   - title: 'Start {{ "{{ container.name }}" }}'
     icon: '<iconify-icon icon="mdi:play"></iconify-icon>'
     shell: 'podman start {{ "{{ container.name }}" }}'
@@ -227,11 +229,6 @@ dashboards:
 {{- end }}
   - title: Containers
     contents:
-{{- /* Listed so no action is dashboard-less: that is what keeps OliveTin's
-       built-in "Actions" view in the sidebar. They are visible here because
-       `hidden: true` appears not to count as placed. */}}
-      - title: Refresh status
-      - title: Refresh containers
       - type: fieldset
         entity: container
         title: '{{ "{{ container.name }}" }}'
