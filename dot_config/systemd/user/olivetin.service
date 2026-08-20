@@ -1,10 +1,13 @@
 [Unit]
 Description=OliveTin — web buttons for the self-hosted stack
-After=network-online.target
+After=network.target
 
 [Service]
 # A user unit, not a container: gaming-mode drives systemctl --user and the
 # container actions call podman directly.
+# Actions run through a non-login sh -c, which inherits the user manager's
+# PATH -- ~/.local/scripts (gaming-mode) is not on it otherwise.
+Environment=PATH=%h/.local/scripts:/usr/local/bin:/usr/bin:/bin
 ExecStart=/usr/bin/OliveTin --configdir %h/.config/OliveTin
 Restart=on-failure
 
