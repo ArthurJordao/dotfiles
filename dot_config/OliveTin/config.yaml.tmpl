@@ -42,4 +42,42 @@ actions: []
 
 entities: []
 
-dashboards: []
+dashboards:
+  - title: Services
+    contents:
+{{- range $group := .dashboard.groups }}
+      - type: fieldset
+        title: {{ $group }}
+        contents:
+{{- range $hostname, $host := $.hosts }}
+{{- range (index $host "endpoints" | default list) }}
+{{- $tile := index $.dashboard.tiles .name | default dict }}
+{{- if and (hasKey . "port") (eq (index $tile "group" | default "") $group) }}
+          - type: display
+            title: |
+              <a href="https://{{ .name }}.{{ $.domain }}">{{ index $tile "label" | default .name }}</a>
+              {{- with index $tile "description" }}<br /><small>{{ . }}</small>{{ end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- $other := list }}
+{{- range $hostname, $host := $.hosts }}
+{{- range (index $host "endpoints" | default list) }}
+{{- $tile := index $.dashboard.tiles .name | default dict }}
+{{- if and (hasKey . "port") (not (index $tile "group")) }}
+{{- $other = append $other . }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if $other }}
+      - type: fieldset
+        title: Other
+        contents:
+{{- range $other }}
+{{- $tile := index $.dashboard.tiles .name | default dict }}
+          - type: display
+            title: |
+              <a href="https://{{ .name }}.{{ $.domain }}">{{ index $tile "label" | default .name }}</a>
+{{- end }}
+{{- end }}
