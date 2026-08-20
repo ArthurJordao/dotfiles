@@ -8,7 +8,7 @@ After=network.target
 # Actions run through a non-login sh -c, which inherits the user manager's
 # PATH -- ~/.local/scripts (gaming-mode) is not on it otherwise.
 Environment=PATH=%h/.local/scripts:/usr/local/bin:/usr/bin:/bin
-ExecStart=/usr/bin/OliveTin --configdir %h/.config/OliveTin
+ExecStart=/usr/bin/olivetin --configdir %h/.config/OliveTin
 Restart=on-failure
 
 [Install]
