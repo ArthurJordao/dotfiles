@@ -9,6 +9,9 @@
 # Field names are harvested from the templates themselves: over-inclusive on
 # purpose, since a spare field costs nothing and a missing one fails the render.
 # .chezmoitemplates needs its own pass -- its entries have no .tmpl extension.
+# A field name looked up dynamically (`index $op $user.secret`) never appears
+# as a literal in a template, so its name is harvested from the `secret:`
+# values in .chezmoidata/*.yaml instead.
 # Every field needs a `section` -- onepasswordItemFields drops the ones without,
 # leaving an empty map and `no entry for key "value"` at every lookup.
 set -uo pipefail
@@ -28,7 +31,8 @@ for arg in "$@"; do
             exit 0 ;;
         item)
             { grep -rhoE 'index \$[a-zA-Z]+ "[^"]+"' --include='*.tmpl' . ;
-              grep -rhoE 'index \$[a-zA-Z]+ "[^"]+"' .chezmoitemplates ; } \
+              grep -rhoE 'index \$[a-zA-Z]+ "[^"]+"' .chezmoitemplates ;
+              grep -rhoE 'secret: [A-Za-z0-9_]+' .chezmoidata | sed 's/secret: //' ; } \
                 | sed 's/.*"\(.*\)"/\1/' | sort -u \
                 | awk 'BEGIN { printf "{\"fields\":[" }
                        { printf "%s{\"id\":\"%s\",\"label\":\"%s\",\"type\":\"STRING\",\"section\":{\"id\":\"mock\"},\"value\":\"mock:%s\"}", sep, $0, $0, $0; sep = "," }

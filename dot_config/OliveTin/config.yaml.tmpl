@@ -1,0 +1,45 @@
+{{- $me := index .hosts .hostname -}}
+{{- $op := onepasswordItemFields .secrets.items.olivetin .secrets.vault -}}
+# GENERATED from .chezmoidata/ — edit hosts.yaml and dashboard.yaml, not this.
+#
+# OliveTin's own {{ "{{ }}" }} placeholders must be emitted as literals here:
+# chezmoi would otherwise evaluate them and fail the render.
+logLevel: INFO
+pageTitle: {{ .hostname }}
+
+# Loopback only — Caddy is the way in.
+listenAddressSingleHTTPFrontend: 127.0.0.1:{{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "dash") }}
+
+authRequireGuestsToLogin: true
+
+authLocalUsers:
+  enabled: true
+  users:
+{{- range $username, $user := .dashboard.users }}
+    - username: {{ $username }}
+      usergroup: {{ $user.group }}
+      password: '{{ (index $op $user.secret).value }}'
+{{- end }}
+
+# Deny by default; an ACL grants.
+defaultPermissions:
+  view: false
+  exec: false
+  logs: false
+
+accessControlLists:
+  # addToEveryAction means a newly added button is never accidentally hidden
+  # from admins, nor accidentally exposed to anyone else.
+  - name: admins
+    matchUsergroups: [admins]
+    permissions: {view: true, exec: true, logs: true}
+    addToEveryAction: true
+  - name: family
+    matchUsergroups: [family]
+    permissions: {view: true, exec: true, logs: false}
+
+actions: []
+
+entities: []
+
+dashboards: []
