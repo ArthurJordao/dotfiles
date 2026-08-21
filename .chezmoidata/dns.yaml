@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=../schemas/dns.schema.json
+#
+# DNS filtering. `upstream` has two consumers -- blocky's upstream and CoreDNS's
+# fallback -- so the resolver is declared once and they cannot disagree.
+dns:
+  upstream:
+    servername: cloudflare-dns.com
+    ips: [1.1.1.1, 1.0.0.1]
+
+  filter:
+    # Host-side ports. blocky's own listeners stay on the image's 53 and 4000.
+    port: 5353
+    api_port: 4000
+
+  blocklists:
+    - https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
+
+  # Domains exempted from every list.
+  allow: []
