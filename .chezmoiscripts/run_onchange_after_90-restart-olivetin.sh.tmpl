@@ -1,0 +1,19 @@
+{{ if has "server" (index .hosts .hostname).roles -}}
+#!/bin/bash
+set -euo pipefail
+# config.yaml: {{ include "dot_config/OliveTin/config.yaml.tmpl" | sha256sum }}
+#
+# Hash the data too: editing .chezmoidata/dashboard.yaml changes the output while
+# leaving the template byte-identical. Secrets are deliberately not hashed --
+# that would need `op` on every apply. Rotating the dashboard passwords means
+# restarting olivetin by hand.
+# data:        {{ dict "dashboard" .dashboard "hosts" .hosts "minecraft" .minecraft "theme" .theme "palettes" .palettes "domain" .domain | toJson | sha256sum }}
+
+# OliveTin's file watcher APPENDS a changed config as an extra source instead of
+# replacing it, and chezmoi writes by atomic rename, so after an apply every
+# action and dashboard exists twice: duplicate titles make one copy unreachable,
+# fieldsets interleave with the wrong headings, and the built-in Actions view
+# comes back. A restart is the only clean reload.
+echo "Restarting olivetin (config changed)..."
+systemctl --user restart olivetin.service
+{{ end }}
