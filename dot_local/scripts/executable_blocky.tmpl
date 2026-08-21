@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# Drive the DNS filter's API. The dashboard buttons in .chezmoidata/dashboard.yaml
+# call this, so the port stays in .chezmoidata/dns.yaml.
+set -euo pipefail
+
+API="http://127.0.0.1:{{ .dns.filter.api_port }}/api"
+LOGS="$HOME/.local/state/blocky"
+
+usage() {
+    cat <<'EOF'
+usage: blocky <command>
+
+  status            is blocking on, and for how much longer
+  pause [duration]  suspend blocking (default 5m)
+  resume            re-enable blocking
+  blocked [n]       last n blocked queries (default 20)
+  why <domain>      which list blocks it, and its recent queries
+  refresh           re-download every blocklist
+  log [n]           last n query-log lines (default 20)
+EOF
+}
+
+call() {
+    curl -fsS "$@" || { echo "blocky is not answering on $API" >&2; exit 1; }
+}
+
+pretty() { python3 -m json.tool 2>/dev/null || cat; }
+
+# blocky names each file by date, so the last glob match is the newest.
+newest_log() {
+    local logs=("$LOGS"/*.csv)
+    [ -e "${logs[0]}" ] || return 1
+    printf '%s\n' "${logs[-1]}"
+}
+
+case "${1:-status}" in
+    status)
+        call "$API/blocking/status" | pretty
+        ;;
+    pause)
+        call "$API/blocking/disable?duration=${2:-5m}"
+        echo "blocking paused for ${2:-5m}"
+        ;;
+    resume)
+        call "$API/blocking/enable"
+        echo "blocking on"
+        ;;
+    refresh)
+        call -X POST "$API/lists/refresh"
+        echo "blocklists refreshed"
+        ;;
+    blocked)
+        log=$(newest_log) || { echo "no query log in $LOGS yet" >&2; exit 1; }
+        grep -i BLOCKED "$log" | tail -n "${2:-20}" || echo "nothing blocked yet today"
+        ;;
+    why)
+        domain="${2:?usage: blocky why <domain>}"
+        call -X POST "$API/query" -H 'Content-Type: application/json' \
+             -d "{\"query\":\"$domain\",\"type\":\"A\"}" | pretty
+        echo "--- recent queries ---"
+        grep -h -i -- "$domain" "$LOGS"/*.csv 2>/dev/null | tail -5 \
+            || echo "(none in the retained log)"
+        ;;
+    log)
+        log=$(newest_log) || { echo "no query log in $LOGS yet" >&2; exit 1; }
+        tail -n "${2:-20}" "$log"
+        ;;
+    -h | --help | help)
+        usage
+        ;;
+    *)
+        usage >&2
+        exit 1
+        ;;
+esac

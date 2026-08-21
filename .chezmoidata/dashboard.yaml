@@ -51,6 +51,13 @@ dashboard:
   # `shell` is data, never a template, so OliveTin's own {{ arg }} placeholders
   # are written literally here. `role` keeps an action off hosts that lack it.
   actions:
+    DNS:
+      - {title: Ad blocking status, icon: "mdi:shield-check", shell: blocky status, timeout: 15, family: true, popup: true}
+      - {title: Pause ad blocking, icon: "mdi:shield-off", shell: blocky pause 5m, timeout: 15, family: true, popup: true}
+      - {title: Resume ad blocking, icon: "mdi:shield-check", shell: blocky resume, timeout: 15, family: true, popup: true}
+      - {title: Recently blocked, icon: "mdi:dns", shell: blocky blocked, timeout: 15, popup: true}
+      - {title: Refresh blocklists, icon: "mdi:refresh", shell: blocky refresh, timeout: 300, popup: true}
+
     Gaming mode:
       - {title: Gaming mode on, icon: "mdi:gamepad-variant", shell: gaming-mode on, timeout: 180, confirm: true, family: true}
       - {title: Gaming mode off, icon: "mdi:server", shell: gaming-mode off, timeout: 180, family: true}
