@@ -74,11 +74,17 @@ actions:
 {{- if or $arg (index . "confirm") }}
     arguments:
 {{- with $arg }}
-      # choices restricts the value to this list, so nothing free-form reaches sh.
+      # Either a fixed choice list or a shell-safe `type`. OliveTin interpolates
+      # the value into the command without escaping, but refuses to run when it
+      # fails the type's pattern, so nothing arbitrary reaches sh either way.
+      # `index`, not a bare lookup: only one of the two keys is ever present.
       - name: {{ .name }}
         title: {{ .title }}
+{{- if index . "type" }}
+        type: {{ .type }}
+{{- end }}
+{{- if eq (index . "choices_from" | default "") "minecraft-instances" }}
         choices:
-{{- if eq .choices_from "minecraft-instances" }}
 {{- range $.minecraft.instances }}
           - value: {{ .name }}
 {{- end }}

@@ -56,6 +56,12 @@ dashboard:
       - {title: Pause ad blocking, icon: "mdi:shield-off", shell: blocky pause 5m, timeout: 15, family: true, popup: true}
       - {title: Resume ad blocking, icon: "mdi:shield-check", shell: blocky resume, timeout: 15, family: true, popup: true}
       - {title: Recently blocked, icon: "mdi:dns", shell: blocky blocked, timeout: 15, popup: true}
+      - title: Why is this blocked?
+        icon: "mdi:help-circle"
+        shell: "blocky why {{ domain }}"
+        timeout: 15
+        popup: true
+        argument: {name: domain, title: Domain, type: ascii_identifier}
       - {title: Refresh blocklists, icon: "mdi:refresh", shell: blocky refresh, timeout: 300, popup: true}
 
     Gaming mode:

@@ -151,10 +151,9 @@
                   "additionalProperties": false,
                   "required": [
                     "name",
-                    "title",
-                    "choices_from"
+                    "title"
                   ],
-                  "description": "A dropdown. Reference the value from `shell` as OliveTin's own {{ name }} placeholder.",
+                  "description": "An input for the action. Either `choices_from` (a dropdown) or `type` (free text OliveTin validates before it runs). Reference the value from `shell` as OliveTin's own {{ name }} placeholder.",
                   "properties": {
                     "name": {
                       "type": "string",
@@ -172,8 +171,37 @@
                           "description": "Instance names from .chezmoidata/minecraft.yaml."
                         }
                       ]
+                    },
+                    "type": {
+                      "description": "An OliveTin argument type. Only types documented as shell-safe are allowed: OliveTin interpolates the value into the command without escaping, and refuses to run when it fails the type's pattern.",
+                      "oneOf": [
+                        {
+                          "const": "ascii_identifier",
+                          "description": "Letters, digits, hyphen, dot, underscore. Right for a hostname."
+                        },
+                        {
+                          "const": "dnsname",
+                          "description": "RFC 1123 hostname. Stricter than ascii_identifier; rejects underscores."
+                        },
+                        {
+                          "const": "int",
+                          "description": "Digits only, no sign."
+                        }
+                      ]
                     }
-                  }
+                  },
+                  "oneOf": [
+                    {
+                      "required": [
+                        "choices_from"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "type"
+                      ]
+                    }
+                  ]
                 }
               }
             }
