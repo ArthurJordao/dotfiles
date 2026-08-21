@@ -9,7 +9,12 @@ dns:
 
   filter:
     # Host-side ports. blocky's own listeners stay on the image's 53 and 4000.
-    port: 5353
+    #
+    # Not 5353: that is mDNS, and avahi's wildcard 0.0.0.0:5353 socket swallows
+    # packets aimed at a stopped blocky instead of the kernel refusing them, so
+    # every query waits out CoreDNS's 2s timeout rather than failing over at
+    # once. Any replacement must have no other listener.
+    port: 5533
     api_port: 4000
 
   blocklists:

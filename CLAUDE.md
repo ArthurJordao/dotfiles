@@ -110,6 +110,12 @@ Silent failures worth knowing:
 - **chezmoi ignores dot-prefixed files in source state**, so a `.neoconf.json` inside a managed
   directory never deploys — it must be `dot_neoconf.json`. Same rule that lets `.nvim-state/` hold
   files chezmoi must not manage, and that makes `.install-password-manager.sh` a hook, not a target.
+- **Port 5353 is mDNS, and that breaks fast failover.** `avahi-daemon` holds a wildcard
+  `0.0.0.0:5353`, so when a container publishing `127.0.0.1:5353` stops, that socket absorbs the
+  packet instead of the kernel refusing it — `dig` reports `timed out`, not `connection refused`.
+  CoreDNS's `forward` then waits out a full 2s per query until its health check marks the upstream
+  down. blocky's filter port is `5533` for this reason; any replacement needs **no** other
+  listener, and `15353` is reserved by convention for throwaway CoreDNS tests.
 - **systemd-resolved sends private reverse lookups to mDNS and waits out the timeout** — a PTR for
   a LAN address cost mars a flat 7.7s. Fixed with `nmcli connection modify ap-not-found
   connection.llmnr 0 connection.mdns 0`. mDNS was the culprit, not LLMNR. Safe because
