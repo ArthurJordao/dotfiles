@@ -1,5 +1,20 @@
 {{- $domain := .domain -}}
+{{- /* The filter hop is emitted only where blocky runs -- otherwise every
+       query would pay a failover to a dead port. */ -}}
+{{- $filter := "" -}}
+{{- if has "blocky" (index (index .hosts .hostname) "quadlets" | default list) -}}
+{{-   $filter = printf "127.0.0.1:%v " .dns.filter.port -}}
+{{- end -}}
 # GENERATED from .chezmoidata/hosts.yaml — edit the endpoints there, not this file.
+
+{{/* policy sequential is load-bearing: forward's default is `random`, which
+     would send half of all queries around the filter. */}}
+(upstream) {
+    forward . {{ $filter }}{{ range .dns.upstream.ips }}tls://{{ . }} {{ end }}{
+        policy sequential
+        tls_servername {{ .dns.upstream.servername }}
+    }
+}
 
 (local_hosts) {
     hosts {
@@ -77,9 +92,7 @@
         expr incidr(client_ip(), '192.168.15.0/24') || incidr(client_ip(), '127.0.0.1/32')
     }
     import local_hosts
-    forward . tls://1.1.1.1 tls://1.0.0.1 {
-        tls_servername cloudflare-dns.com
-    }
+    import upstream
     cache
     log
     errors
@@ -90,18 +103,14 @@
         expr incidr(client_ip(), '100.64.0.0/10')
     }
     import tailscale_hosts
-    forward . tls://1.1.1.1 tls://1.0.0.1 {
-        tls_servername cloudflare-dns.com
-    }
+    import upstream
     cache
     log
     errors
 }
 
 .:53 {
-    forward . tls://1.1.1.1 tls://1.0.0.1 {
-        tls_servername cloudflare-dns.com
-    }
+    import upstream
     cache
     log
     errors
@@ -114,9 +123,7 @@ https://.:8053 {
         expr incidr(client_ip(), '192.168.15.0/24') || incidr(client_ip(), '127.0.0.1/32') || incidr(client_ip(), '::1/128')
     }
     import local_hosts
-    forward . tls://1.1.1.1 tls://1.0.0.1 {
-        tls_servername cloudflare-dns.com
-    }
+    import upstream
     cache
     errors
 }
@@ -128,9 +135,7 @@ https://.:8053 {
         expr incidr(client_ip(), '100.64.0.0/10')
     }
     import tailscale_hosts
-    forward . tls://1.1.1.1 tls://1.0.0.1 {
-        tls_servername cloudflare-dns.com
-    }
+    import upstream
     cache
     errors
 }
@@ -138,9 +143,7 @@ https://.:8053 {
 https://.:8053 {
     tls /etc/coredns/cert.pem /etc/coredns/key.pem
     proxyproto
-    forward . tls://1.1.1.1 tls://1.0.0.1 {
-        tls_servername cloudflare-dns.com
-    }
+    import upstream
     cache
     errors
 }
