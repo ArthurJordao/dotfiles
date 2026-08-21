@@ -10,6 +10,7 @@ usage() {
 usage: blocky <command>
 
   status            is blocking on, and for how much longer
+  stats [n]         totals, share blocked, and the top n domains (default 10)
   pause [duration]  suspend blocking (default 5m)
   resume            re-enable blocking
   blocked [n]       last n blocked queries (default 20)
@@ -57,6 +58,23 @@ case "${1:-status}" in
     refresh)
         call -X POST "$API/lists/refresh"
         echo "blocklists refreshed"
+        ;;
+    stats)
+        dir=$(log_dir) || { echo "no query log yet (has blocky run?)" >&2; exit 1; }
+        # Every retained file, not just today: logRetentionDays governs the window.
+        awk -F'\t' '{t++; c[$9]++} END{
+            printf "  queries   %d\n", t
+            printf "  blocked   %d  (%.1f%%)\n", c["BLOCKED"]+0, t ? (c["BLOCKED"]+0)/t*100 : 0
+            printf "  resolved  %d\n", c["RESOLVED"]+0
+            printf "  cached    %d\n", c["CACHED"]+0
+        }' "$dir"/*.log
+        echo
+        echo "  top blocked:"
+        awk -F'\t' '$9=="BLOCKED"{sub(/\.$/,"",$6); c[$6]++} END{for(k in c) printf "%6d  %s\n", c[k], k}' \
+            "$dir"/*.log | sort -rn | head -"${2:-10}" | sed 's/^/  /'
+        echo
+        echo "  denylist entries: $(call "${API%/api}/metrics" |
+            awk '/^blocky_denylist_cache_entries/{print $2}')"
         ;;
     blocked)
         log=$(newest_log) || { echo "no query log yet (has blocky run?)" >&2; exit 1; }

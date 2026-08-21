@@ -55,6 +55,7 @@ dashboard:
       - {title: Ad blocking status, icon: "mdi:shield-check", shell: blocky status, timeout: 15, family: true, popup: true}
       - {title: Pause ad blocking, icon: "mdi:shield-off", shell: blocky pause 5m, timeout: 15, family: true, popup: true}
       - {title: Resume ad blocking, icon: "mdi:shield-check", shell: blocky resume, timeout: 15, family: true, popup: true}
+      - {title: Ad blocking stats, icon: "mdi:chart-box", shell: blocky stats, timeout: 15, family: true, popup: true}
       - {title: Recently blocked, icon: "mdi:dns", shell: blocky blocked, timeout: 15, popup: true}
       - title: Why is this blocked?
         icon: "mdi:help-circle"
