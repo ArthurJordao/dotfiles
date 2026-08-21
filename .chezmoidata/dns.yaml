@@ -17,8 +17,14 @@ dns:
     port: 5533
     api_port: 4000
 
+  # hosts format and Adblock Plus syntax are both fine -- blocky parses either.
+  # loading.strategy is failOnError, so every URL here has to be reachable when
+  # blocky starts, or it refuses to start (DNS keeps working, unfiltered).
   blocklists:
     - https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
+    - https://big.oisd.nl
+    # These query params are required; without them it serves an HTML page.
+    - "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts&showintro=0&mimetype=plaintext"
 
   # Domains exempted from every list.
   allow: []

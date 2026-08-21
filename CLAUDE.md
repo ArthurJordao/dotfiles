@@ -368,11 +368,11 @@ the script's own bytes, `run_onchange` re-fires exactly when the output changes.
 hash here; `trimSuffix "\n"` on each `includeTemplate` keeps the heredoc terminator on its own
 line.
 
-All nine scripts live in **`.chezmoiscripts/`** and every one carries the **`after_`** attribute, so
+All eleven scripts live in **`.chezmoiscripts/`** and every one carries the **`after_`** attribute, so
 they run once every file has been deployed and the numeric prefix orders only the scripts among
 themselves. Keep both properties on any new script: without `after_`, `.chezmoiscripts` sorts ahead
 of `.config`, `.local`, `Brewfile` and `Pictures`, and the script runs before anything lands.
-Anything needing a package goes after 10; gaps of 10 leave room to insert.
+Anything needing a package goes after 10; gaps of 10 leave room to insert. Keep prefixes **two digits** — the order is lexical, so `100-` would sort before `15-`.
 
 | | Script | Needs |
 |---|---|---|
@@ -385,6 +385,8 @@ Anything needing a package goes after 10; gaps of 10 leave room to insert.
 | 60 | `set-wallpaper` | `Pictures/` deployed |
 | 70 | `deploy-etc` | `caddy`, `coredns` (edge role) |
 | 80 | `restart-syncthing` | `syncthing` (emulation role) |
+| 90 | `restart-olivetin` | OliveTin config deployed (server role) |
+| 95 | `restart-blocky` | blocky config deployed (claims the quadlet) |
 
 Pre-installed prerequisites: `chezmoi` and `git`. `1password-cli` is **not** one — it installs
 itself via the `hooks.read-source-state.pre` hook (`.install-password-manager.sh`) the first time
@@ -531,6 +533,13 @@ hosts in `.chezmoidata/hosts.yaml` relocates the whole Caddy/CoreDNS/cloudflared
   that turns filtering on. Lists refresh themselves every 24h; the `blocky`
   script drives the API and the dashboard buttons call it. `hosts` blocks keep
   their `fallthrough` and run first, so no internal name reaches the filter.
+- **Neither OliveTin nor blocky reloads a changed config**, so each has a `run_onchange` restart
+  script (90, 95). OliveTin is the worse of the two: its watcher *appends* the changed file as an
+  extra config source instead of replacing it, so after chezmoi's atomic rename every action and
+  dashboard exists twice — duplicate titles leave one copy unreachable, fieldsets interleave under
+  the wrong headings, and the built-in Actions view returns. blocky simply reads its config once at
+  start, so a new blocklist URL needs the restart; `/lists/refresh` only re-downloads lists it
+  already knows.
 - **The dashboard is OliveTin**, a systemd *user* unit rather than a container —
   `gaming-mode` drives `systemctl --user` and the container buttons call
   `podman` directly. Its whole config is generated: tiles come from `endpoints`,

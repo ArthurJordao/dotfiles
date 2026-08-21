@@ -1,0 +1,21 @@
+{{ if has "blocky" (index (index .hosts .hostname) "quadlets" | default list) -}}
+#!/bin/bash
+set -euo pipefail
+# config.yml: {{ include "dot_config/blocky/config.yml.tmpl" | sha256sum }}
+#
+# Hash the data too: editing .chezmoidata/dns.yaml changes the output while
+# leaving the template byte-identical.
+# data:       {{ .dns | toJson | sha256sum }}
+
+# blocky reads its config only at start -- the API's /lists/refresh re-downloads
+# the lists it already knows, so a new blocklist URL needs this. Roughly 20s of
+# unfiltered DNS while it comes back: CoreDNS falls back to Cloudflare.
+systemctl --user daemon-reload
+if systemctl --user cat blocky.service >/dev/null 2>&1; then
+    echo "Restarting blocky (config changed)..."
+    systemctl --user restart blocky.service
+else
+    echo "blocky.service is not generated yet -- start it with:"
+    echo "  systemctl --user start blocky.service"
+fi
+{{ end }}
