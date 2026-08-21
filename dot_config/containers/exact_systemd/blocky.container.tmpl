@@ -1,0 +1,25 @@
+[Unit]
+Description=blocky DNS filter (CoreDNS forwards here; Cloudflare is the fallback)
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=ghcr.io/0xerr0r/blocky:latest
+AutoUpdate=registry
+
+# Loopback only: the API is unauthenticated and can switch blocking off.
+PublishPort=127.0.0.1:{{ .dns.filter.port }}:53/udp
+PublishPort=127.0.0.1:{{ .dns.filter.port }}:53/tcp
+PublishPort=127.0.0.1:{{ .dns.filter.api_port }}:4000
+
+Environment=TZ={{ .timezone }}
+
+Volume=%h/.config/blocky/config.yml:/app/config.yml:ro
+# Holds the CSV query log only. Created by podman, managed by nothing.
+Volume=%h/.local/state/blocky:/app/data
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

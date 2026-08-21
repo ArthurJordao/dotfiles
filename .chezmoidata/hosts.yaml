@@ -60,6 +60,7 @@ hosts:
       external: /mnt/x9pro
 
     quadlets:
+      - blocky
       - calibre-web-automated
       - cloudflare-ddns
       - immich
@@ -85,6 +86,7 @@ hosts:
       - {name: syncthing}
       - {name: olivetin, stop_for_gaming: false}
       - {name: sunshine, stop_for_gaming: false}
+      - {name: blocky, stop_for_gaming: false}
 
     endpoints:
       - {name: books, port: 8083, public: true}
