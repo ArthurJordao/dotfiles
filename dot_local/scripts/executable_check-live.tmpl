@@ -22,7 +22,7 @@ ok()   { printf '%s%s%s\n' "$GREEN"  "$1" "$OFF"; }
 
 UNITS=(
 {{- range (index $me "units" | default list) }}
-    "{{ . }}.service"
+    "{{ if kindIs "string" . }}{{ . }}{{ else }}{{ .name }}{{ end }}.service"
 {{- end }}
 )
 

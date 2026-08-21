@@ -83,8 +83,9 @@ hosts:
       - shelfmark
       - teamspeak3
       - syncthing
-      # sunshine is deliberately absent: gaming-mode stops everything in this
-      # list, and that would kill the session being streamed.
+      - {name: olivetin, stop_for_gaming: false}
+      # sunshine is absent entirely: stopping it would kill the session being
+      # streamed, and its unit name is app-dev.lizardbyte.app.Sunshine.
 
     endpoints:
       - {name: books, port: 8083, public: true}

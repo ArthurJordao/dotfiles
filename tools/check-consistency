@@ -95,6 +95,13 @@ dashboard = data.get("dashboard") or {}
 files = quadlet_files()
 top_level = set(f.split(os.sep)[0] for f in files)
 
+
+def unit_names(units):
+    """`units` entries are a bare name or {name, stop_for_gaming} -- the same
+    string-or-dict shape packages.darwin uses."""
+    return [u if isinstance(u, str) else u.get("name") for u in units]
+
+
 for name in sorted(hosts):
     host = hosts[name]
     # An unmanaged host declares nothing but user/ip -- every rule below is
@@ -102,7 +109,7 @@ for name in sorted(hosts):
     if host.get("managed") is False:
         continue
     quadlets = host.get("quadlets") or []
-    units = host.get("units") or []
+    units = unit_names(host.get("units") or [])
     endpoints = host.get("endpoints") or []
     roles = host.get("roles") or []
 
