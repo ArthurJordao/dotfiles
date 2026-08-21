@@ -192,6 +192,8 @@ WantedBy=timers.target
 
 Enable with `sudo systemctl enable --now caddy coredns cloudflared cloudflared-update.timer`.
 
+blocky needs nothing here: it is a quadlet, and it refreshes its own blocklists.
+
 ### Drop-ins
 
 ```ini

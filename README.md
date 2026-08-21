@@ -170,7 +170,7 @@ Caddy, CoreDNS, the Cloudflare Tunnel, `gaming-mode` and `~/.ssh/config` are all
 | List | Consumer | Contents |
 |---|---|---|
 | `quadlets` | which container files deploy | quadlet filename *prefixes*, matched `<prefix>*` |
-| `units` | `gaming-mode` | systemd user units, **without** `.service` |
+| `units` | `gaming-mode` | systemd user units, **without** `.service`, each as `{name, stop_for_gaming}` — `stop_for_gaming: false` keeps gaming mode from stopping it, which is how `olivetin`, `sunshine` and `blocky` stay up |
 | `endpoints` | Caddy, CoreDNS, cloudflared, `~/.ssh/config`, quadlet `PublishPort` | hostnames to serve and resolve |
 
 `~/.ssh/config` also reads the scalar `user`: one `Host` block per host, aliased by
@@ -287,11 +287,11 @@ to `ip.lan` for LAN clients and `ip.tailscale` for tailnet clients.
 
 ### Editor validation
 
-`schemas/hosts.schema.json`, `schemas/syncthing.schema.json` and `schemas/packages.schema.json`
-describe the shapes above, and each file in `.chezmoidata/` opens with a
-`# yaml-language-server: $schema=` modeline pointing at its own schema
-(`../schemas/hosts.schema.json`, `../schemas/syncthing.schema.json`,
-`../schemas/packages.schema.json`), so Neovim validates as you type and shows each field's
+`schemas/hosts.schema.json`, `schemas/syncthing.schema.json`, `schemas/packages.schema.json`
+and `schemas/dns.schema.json` describe the shapes above, and each file in
+`.chezmoidata/` opens with a `# yaml-language-server: $schema=` modeline pointing at
+its own schema (`../schemas/hosts.schema.json`, `../schemas/syncthing.schema.json`,
+`../schemas/packages.schema.json`, `../schemas/dns.schema.json`), so Neovim validates as you type and shows each field's
 meaning on hover. It catches the mistakes that otherwise fail *silently*: a misspelled
 `tls-insecure` reads as absent and quietly disables the flag, `endpoint:` instead of
 `endpoints:` yields no endpoints at all, and a typo'd role is inert by design.

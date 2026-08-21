@@ -22,9 +22,10 @@ Hosts share this repo, gated by roles in `.chezmoidata/hosts.yaml`:
 `.chezmoidata/` is the only place hosts are named — `hosts.yaml` holds the per-host inventory,
 `syncthing.yaml` the shared emulation folders, `minecraft.yaml` the server instances and their
 JDKs, `packages.yaml` the package declarations, `secrets.yaml` the 1Password vault and item names,
-`cloudflare.yaml` the tunnel ID. chezmoi merges every file in that directory into one template data
-namespace, so templates just read `.hosts` / `.domain` / `.syncthing` / `.minecraft` / `.packages`
-/ `.secrets` / `.cloudflare`. Gate on the axis that is the actual reason a file isn't universal:
+`cloudflare.yaml` the tunnel ID, `dns.yaml` the filter's lists and upstream. chezmoi merges every
+file in that directory into one template data namespace, so templates just read `.hosts` /
+`.domain` / `.syncthing` / `.minecraft` / `.packages` / `.secrets` / `.cloudflare` / `.dns`. Gate
+on the axis that is the actual reason a file isn't universal:
 
 | Axis | Mechanism | Use for |
 |---|---|---|
@@ -289,6 +290,16 @@ mars:
 will never exist; an endpoint with no quadlet is a 502. None of it errors. The one pair that
 *can't* drift is the port: the quadlet reads it from the endpoint.
 
+Each `units` entry is an object, `{name, stop_for_gaming}` — uniform on purpose,
+so no consumer branches on the entry's type. `stop_for_gaming: false` keeps a
+unit out of `gaming-mode`'s `CANDIDATES` while `check-live` still expects it
+active: `olivetin`, `sunshine` and `blocky`. Never read the flag with
+`| default` — sprig treats `false` as empty and flips it to `true`. `check-live`
+also resolves each name to its canonical unit `Id` before asking about boot,
+because an alias reports `is-enabled=alias`: `sunshine` is one, for
+`app-dev.lizardbyte.app.Sunshine`, and C3 accepts the short name only because
+the package is called `sunshine` too.
+
 They don't line up 1:1: `immich` is one quadlet, five units, one endpoint; `music` is one quadlet,
 three units, three endpoints; `teamspeak3` has no endpoint; `dns` is an endpoint with neither;
 `minecraft` is an endpoint whose units come from `.chezmoidata/minecraft.yaml` instead.
@@ -505,6 +516,15 @@ hosts in `.chezmoidata/hosts.yaml` relocates the whole Caddy/CoreDNS/cloudflared
   stream. Sunshine's own `dd_*` auto-resolution options are Windows/macOS only.
 - A prep-cmd runs **without a shell**, so `apps.json` needs absolute paths — no `~`, no `$HOME`,
   and no systemd `%h`. The path is rendered from the host's `user`.
+- **DNS filtering is blocky**, a quadlet publishing only on loopback. CoreDNS
+  forwards `.` to it with `policy sequential`, keeping Cloudflare as a second
+  upstream, so a dead filter is unfiltered resolution rather than none.
+  `policy sequential` is load-bearing: forward's default is `random`, which
+  would route half of all queries around the filter. The Corefile emits the hop
+  only where the `blocky` quadlet is claimed, so claiming it is the single fact
+  that turns filtering on. Lists refresh themselves every 24h; the `blocky`
+  script drives the API and the dashboard buttons call it. `hosts` blocks keep
+  their `fallthrough` and run first, so no internal name reaches the filter.
 - **The dashboard is OliveTin**, a systemd *user* unit rather than a container —
   `gaming-mode` drives `systemctl --user` and the container buttons call
   `podman` directly. Its whole config is generated: tiles come from `endpoints`,
