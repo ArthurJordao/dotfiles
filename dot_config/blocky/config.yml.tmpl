@@ -1,0 +1,53 @@
+{{- $up := .dns.upstream -}}
+{{- $primary := printf "tcp-tls:%v:853#%v" (index $up.ips 0) $up.servername -}}
+# GENERATED from .chezmoidata/dns.yaml — edit the data, not this file.
+
+upstreams:
+  groups:
+    default:
+{{- range $up.ips }}
+      - tcp-tls:{{ . }}:853#{{ $up.servername }}
+{{- end }}
+
+# Resolves the blocklist URLs without going through CoreDNS, which forwards
+# here -- that would be circular at cold start.
+bootstrapDns:
+  - upstream: {{ $primary }}
+
+# The image's own ports. Host-side ports live in the quadlet.
+ports:
+  dns: 53
+  http: 4000
+
+blocking:
+  denylists:
+    blocked:
+{{- range .dns.blocklists }}
+      - {{ . }}
+{{- end }}
+{{- if .dns.allow }}
+  allowlists:
+    blocked:
+      - |
+{{- range .dns.allow }}
+        {{ . }}
+{{- end }}
+{{- end }}
+  clientGroupsBlock:
+    default:
+      - blocked
+  blockType: nxDomain
+  blockTTL: 1m
+  loading:
+    refreshPeriod: 24h
+    # One unreachable list keeps blocky down, rather than quietly filtering half
+    # of what is declared. CoreDNS falls back to Cloudflare meanwhile.
+    strategy: failOnError
+
+queryLog:
+  type: csv
+  target: /app/data
+  logRetentionDays: 7
+
+prometheus:
+  enable: true

@@ -80,6 +80,11 @@ Emulation/**
 # leaves anything unclaimed unignored, so `exact_systemd` prunes it. A name is a
 # directory or the stem before the first dot -- never a prefix, which would let
 # one host's `shelf` swallow another's `shelfmark`.
+{{ if not (has "blocky" (index $me "quadlets" | default list)) }}
+.config/blocky
+.config/blocky/**
+.local/scripts/blocky
+{{ end }}
 {{ if not (has "podman" $roles) }}
 .config/containers
 .config/containers/**
