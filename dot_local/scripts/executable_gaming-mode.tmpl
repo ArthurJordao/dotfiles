@@ -17,13 +17,10 @@ set -euo pipefail
 
 CANDIDATES=(
 {{- range (index $me "units" | default list) }}
-{{-   $name := . }}{{ $stop := true }}
-{{-   if not (kindIs "string" .) }}
-{{-     $name = .name }}
-{{-     if hasKey . "stop_for_gaming" }}{{ $stop = .stop_for_gaming }}{{ end }}
-{{-   end }}
+{{-   $stop := true }}
+{{-   if hasKey . "stop_for_gaming" }}{{ $stop = .stop_for_gaming }}{{ end }}
 {{-   if $stop }}
-    {{ $name }}.service
+    {{ .name }}.service
 {{-   end }}
 {{- end }}
 {{- if has "minecraft" $roles }}

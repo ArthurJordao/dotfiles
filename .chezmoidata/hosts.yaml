@@ -70,22 +70,21 @@ hosts:
     units:
       # Every immich unit, not just the pod: starting immich-pod alone brings
       # up an empty pod (Requires= propagates stop, not start).
-      - immich-pod
-      - immich-db
-      - immich-valkey
-      - immich-ml
-      - immich-server
-      - navidrome
-      - slskd
-      - soulsync
-      - calibre-web-automated
-      - cloudflare-ddns
-      - shelfmark
-      - teamspeak3
-      - syncthing
+      - {name: immich-pod}
+      - {name: immich-db}
+      - {name: immich-valkey}
+      - {name: immich-ml}
+      - {name: immich-server}
+      - {name: navidrome}
+      - {name: slskd}
+      - {name: soulsync}
+      - {name: calibre-web-automated}
+      - {name: cloudflare-ddns}
+      - {name: shelfmark}
+      - {name: teamspeak3}
+      - {name: syncthing}
       - {name: olivetin, stop_for_gaming: false}
-      # sunshine is absent entirely: stopping it would kill the session being
-      # streamed, and its unit name is app-dev.lizardbyte.app.Sunshine.
+      - {name: sunshine, stop_for_gaming: false}
 
     endpoints:
       - {name: books, port: 8083, public: true}

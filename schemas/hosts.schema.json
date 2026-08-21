@@ -35,40 +35,6 @@
     }
   },
   "$defs": {
-    "unitItem": {
-      "oneOf": [
-        {
-          "type": "string",
-          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9@._-]*$",
-          "not": {
-            "pattern": "\\.service$"
-          },
-          "description": "Without the .service suffix — the template appends it. minecraft@<instance> entries also generate the Conflicts= line in minecraft@.service."
-        },
-        {
-          "type": "object",
-          "description": "A unit carrying a flag. Bare names stay bare.",
-          "required": [
-            "name"
-          ],
-          "additionalProperties": false,
-          "properties": {
-            "name": {
-              "type": "string",
-              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9@._-]*$",
-              "not": {
-                "pattern": "\\.service$"
-              }
-            },
-            "stop_for_gaming": {
-              "type": "boolean",
-              "description": "false keeps gaming-mode from stopping this unit. check-live still expects it active.",
-              "default": true
-            }
-          }
-        }
-      ]
-    },
     "host": {
       "type": "object",
       "additionalProperties": false,
@@ -236,7 +202,26 @@
           "description": "Systemd user units gaming-mode suspends and restores. Name EVERY unit, not just a pod: Requires= propagates stop to dependents but start only to dependencies, so starting immich-pod alone brings up an empty pod.",
           "uniqueItems": true,
           "items": {
-            "$ref": "#/$defs/unitItem"
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9@._-]*$",
+                "not": {
+                  "pattern": "\\.service$"
+                },
+                "description": "Without the .service suffix — the consumers append it. minecraft@<instance> entries also generate the Conflicts= line in minecraft@.service. An alias is fine: check-live resolves it."
+              },
+              "stop_for_gaming": {
+                "type": "boolean",
+                "description": "false keeps gaming-mode from stopping this unit. check-live still expects it active.",
+                "default": true
+              }
+            }
           }
         },
         "endpoints": {
