@@ -15,8 +15,9 @@ PublishPort=127.0.0.1:{{ .dns.filter.api_port }}:4000
 Environment=TZ={{ .timezone }}
 
 Volume=%h/.config/blocky/config.yml:/app/config.yml:ro
-# Holds the CSV query log only. Created by podman, managed by nothing.
-Volume=%h/.local/state/blocky:/app/data
+# The query log. A named volume, not a host path: the image runs as uid 100, so
+# podman has to own the directory to chown it for that user.
+Volume=blocky-data:/app/data
 
 [Service]
 Restart=always

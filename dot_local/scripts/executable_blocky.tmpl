@@ -4,7 +4,6 @@
 set -euo pipefail
 
 API="http://127.0.0.1:{{ .dns.filter.api_port }}/api"
-LOGS="$HOME/.local/state/blocky"
 
 usage() {
     cat <<'EOF'
@@ -26,9 +25,19 @@ call() {
 
 pretty() { python3 -m json.tool 2>/dev/null || cat; }
 
+# The log lives in a podman-owned volume, so ask podman where.
+log_dir() {
+    local dir
+    dir=$(podman volume inspect blocky-data --format '{{ "{{ .Mountpoint }}" }}' 2>/dev/null) || return 1
+    [ -d "$dir" ] || return 1
+    printf '%s\n' "$dir"
+}
+
 # blocky names each file by date, so the last glob match is the newest.
 newest_log() {
-    local logs=("$LOGS"/*.csv)
+    local dir logs
+    dir=$(log_dir) || return 1
+    logs=("$dir"/*.log)
     [ -e "${logs[0]}" ] || return 1
     printf '%s\n' "${logs[-1]}"
 }
@@ -50,7 +59,7 @@ case "${1:-status}" in
         echo "blocklists refreshed"
         ;;
     blocked)
-        log=$(newest_log) || { echo "no query log in $LOGS yet" >&2; exit 1; }
+        log=$(newest_log) || { echo "no query log yet (has blocky run?)" >&2; exit 1; }
         grep -i BLOCKED "$log" | tail -n "${2:-20}" || echo "nothing blocked yet today"
         ;;
     why)
@@ -58,11 +67,12 @@ case "${1:-status}" in
         call -X POST "$API/query" -H 'Content-Type: application/json' \
              -d "{\"query\":\"$domain\",\"type\":\"A\"}" | pretty
         echo "--- recent queries ---"
-        grep -h -i -- "$domain" "$LOGS"/*.csv 2>/dev/null | tail -5 \
-            || echo "(none in the retained log)"
+        dir=$(log_dir) &&
+            grep -h -i -- "$domain" "$dir"/*.log 2>/dev/null | tail -5 ||
+            echo "(none in the retained log)"
         ;;
     log)
-        log=$(newest_log) || { echo "no query log in $LOGS yet" >&2; exit 1; }
+        log=$(newest_log) || { echo "no query log yet (has blocky run?)" >&2; exit 1; }
         tail -n "${2:-20}" "$log"
         ;;
     -h | --help | help)
