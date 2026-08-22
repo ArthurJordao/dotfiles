@@ -109,6 +109,10 @@
                 "description": "A host commits are authored on: imports the GPG signing key and switches the source-dir remote to SSH. Both need credentials no other host should carry."
               },
               {
+                "const": "work",
+                "description": "The work laptop. Exports the employer's API keys into the shell; they must not reach a personal or shared machine."
+              },
+              {
                 "const": "gaming",
                 "description": "Used for games. Combined with `server`, also installs gaming-mode."
               },

@@ -5,6 +5,7 @@
 #   podman     rootless podman quadlets
 #   gui        graphical session
 #   dev        a host commits are authored on: signing key + SSH push remote
+#   work       the work laptop: exports the employer's API keys into the shell
 #   gaming     used for games
 #   minecraft  minecraft@ units + helper scripts
 #   sunshine   sunshine game-stream host (package + its user unit)
@@ -116,7 +117,7 @@ hosts:
     endpoints: []
 
   neptune:
-    roles: [gui, dev]
+    roles: [gui, dev, work]
     os: darwin
     user: arthurjordao
     ip:
