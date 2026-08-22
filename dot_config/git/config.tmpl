@@ -16,13 +16,11 @@
 [init]
 	defaultBranch = main
 {{ if has "dev" (index .hosts .hostname).roles -}}
-{{- /* Both need credentials only an authoring host has: the signing key, and
-       a GitHub-authorised SSH key. The rewrite is global, so on a host without
-       one it breaks every https pull, chezmoi update included. */ -}}
+{{- /* Only a host that imports the signing key can sign. */ -}}
 [commit]
 	gpgsign = true
+{{ end -}}
 [url "ssh://git@github.com/"]
 	insteadOf = https://github.com/
-{{ end -}}
 [includeIf "gitdir:~/dev/noredink/"]
   path = ~/.config/git/work-config
