@@ -3,6 +3,9 @@
 # Syncthing folders shared between every host with the `emulation` role.
 #
 # `mode: oneway` + `source:` renders Send Only on the source host and Receive
+#
+# `except:` lists hosts that do NOT get the folder; absent means every peer.
+# EmuDeck-only folders exclude phobos, which runs ArkOS.
 # Only everywhere else. `mode: twoway` renders Send & Receive with versioning.
 #
 # Paths are home-relative and must point at REAL storage on both hosts:
@@ -12,21 +15,21 @@ syncthing:
     # Content — mars is authoritative.
     - {id: emu-roms, path: Emulation/roms, mode: oneway, source: mars}
     - {id: emu-bios, path: Emulation/bios, mode: oneway, source: mars}
-    - {id: emu-media, path: Emulation/tools/downloaded_media, mode: oneway, source: mars}
+    - {id: emu-media, path: Emulation/tools/downloaded_media, mode: oneway, source: mars, except: [phobos]}
     # Installed updates/DLC. Eden puts installed NSPs here, not in load/.
-    - {id: emu-switch-installed, path: Emulation/storage/eden/nand/user/Contents/registered, mode: oneway, source: mars}
+    - {id: emu-switch-installed, path: Emulation/storage/eden/nand/user/Contents/registered, mode: oneway, source: mars, except: [phobos]}
     # Mods and cheats.
-    - {id: emu-switch-mods, path: Emulation/storage/eden/load, mode: oneway, source: mars}
-    - {id: emu-switch-firmware, path: Emulation/storage/eden/nand/system/Contents/registered, mode: oneway, source: mars}
-    - {id: emu-switch-keys, path: .local/share/eden/keys, mode: oneway, source: mars}
+    - {id: emu-switch-mods, path: Emulation/storage/eden/load, mode: oneway, source: mars, except: [phobos]}
+    - {id: emu-switch-firmware, path: Emulation/storage/eden/nand/system/Contents/registered, mode: oneway, source: mars, except: [phobos]}
+    - {id: emu-switch-keys, path: .local/share/eden/keys, mode: oneway, source: mars, except: [phobos]}
     # Profile registry the per-profile saves below reference. One opaque
     # binary, so oneway: two-way would drop a host's profile.
-    - {id: emu-switch-profiles, path: Emulation/storage/eden/nand/system/save/8000000000000010/su/avators, mode: oneway, source: mars}
+    - {id: emu-switch-profiles, path: Emulation/storage/eden/nand/system/save/8000000000000010/su/avators, mode: oneway, source: mars, except: [phobos]}
     # Saves — change on both hosts, so two-way with versioning.
-    - {id: emu-save-eden, path: Emulation/storage/eden/nand/user/save, mode: twoway}
+    - {id: emu-save-eden, path: Emulation/storage/eden/nand/user/save, mode: twoway, except: [phobos]}
     - {id: emu-save-retroarch, path: Emulation/saves/retroarch/saves, mode: twoway}
-    - {id: emu-state-retroarch, path: Emulation/saves/retroarch/states, mode: twoway}
-    - {id: emu-save-dolphin, path: .var/app/org.DolphinEmu.dolphin-emu/data/dolphin-emu, mode: twoway}
-    - {id: emu-save-melonds, path: Emulation/saves/melonds, mode: twoway}
-    - {id: emu-save-duckstation, path: Emulation/saves/duckstation, mode: twoway}
-    - {id: emu-gamelists, path: ES-DE/gamelists, mode: twoway}
+    - {id: emu-state-retroarch, path: Emulation/saves/retroarch/states, mode: twoway, except: [phobos]}
+    - {id: emu-save-dolphin, path: .var/app/org.DolphinEmu.dolphin-emu/data/dolphin-emu, mode: twoway, except: [phobos]}
+    - {id: emu-save-melonds, path: Emulation/saves/melonds, mode: twoway, except: [phobos]}
+    - {id: emu-save-duckstation, path: Emulation/saves/duckstation, mode: twoway, except: [phobos]}
+    - {id: emu-gamelists, path: ES-DE/gamelists, mode: twoway, except: [phobos]}

@@ -65,6 +65,15 @@
           "type": "string",
           "pattern": "^[a-z][a-z0-9-]*$",
           "description": "Authoritative host for a oneway folder. Must name a host in `hosts`."
+        },
+        "except": {
+          "type": "array",
+          "description": "Hosts that do NOT share this folder. Absent means every peer with the emulation role. Names must be hosts in hosts.yaml; tools/check-consistency C16 enforces that.",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          }
         }
       },
       "allOf": [

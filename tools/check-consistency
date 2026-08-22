@@ -187,6 +187,15 @@ for family in ("arch", "debian"):
             fail("C6", "packages.%s.%s is not a role any host declares"
                        % (family, key))
 
+# C16 -- an `except` naming no host excludes nothing, silently.
+# Membership, not the emulation role: a host is listed here before it gains
+# the role, which is how it is kept out of a folder from the start.
+for folder in folders:
+    for name in folder.get("except") or []:
+        if name not in hosts:
+            fail("C16", "syncthing folder %r: except %r is not a host"
+                        % (folder["id"], name))
+
 # C7 -- an instance whose JDK package is not declared installs no JVM to run on.
 for name in sorted(hosts):
     host = hosts[name]

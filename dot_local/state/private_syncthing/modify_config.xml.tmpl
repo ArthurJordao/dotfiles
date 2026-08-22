@@ -25,7 +25,11 @@ FOLDERS = [
 {{- if eq $f.mode "oneway" }}
 {{-   if eq $f.source $.hostname }}{{ $type = "sendonly" }}{{ else }}{{ $type = "receiveonly" }}{{ end }}
 {{- end }}
-    {{ printf "(%q, %q, %q, %s)," $f.id $f.path $type (ternary "True" "False" (eq $f.mode "twoway")) }}
+{{- /* `except` lists hosts that do NOT get the folder; absent means all peers. */ -}}
+{{- $except := index $f "except" | default list }}
+{{- $members := list }}
+{{- range $p := $peers }}{{ if not (has $p $except) }}{{ $members = append $members (index $.hosts $p).syncthing_id }}{{ end }}{{ end }}
+    ({{ $f.id | quote }}, {{ $f.path | quote }}, {{ $type | quote }}, {{ ternary "True" "False" (eq $f.mode "twoway") }}, [{{ range $i, $m := $members }}{{ if $i }}, {{ end }}{{ $m | quote }}{{ end }}]),
 {{- end }}
 ]
 
@@ -63,7 +67,7 @@ GUI_ADDRESS = "127.0.0.1:8384"
 SEED = '<configuration version="52"></configuration>'
 
 
-def build_folder(fid, path, ftype, versioned):
+def build_folder(fid, path, ftype, versioned, members):
     el = ET.Element("folder", {
         "id": fid,
         "label": fid,
@@ -74,7 +78,7 @@ def build_folder(fid, path, ftype, versioned):
         "fsWatcherDelayS": "10",
         "ignorePerms": "false",
     })
-    for did, _name, _addr in DEVICES:
+    for did in members:
         ET.SubElement(el, "device", {"id": did, "introducedBy": ""})
     v = ET.SubElement(el, "versioning")
     if versioned:
