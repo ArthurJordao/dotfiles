@@ -139,6 +139,7 @@ packages:
       - pipx
       - postgresql@17
       - ripgrep
+      - sevenzip
       - shellcheck
       - tree-sitter-cli
       - vivid
