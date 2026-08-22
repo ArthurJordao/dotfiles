@@ -5,4 +5,6 @@ pure-fish/pure
 patrickf1/fzf.fish
 jorgebucaran/autopair.fish
 catppuccin/fish
+{{ if has "work" (index .hosts .hostname).roles -}}
 reitzig/sdkman-for-fish@v2.1.0
+{{ end -}}

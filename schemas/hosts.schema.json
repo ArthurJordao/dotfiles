@@ -110,7 +110,7 @@
               },
               {
                 "const": "work",
-                "description": "The work laptop. Exports the employer's API keys into the shell; they must not reach a personal or shared machine."
+                "description": "The work laptop. Carries the employer's API keys and the JVM tooling (sdkman) used only there; neither should reach a personal or shared machine."
               },
               {
                 "const": "gaming",

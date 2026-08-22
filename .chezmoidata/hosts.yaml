@@ -5,7 +5,7 @@
 #   podman     rootless podman quadlets
 #   gui        graphical session
 #   dev        a host commits are authored on: signing key + SSH push remote
-#   work       the work laptop: exports the employer's API keys into the shell
+#   work       the work laptop: employer API keys and JVM tooling (sdkman)
 #   gaming     used for games
 #   minecraft  minecraft@ units + helper scripts
 #   sunshine   sunshine game-stream host (package + its user unit)
