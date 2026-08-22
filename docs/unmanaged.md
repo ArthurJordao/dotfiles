@@ -1,7 +1,8 @@
 # What lives only on mars
 
 Things mars depends on that `chezmoi apply` does not create. Rebuilding the box means
-walking this list by hand.
+walking this list by hand. A second section at the end covers **phobos**, the RG353V
+handheld, which has a short list of its own.
 
 Everything here was read off the running host. Where a file is short, its whole body is
 inlined so this document is enough on its own.
@@ -400,3 +401,58 @@ a future reader does not mistake them for load-bearing.
 
 - `/etc/systemd/system/wifi-linklog.service`
 - `/usr/local/bin/wifi-linklog`
+
+---
+
+# What lives only on phobos
+
+The Anbernic RG353V handheld, running dArkOS (Debian 13 trixie, arm64, user `ark`).
+None of this survives reflashing the OS card.
+
+Root is btrfs with roughly 4 GB free, so keep the installed footprint small.
+
+### Hostname
+
+The image ships as `rg353v`. chezmoi requires the hostname to match the key in
+`.chezmoidata/hosts.yaml` exactly — a mismatch fails every template with
+`map has no entry for key "rg353v"`.
+
+```sh
+sudo hostnamectl set-hostname phobos
+sudo sed -i 's/\brg353v\b/phobos/g' /etc/hosts
+```
+
+### chezmoi
+
+Not in Debian's archive. Fetch the arm64 package from
+https://github.com/twpayne/chezmoi/releases:
+
+```sh
+curl -fsSLO https://github.com/twpayne/chezmoi/releases/download/v2.72.0/chezmoi_2.72.0_linux_arm64.deb
+sudo dpkg -i chezmoi_2.72.0_linux_arm64.deb
+```
+
+### Remote Services
+
+ArkOS leaves sshd off, and the Options-menu toggle is per-boot. SSH access is **not**
+persistent — re-enable it from the handheld after every reboot. This is a deliberate
+ArkOS default, not a fault.
+
+### Tailscale
+
+The apt repo is added by `chezmoi apply`, but joining the tailnet is interactive and
+prints a URL to open in a browser:
+
+```sh
+sudo tailscale up
+```
+
+The address it assigns goes into `ip.tailscale` in `.chezmoidata/hosts.yaml`. Declare
+both `lan` and `tailscale` in the same edit: the Corefile's host blocks test for the
+`ip` key rather than its values, so a half-declared `ip` emits a hosts line with no
+address into the config mars serves for the whole fleet.
+
+### dArkOS updates
+
+Options → Update may revert `/etc`, the hostname included. Re-check this list after any
+OS update.
