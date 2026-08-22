@@ -7,15 +7,40 @@
 //
 // First match wins, so `!` includes come first. A leading `/` anchors to root.
 
-// --- excludes: optical systems this hardware cannot run ---
+// --- excludes: hardware this RK3566 cannot emulate ---
+// mars's library is the union of the fleet's; only what phobos can run
+// should cross. Names are mars's ES-DE directories.
+/switch
+/wiiu
+/wii
+/gamecube
+/gc
+/ps2
+/ps3
+/psvita
+/xbox
+/xbox360
+/n3ds
+/3ds
+
+// --- excludes: large optical libraries kept locally, never synced ---
+// The card already holds these; syncing would duplicate or overwrite them.
 /psx
 /dreamcast
 /psp
-/ps2
 /ss
+/saturn
 /wii&ngc
 
-// --- excludes: not part of the shared library ---
+// --- excludes: emulator installs and non-game trees ---
+/emulators
+/model2
+/desktop
+/steam
+/epic
+/cloud
+/android
+/flash
 /varcade
 /anbernic
 /tools
