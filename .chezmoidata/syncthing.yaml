@@ -14,7 +14,7 @@ syncthing:
   folders:
     # Content — mars is authoritative.
     - {id: emu-roms, path: Emulation/roms, mode: oneway, source: mars}
-    - {id: emu-bios, path: Emulation/bios, mode: oneway, source: mars}
+    - {id: emu-bios, path: Emulation/bios, mode: oneway, source: mars, except: [phobos]}
     - {id: emu-media, path: Emulation/tools/downloaded_media, mode: oneway, source: mars, except: [phobos]}
     # Installed updates/DLC. Eden puts installed NSPs here, not in load/.
     - {id: emu-switch-installed, path: Emulation/storage/eden/nand/user/Contents/registered, mode: oneway, source: mars, except: [phobos]}

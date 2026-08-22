@@ -32,6 +32,17 @@
 /saturn
 /wii&ngc
 
+// --- excludes: phobos keeps its own, these must never be overwritten ---
+// ports: PortMaster launchers are device-specific shell scripts, and mars
+//   holds none -- syncing would delete the handheld's whole ports library.
+// bios: ArkOS's RetroArch reads /roms2/bios, which lives inside this folder.
+// wswanc/wonderswancolor: ArkOS's frontend scans wswanc and will not see the
+//   ES-DE name, so keep the local directory and refuse the remote one.
+/ports
+/bios
+/wswanc
+/wonderswancolor
+
 // --- excludes: emulator installs and non-game trees ---
 /emulators
 /model2
