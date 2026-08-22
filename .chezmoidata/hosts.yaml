@@ -129,12 +129,15 @@ hosts:
     endpoints: []
 
   phobos:
-    # Anbernic RG353V running dArkOS. Deliberately not `emulation`: its ROM
-    # library is reconciled by hand, not by syncthing.
+    # Anbernic RG353V running dArkOS. `arkos` selects the ArkOS branch of the
+    # emu-roms .stignore, which keeps its optical library off the sync.
     #
     # The kernel has no CONFIG_TUN, so tailscaled runs in userspace-networking
     # mode: reachable inbound, but it cannot originate to a tailnet address.
-    roles: []
+    #
+    # ~/Emulation/roms is a symlink to /roms2 and the retroarch save dir is
+    # symlinked into ~/Emulation; neither survives a reflash.
+    roles: [emulation, arkos]
     os: linux
     distro: debian
     user: ark
