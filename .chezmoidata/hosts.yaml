@@ -124,3 +124,18 @@ hosts:
     quadlets: []
     units: []
     endpoints: []
+
+  phobos:
+    # Anbernic RG353V running dArkOS. Deliberately not `emulation`: its ROM
+    # library is reconciled by hand, not by syncthing.
+    #
+    # No `ip` until it joins the tailnet. The Corefile's host blocks guard on
+    # the key, not the value, so a half-declared `ip` emits a hosts line with
+    # no address into the config mars serves for the whole fleet.
+    roles: []
+    os: linux
+    distro: debian
+    user: ark
+    quadlets: []
+    units: []
+    endpoints: []

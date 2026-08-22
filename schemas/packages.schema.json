@@ -27,6 +27,15 @@
             "casks": {"type": "array", "items": {"$ref": "#/definitions/brewItem"}},
             "go": {"type": "array", "items": {"$ref": "#/definitions/brewItem"}}
           }
+        },
+        "debian": {
+          "type": "object",
+          "description": "Debian/Ubuntu packages, keyed by group: 'common' plus one key per role name.",
+          "additionalProperties": {
+            "type": "array",
+            "description": "Package names, installed with apt-get install -y.",
+            "items": {"type": "string"}
+          }
         }
       }
     }

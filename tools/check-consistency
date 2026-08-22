@@ -181,9 +181,11 @@ for folder in folders:
 
 # C6 -- a package group keyed on a role nothing declares installs nothing.
 all_roles = set(r for h in hosts.values() for r in (h.get("roles") or []))
-for key in sorted(packages.get("arch") or {}):
-    if key != "common" and key not in all_roles:
-        fail("C6", "packages.arch.%s is not a role any host declares" % key)
+for family in ("arch", "debian"):
+    for key in sorted(packages.get(family) or {}):
+        if key != "common" and key not in all_roles:
+            fail("C6", "packages.%s.%s is not a role any host declares"
+                       % (family, key))
 
 # C7 -- an instance whose JDK package is not declared installs no JVM to run on.
 for name in sorted(hosts):
