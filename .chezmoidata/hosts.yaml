@@ -143,6 +143,7 @@ hosts:
     user: ark
     # /roms2 is vfat: no permission bits, so syncing them never converges.
     syncthing_ignore_perms: true
+    syncthing_id: "ASURG4D-5ZNX5AC-FZIU6FW-O25VIE7-BDJURXN-YD6RO2C-PYMD2IF-IBLLNAT"
     ip:
       lan: 192.168.15.21
       tailscale: 100.109.2.30

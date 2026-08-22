@@ -67,7 +67,10 @@ OPTIONS = {
 GUI_ADDRESS = "127.0.0.1:8384"
 
 # Used only when there is no config yet; syncthing expands it on first start.
-SEED = '<configuration version="52"></configuration>'
+# Seed at the OLDEST version in the fleet: a newer syncthing migrates forward,
+# but an older one refuses a config newer than it supports. Debian's 1.29.5
+# caps at 37, Arch's is on 52.
+SEED = '<configuration version="37"></configuration>'
 
 
 def build_folder(fid, path, ftype, versioned, members):
