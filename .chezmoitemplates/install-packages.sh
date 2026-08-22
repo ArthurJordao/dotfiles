@@ -76,6 +76,14 @@ HINT
     exit 1
 fi
 {{ else -}}
+# Tailscale is not in Debian's archive; add its repo before installing.
+if grep -qx tailscale "$LIST" && [ ! -f /etc/apt/sources.list.d/tailscale.list ]; then
+    codename="$(awk -F= '/^VERSION_CODENAME=/{print $2}' /etc/os-release)"
+    curl -fsSL "https://pkgs.tailscale.com/stable/debian/${codename}.noarmor.gpg" \
+        | sudo tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null
+    curl -fsSL "https://pkgs.tailscale.com/stable/debian/${codename}.tailscale-keyring.list" \
+        | sudo tee /etc/apt/sources.list.d/tailscale.list >/dev/null
+fi
 sudo apt-get update
 xargs -a "$LIST" sudo apt-get install -y
 {{ end -}}
