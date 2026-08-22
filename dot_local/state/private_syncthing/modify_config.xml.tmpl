@@ -25,11 +25,16 @@ FOLDERS = [
 {{- if eq $f.mode "oneway" }}
 {{-   if eq $f.source $.hostname }}{{ $type = "sendonly" }}{{ else }}{{ $type = "receiveonly" }}{{ end }}
 {{- end }}
-{{- /* `except` lists hosts that do NOT get the folder; absent means all peers. */ -}}
+{{- /* `except` lists hosts that do NOT get the folder; absent means all peers.
+       An excluded host omits the folder ENTIRELY: a <folder> in a config is a
+       folder that device holds, and its <device> children are only who it
+       shares with. Dropping ourselves from that list would still sync it. */ -}}
 {{- $except := index $f "except" | default list }}
+{{- if not (has $.hostname $except) }}
 {{- $members := list }}
 {{- range $p := $peers }}{{ if not (has $p $except) }}{{ $members = append $members (index $.hosts $p).syncthing_id }}{{ end }}{{ end }}
     ({{ $f.id | quote }}, {{ $f.path | quote }}, {{ $type | quote }}, {{ ternary "True" "False" (eq $f.mode "twoway") }}, [{{ range $i, $m := $members }}{{ if $i }}, {{ end }}{{ $m | quote }}{{ end }}]),
+{{- end }}
 {{- end }}
 ]
 
