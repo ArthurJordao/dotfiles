@@ -133,6 +133,10 @@
                 "description": "Shared EmuDeck library: installs syncthing, enables its user unit, and renders the folders in `syncthing.folders`. Also needs `syncthing_id` once the host has run syncthing once."
               },
               {
+                "const": "arkos",
+                "description": "An ArkOS handheld rather than an EmuDeck host. Selects the ArkOS branch of the emu-roms .stignore; its ROM layout and frontend differ."
+              },
+              {
                 "const": "edge",
                 "description": "Owns Caddy, CoreDNS, cloudflared and the /etc deploy. Move it to relocate the whole edge."
               }

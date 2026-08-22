@@ -11,6 +11,7 @@
 #   sunshine   sunshine game-stream host (package + its user unit)
 #   moonlight  moonlight client, i.e. streams *from* a sunshine host
 #   emulation  syncthing + the shared EmuDeck library (see `syncthing.folders`)
+#   arkos      ArkOS handheld: different frontend and ROM layout from EmuDeck
 #   edge       Caddy, CoreDNS, cloudflared, /etc deploy
 #
 # `os` and `distro` are what a template reads instead of .chezmoi.os — chezmoi's

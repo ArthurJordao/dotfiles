@@ -1,3 +1,34 @@
+{{- if has "arkos" (index .hosts .hostname).roles -}}
+// Syncthing ignore list for the emu-roms folder, ArkOS hosts.
+//
+// Double duty: this both limits what the host receives and protects what it
+// keeps. An ignored path is not part of the folder, so in a Receive Only
+// folder it is neither synced nor flagged as locally changed.
+//
+// First match wins, so `!` includes come first. A leading `/` anchors to root.
+
+// --- excludes: optical systems this hardware cannot run ---
+/psx
+/dreamcast
+/psp
+/ps2
+/ss
+/wii&ngc
+
+// --- excludes: not part of the shared library ---
+/varcade
+/anbernic
+/tools
+/themes
+
+// --- excludes: ArkOS's own files inside the ROM tree ---
+gamelist.xml
+/.config
+(?i)*.sh
+(?i)*.exe
+(?i)*.dll
+*.log
+{{ else -}}
 // Syncthing ignore list for the emu-roms folder.
 // Deployed by chezmoi, gated on the `emulation` role.
 //
@@ -39,3 +70,4 @@
 
 // Per-host noise.
 *.log
+{{ end -}}
