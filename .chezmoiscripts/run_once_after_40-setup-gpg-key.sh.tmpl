@@ -1,3 +1,4 @@
+{{ if has "dev" (index .hosts .hostname).roles -}}
 #!/bin/bash
 set -euo pipefail
 
@@ -15,3 +16,4 @@ trap 'rm -f "$tmp"' EXIT
 op document get {{ index .secrets.items "gpg-key" }} --vault {{ .secrets.vault }} > "$tmp"
 gpg --import "$tmp"
 echo "GPG key imported successfully"
+{{ end -}}

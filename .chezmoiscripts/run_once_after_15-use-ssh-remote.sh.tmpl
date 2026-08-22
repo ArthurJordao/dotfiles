@@ -1,3 +1,4 @@
+{{ if has "dev" (index .hosts .hostname).roles -}}
 #!/bin/bash
 # Switches the source-dir remote from the bootstrap HTTPS clone to SSH.
 set -euo pipefail
@@ -16,3 +17,4 @@ esac
 
 git -C "$SRC" remote set-url origin git@github.com:ArthurJordao/dotfiles
 echo "Switched the source-dir remote to SSH."
+{{ end -}}

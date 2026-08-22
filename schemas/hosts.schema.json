@@ -105,6 +105,10 @@
                 "description": "Graphical session configs."
               },
               {
+                "const": "dev",
+                "description": "A host commits are authored on: imports the GPG signing key and switches the source-dir remote to SSH. Both need credentials no other host should carry."
+              },
+              {
                 "const": "gaming",
                 "description": "Used for games. Combined with `server`, also installs gaming-mode."
               },
