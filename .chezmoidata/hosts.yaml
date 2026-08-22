@@ -137,6 +137,8 @@ hosts:
     os: linux
     distro: debian
     user: ark
+    # /roms2 is vfat: no permission bits, so syncing them never converges.
+    syncthing_ignore_perms: true
     ip:
       lan: 192.168.15.21
       tailscale: 100.109.2.30

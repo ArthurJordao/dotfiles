@@ -51,6 +51,9 @@ DEVICES = [
 
 MY_ID = {{ $myId | quote }}
 
+{{- /* `index`, not `| default`: sprig treats false as empty and flips it. */}}
+IGNORE_PERMS = {{ ternary "True" "False" (eq (index $me "syncthing_ignore_perms" | toString) "true") }}
+
 OPTIONS = {
     "globalAnnounceEnabled": "false",
     "localAnnounceEnabled": "true",
@@ -76,7 +79,7 @@ def build_folder(fid, path, ftype, versioned, members):
         "rescanIntervalS": "3600",
         "fsWatcherEnabled": "true",
         "fsWatcherDelayS": "10",
-        "ignorePerms": "false",
+        "ignorePerms": "true" if IGNORE_PERMS else "false",
     })
     for did in members:
         ET.SubElement(el, "device", {"id": did, "introducedBy": ""})

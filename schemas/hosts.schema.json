@@ -243,6 +243,11 @@
           "type": "string",
           "pattern": "^$|^([A-Z0-9]{7}-){7}[A-Z0-9]{7}$",
           "description": "This host's Syncthing device ID, from `syncthing --device-id`. Derived from a TLS cert generated on first run, so it cannot be known before the host has applied once -- empty string means config.xml omits folders and devices rather than half-rendering them. Public data (a hash of the cert public key), safe to commit."
+        },
+        "syncthing_ignore_perms": {
+          "type": "boolean",
+          "description": "Set true when this host's synced folders live on a filesystem with no permission bits (vfat, exfat). Syncthing otherwise reports mismatches that never converge. Default false.",
+          "default": false
         }
       }
     },
