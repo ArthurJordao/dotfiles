@@ -1,4 +1,6 @@
+{{ if has "gui" (index .hosts .hostname).roles -}}
 [".config/wezterm/wezterm-session-manager"]
     type = "git-repo"
     url = "ssh://git@github.com/danielcopper/wezterm-session-manager.git"
     refreshPeriod = "168h"
+{{ end -}}
