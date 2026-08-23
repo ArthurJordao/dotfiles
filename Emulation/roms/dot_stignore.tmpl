@@ -57,6 +57,16 @@
 /tools
 /themes
 
+// --- excludes: saves, which ArkOS writes NEXT TO THE ROM ---
+// savefiles_in_content_dir=true overrides savefile_directory, so battery
+// saves and states land inside this folder. It is Receive Only, so without
+// these they are locally-changed items that Revert would delete.
+*.srm
+*.state
+*.state[0-9]
+*.state.auto
+*.sav
+
 // --- excludes: ArkOS's own files inside the ROM tree ---
 gamelist.xml
 /.config
