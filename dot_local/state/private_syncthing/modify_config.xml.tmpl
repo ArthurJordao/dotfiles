@@ -78,9 +78,10 @@ GUI_ADDRESS = "127.0.0.1:8384"
 SEED = '<configuration version="37"></configuration>'
 
 
-def build_folder(fid, path, ftype, versioned, members):
+def build_folder(fid, path, ftype, versioned, members, paused="false"):
     el = ET.Element("folder", {
         "id": fid,
+        "paused": paused,
         "label": fid,
         "path": "~/" + path,
         "type": ftype,
@@ -99,7 +100,7 @@ def build_folder(fid, path, ftype, versioned, members):
     return el
 
 
-def build_device(did, name, addrs):
+def build_device(did, name, addrs, paused="false"):
     el = ET.Element("device", {
         "id": did,
         "name": name,
@@ -107,6 +108,9 @@ def build_device(did, name, addrs):
         "introducer": "false",
         "skipIntroductionRemovals": "false",
         "introducedBy": "",
+        # Operational state, not configuration: pausing is something you do at
+        # runtime, so carry over whatever is on disk instead of resetting it.
+        "paused": paused,
     })
     for a in addrs:
         ET.SubElement(el, "address").text = a
@@ -132,10 +136,17 @@ def main():
     # No ID of our own, or no peer to pair with: leave folders and devices
     # alone rather than emitting half a topology.
     if MY_ID and len(DEVICES) > 1:
+        # Carry the runtime paused flags across the rebuild.
+        was_paused = {
+            (e.tag, e.get("id")): e.get("paused", "false")
+            for e in root if e.tag in ("folder", "device")
+        }
         keep = [e for e in root if e.tag not in ("folder", "device")]
         root[:] = (
-            [build_folder(*f) for f in FOLDERS]
-            + [build_device(*d) for d in DEVICES]
+            [build_folder(*f, paused=was_paused.get(("folder", f[0]), "false"))
+             for f in FOLDERS]
+            + [build_device(*d, paused=was_paused.get(("device", d[0]), "false"))
+               for d in DEVICES]
             + keep
         )
 
