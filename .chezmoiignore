@@ -61,6 +61,14 @@ minecraft/**
 .config/OliveTin/**
 .local/scripts/dashboard-status
 {{ end }}
+{{ if has "arkos" $roles }}
+{{/* The ROM tree is a vfat mount: it cannot store the modes chezmoi wants,
+     so every apply would re-prompt forever. Matching the mount's masks is
+     not an option either -- it would strip +x from the PortMaster scripts.
+     The .stignore there is maintained by hand. */}}
+Emulation/roms
+Emulation/roms/**
+{{ end }}
 {{ if not (has "emulation" $roles) }}
 Emulation
 Emulation/**
