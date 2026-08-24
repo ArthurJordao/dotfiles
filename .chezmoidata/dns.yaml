@@ -27,4 +27,5 @@ dns:
     - "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts&showintro=0&mimetype=plaintext"
 
   # Domains exempted from every list.
-  allow: []
+  allow:
+    - t.co
