@@ -22,6 +22,11 @@ dashboard:
       dns: {icon: "selfhst:coredns", label: CoreDNS, description: Split-horizon DNS}
       sunshine: {icon: "selfhst:sunshine", label: Sunshine, description: Game streaming}
 
+    # `memory` is deliberately absent: it is an MCP endpoint, not a web UI, so a
+    # tile for it would just 401. It still gets a plain tile under "Other".
+    Notes:
+      notes: {icon: "selfhst:silverbullet", label: SilverBullet, description: Notes}
+
     Media:
       immich: {icon: "selfhst:immich", label: Immich, description: Photos}
       music: {icon: "selfhst:navidrome", label: Navidrome, description: Music}
