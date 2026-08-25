@@ -167,6 +167,14 @@ for name in sorted(hosts):
                        "(add `served_by:` if a non-container service listens there)"
                        % (name, endpoint["name"], endpoint["port"]))
 
+    # C17 -- `auth` on a portless endpoint guards nothing: no port means no
+    # Caddy block, and the guard lives in that block.
+    for endpoint in endpoints:
+        if endpoint.get("auth") and "port" not in endpoint:
+            fail("C17", "%s: endpoint %r sets `auth` but declares no port -- it "
+                        "emits no Caddy block, so nothing checks the token"
+                        % (name, endpoint["name"]))
+
 # C5 -- a oneway folder whose source host does not even run syncthing.
 for folder in folders:
     source = folder.get("source")

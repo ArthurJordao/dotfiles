@@ -12,7 +12,17 @@
 {{- $upstream := $host.ip.lan }}{{ if eq $hostname $edge }}{{ $upstream = "127.0.0.1" }}{{ end }}
 {{- $scheme := index . "scheme" | default "http" }}
 {{- $log := true }}{{ if hasKey . "log" }}{{ $log = .log }}{{ end }}
+{{- $auth := index . "auth" | default "" }}
+{{- /* Hyphens are legal in an endpoint name and illegal in an env var name. */ -}}
+{{- $token := printf "%s_BEARER_TOKEN" (upper (replace "-" "_" .name)) }}
 {{ .name }}.{{ $domain }} {
+{{- if eq $auth "bearer" }}
+    # {$VAR} is substituted before the Caddyfile is parsed; the runtime
+    # {env.VAR} form is not expanded inside a matcher. `respond` sorts ahead of
+    # `reverse_proxy` in the default directive order, so no `route` wrapper.
+    @unauth not header Authorization "Bearer {${{ $token }}}"
+    respond @unauth 401
+{{- end }}
     reverse_proxy {{ if eq $scheme "https" }}https://{{ end }}{{ $upstream }}:{{ .port }}{{ if index . "tls_insecure" | default false }} {
         transport http {
             tls_insecure_skip_verify

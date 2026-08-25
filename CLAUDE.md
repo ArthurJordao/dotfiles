@@ -315,7 +315,7 @@ dependents but start only to dependencies — stopping `immich-pod` takes the co
 starting it alone brings up an empty pod.
 
 Endpoint fields: `name` (required), `port` (omit ⇒ DNS-only, no Caddy block, no tunnel),
-`public`, `ddns`, `scheme`, `tls_insecure`, `log`, `served_by`.
+`public`, `ddns`, `scheme`, `tls_insecure`, `log`, `served_by`, `auth`.
 
 `ddns: true` makes the `cloudflare-ddns` container keep that hostname's public A record on the
 current WAN IP. Independent of `public`, which routes a hostname through the tunnel instead.
@@ -323,6 +323,15 @@ current WAN IP. Independent of `public`, which routes a hostname through the tun
 `served_by` names the non-container service listening on that port — `dns` → coredns, `sunshine` →
 the package. Without it, `check-consistency` requires one of that host's quadlets to publish the
 port, so the field is what separates "intentionally not a container" from "forgot the quadlet".
+
+`auth: bearer` makes the Caddy block require `Authorization: Bearer <token>`, matched against
+`<NAME>_BEARER_TOKEN` — hyphens in the name become underscores — which `caddy.env` reads off the
+`caddy` 1Password item, so that field must exist there. It also re-points the hostname's tunnel
+ingress at Caddy, since a `public` ingress otherwise goes straight to the app port and never
+passes the check. The token is written `{$VAR}`, substituted before the Caddyfile is parsed; the
+runtime `{env.VAR}` form is not expanded inside a matcher. Every client sends the header, LAN
+included. `check-consistency` C17 rejects `auth` on a portless endpoint, which would emit no
+Caddy block and therefore no guard.
 
 Each template reads `.hosts` directly — there is no shared helper. The Corefile also emits
 `<hostname>.<domain>` for every host with an `ip`, which is why `mars`/`mercury`/`neptune` resolve
@@ -551,6 +560,14 @@ hosts in `.chezmoidata/hosts.yaml` relocates the whole Caddy/CoreDNS/cloudflared
   sweep, so only the `dash` endpoint probe covers it. Keep `olivetin-bin`
   current: CVE-2026-28790 covers unauthenticated action termination in exactly
   this guests-must-log-in configuration.
+- **The notes store is one directory, two containers.** `/mnt/x9pro/memory/` is
+  SilverBullet's space; `personal/` inside it is the `basic-memory` project. The
+  nesting is load-bearing: the internet-facing MCP server runs
+  `--project personal` and cannot read a sibling directory. `basic-memory`
+  publishes on loopback only, so Caddy — where the bearer token is checked — is
+  the sole route in, and `BASIC_MEMORY_SYNC_CHANGES=true` is what makes a
+  SilverBullet edit reach the index. Claude Code's own memory under `~/.claude/`
+  keeps repo-mechanics facts: it needs no MCP and works with mars powered off.
 
 # Emulation library sync (mars ↔ mercury)
 

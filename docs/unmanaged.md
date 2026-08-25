@@ -361,6 +361,14 @@ against the live host.
 - **Cloudflare API tokens.** Two distinct ones, both needing *Edit DNS* on the zone: one
   for Caddy's DNS-01 challenge (`/etc/caddy/caddy.env`, from the `caddy` item) and one
   for the DDNS container (from the `cloudflare-ddns` item).
+- **The `memory` bearer token** is a `MEMORY_BEARER_TOKEN` field on the `caddy` item, and the
+  **same string** is configured by hand in two more places: the Request headers section of the
+  custom connector on claude.ai, and `claude mcp add --header` on each host that uses it.
+  Rotating it means editing all three.
+- **The claude.ai custom connector** at `https://memory.arthurjordao.dev/mcp`, added under
+  Customize → Connectors with `Authorization` = `Bearer <token>` as a request header. Header
+  auth is a beta feature on that account; if it ever disappears from the dialog the endpoint is
+  unauthenticated and must come out of the tunnel.
 - **Router port-forward.** TCP 25565 → mars, for Minecraft. The only forwarded port.
   `minecraft.arthurjordao.dev`'s A record is kept current by the `cloudflare-ddns`
   quadlet.
@@ -380,6 +388,7 @@ None of this is reconstructible from the repo.
 | media (music, books, book-ingest) | `/mnt/x9pro` | none |
 | minecraft worlds, mods, plugins | `~/minecraft/<instance>/` | world trees only, below |
 | minecraft backups | `/mnt/x9pro/minecraft-backups` | newest 3 tarballs per instance |
+| notes and memory store | `/mnt/x9pro/memory/` | none |
 | podman named volumes | `~/.local/share/containers` | none |
 | syncthing identity | `~/.local/state/syncthing/{cert,key}.pem` | none — regenerating changes the device ID |
 | syncthing database | `~/.local/state/syncthing/` (SQLite) | none, rebuildable by rescanning |

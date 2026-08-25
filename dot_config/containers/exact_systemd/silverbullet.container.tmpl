@@ -1,0 +1,24 @@
+{{- $external := includeTemplate "storage-path" (dict "hosts" .hosts "name" "external") -}}
+[Unit]
+Description=SilverBullet notes
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=ghcr.io/silverbulletmd/silverbullet:latest
+AutoUpdate=registry
+PublishPort={{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "notes") }}:3000
+
+Environment=TZ={{ .timezone }}
+EnvironmentFile=%h/.config/containers/systemd/silverbullet.env
+
+# uid 0 so the files it writes belong to the host user and basic-memory can
+# index them. The space root holds SilverBullet's own index, outside personal/.
+User=0
+Volume={{ $external }}/memory:/space
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

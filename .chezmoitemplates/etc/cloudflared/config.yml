@@ -21,6 +21,13 @@ ingress:
 {{- range (index $host "endpoints" | default list) }}
 {{- if and (hasKey . "port") (index . "public" | default false) }}
   - hostname: {{ .name }}.{{ $domain }}
+{{- if eq (index . "auth" | default "") "bearer" }}
+    # Via Caddy, not the app port: Caddy is where the bearer token is checked.
+    service: https://127.0.0.1:443
+    originRequest:
+      originServerName: {{ .name }}.{{ $domain }}
+{{- else }}
     service: http://127.0.0.1:{{ .port }}
+{{- end }}
 {{- end }}{{ end }}{{ end }}
   - service: http_status:404

@@ -1,0 +1,32 @@
+{{- $external := includeTemplate "storage-path" (dict "hosts" .hosts "name" "external") -}}
+[Unit]
+Description=basic-memory MCP server
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=ghcr.io/basicmachines-co/basic-memory:latest
+AutoUpdate=registry
+# Loopback only: Caddy is the sole route in, and Caddy is where the bearer token
+# is checked. This image's own HTTP transport is unauthenticated.
+PublishPort=127.0.0.1:{{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "memory") }}:8000
+
+Exec=basic-memory mcp --transport streamable-http --host 0.0.0.0 --port 8000 --path /mcp --project personal
+
+# Without this an edit made in SilverBullet never reaches the index.
+Environment=BASIC_MEMORY_SYNC_CHANGES=true
+Environment=BASIC_MEMORY_PROJECT_ROOT=/app/data
+Environment=TZ={{ .timezone }}
+
+# uid 0 so container-root maps to the host user and the notes stay editable over
+# ssh. Not the PUID/PGID pair the neighbours use — that is an s6 convention this
+# image does not honour. It also moves the config dir to /root.
+User=0
+Volume={{ $external }}/memory/personal:/app/data/personal
+Volume=%h/.local/state/basic-memory:/root/.basic-memory
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

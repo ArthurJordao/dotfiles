@@ -324,6 +324,10 @@
           "description": "Non-container service listening on this port. Absent means a quadlet must publish it, which is what tools/check-consistency enforces.",
           "minLength": 1
         },
+        "auth": {
+          "description": "bearer requires `Authorization: Bearer <token>` on every request, checked in the generated Caddy block against <NAME>_BEARER_TOKEN from caddy.env. Also re-points this hostname's tunnel ingress at Caddy, since that is where the check lives. Every client sends it, LAN included.",
+          "enum": ["bearer"]
+        },
         "tls_insecure": {
           "type": "boolean",
           "description": "Skip verification of the upstream's certificate. Only meaningful with scheme: https, e.g. CoreDNS's self-signed DoH listener.",
