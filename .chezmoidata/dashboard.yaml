@@ -15,6 +15,7 @@ dashboard:
     Books:
       books: {icon: "selfhst:calibre-web", label: Calibre, description: Library}
       shelfmark: {icon: "selfhst:shelfmark", label: Shelfmark, description: Reading sync}
+      wallabag: {icon: "selfhst:wallabag", label: wallabag, description: Read later}
 
     Infra:
       dash: {icon: "mdi:view-dashboard", label: This dashboard}

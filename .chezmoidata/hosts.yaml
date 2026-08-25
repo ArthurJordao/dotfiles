@@ -70,6 +70,7 @@ hosts:
       - music
       - shelfmark
       - teamspeak3
+      - wallabag
 
     units:
       # Every immich unit, not just the pod: starting immich-pod alone brings
@@ -86,6 +87,7 @@ hosts:
       - {name: cloudflare-ddns}
       - {name: shelfmark}
       - {name: teamspeak3}
+      - {name: wallabag}
       - {name: syncthing}
       - {name: olivetin, stop_for_gaming: false}
       - {name: sunshine, stop_for_gaming: false}
@@ -103,6 +105,7 @@ hosts:
       - {name: soulsync, port: 8008}
       # Config UI only — moonlight talks straight to the host, not via Caddy.
       - {name: sunshine, port: 47990, scheme: https, tls_insecure: true, served_by: sunshine}
+      - {name: wallabag, port: 8085}
 
   mercury:
     roles: [gui, dev, gaming, moonlight, emulation]

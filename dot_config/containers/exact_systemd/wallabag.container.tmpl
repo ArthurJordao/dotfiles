@@ -1,0 +1,29 @@
+[Unit]
+Description=wallabag read-later
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=docker.io/wallabag/wallabag:latest
+AutoUpdate=registry
+PublishPort={{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "wallabag") }}:80
+
+# SQLite. The path is hardcoded to data/db/wallabag.sqlite in the entrypoint and
+# only installed when absent, so the data volume is the whole persistence story.
+Environment=SYMFONY__ENV__DATABASE_DRIVER=pdo_sqlite
+# Drives every generated URL; the image has no trusted-proxy setting.
+Environment=SYMFONY__ENV__DOMAIN_NAME=https://wallabag.{{ .domain }}
+Environment=SYMFONY__ENV__SERVER_NAME=wallabag
+Environment=TZ={{ .timezone }}
+EnvironmentFile=%h/.config/containers/systemd/wallabag.env
+
+Volume=wallabag-data:/var/www/wallabag/data
+Volume=wallabag-images:/var/www/wallabag/web/assets/images
+
+[Service]
+Restart=always
+# The entrypoint runs composer install on every start.
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target
