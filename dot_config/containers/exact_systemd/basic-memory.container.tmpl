@@ -16,6 +16,10 @@ Exec=basic-memory mcp --transport streamable-http --host 0.0.0.0 --port 8000 --p
 # Without this an edit made in SilverBullet never reaches the index.
 Environment=BASIC_MEMORY_SYNC_CHANGES=true
 Environment=BASIC_MEMORY_PROJECT_ROOT=/app/data
+# Declares the project registry outright, so a fresh config volume needs no
+# `project add` — and the image's vestigial `main` project never appears. Paths
+# are relative to PROJECT_ROOT. Single-quoted: the value contains double quotes.
+Environment='BASIC_MEMORY_PROJECTS={"personal":{"path":"/app/data/personal"}}'
 Environment=TZ={{ .timezone }}
 
 # uid 0 so container-root maps to the host user and the notes stay editable over
@@ -23,7 +27,9 @@ Environment=TZ={{ .timezone }}
 # image does not honour. It also moves the config dir to /root.
 User=0
 Volume={{ $external }}/memory/personal:/app/data/personal
-Volume=%h/.local/state/basic-memory:/root/.basic-memory
+# Named volume, like every other container's private state here: podman creates
+# one on demand but requires a bind mount's host path to already exist.
+Volume=basic-memory-config:/root/.basic-memory
 
 [Service]
 Restart=always
