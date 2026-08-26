@@ -25,12 +25,25 @@ cd "$SPACE"
 # exFAT reports every file 0755, so without this every file looks mode-changed.
 git config core.fileMode false
 
-if git diff --quiet HEAD -- && [ -z "$(git status --porcelain)" ]; then
-    echo "notes-backup: no changes."
+if [ -n "$(git status --porcelain)" ]; then
+    git add -A
+    git commit -q -m "Snapshot $(date '+%Y-%m-%d %H:%M')"
+fi
+
+# Push whenever the remote is behind, not only when this run committed something:
+# a push that hung once would otherwise sit unpushed until the next content change.
+upstream=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || echo origin/main)
+if [ -z "$(git log --oneline "$upstream"..HEAD 2>/dev/null)" ]; then
+    echo "notes-backup: nothing to push."
     exit 0
 fi
 
-git add -A
-git commit -q -m "Snapshot $(date '+%Y-%m-%d %H:%M')"
-git push -q origin HEAD
+# A hung push would otherwise keep the unit running until systemd gives up, with
+# the commit local and nobody the wiser. Failing loudly makes it show up as a
+# failed unit, which check-live and the dashboard both surface.
+if ! timeout 60 git push -q origin HEAD; then
+    echo "notes-backup: committed locally but the push failed or timed out — the remote is behind." >&2
+    exit 1
+fi
+
 echo "notes-backup: pushed $(git rev-parse --short HEAD)."
