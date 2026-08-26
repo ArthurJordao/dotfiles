@@ -1,4 +1,18 @@
 {{- $domain := .domain -}}
+{{- /* A proxied name must resolve to whoever runs Caddy, not to whoever runs the
+       service -- otherwise moving `edge` sends every client past the edge to a
+       host with nothing on 443. Portless endpoints are the opposite: they are
+       reached on their own TCP port and must stay on their service host.
+       check-consistency C18 guarantees exactly one host carries the role. */ -}}
+{{- $edgeLan := "" -}}
+{{- $edgeTs := "" -}}
+{{- range $host := .hosts -}}
+{{-   if has "edge" (index $host "roles" | default list) -}}
+{{-     $ip := index $host "ip" | default dict -}}
+{{-     $edgeLan = index $ip "lan" -}}
+{{-     $edgeTs = index $ip "tailscale" -}}
+{{-   end -}}
+{{- end -}}
 {{- /* The filter hop is emitted only where blocky runs -- otherwise every
        query would pay a failover to a dead port. */ -}}
 {{- $filter := "" -}}
@@ -22,7 +36,7 @@
 {{- if index $host "ip" }}
         {{ $host.ip.lan }} {{ $hostname }}.{{ $domain }}
 {{- range (index $host "endpoints" | default list) }}
-        {{ $host.ip.lan }} {{ .name }}.{{ $domain }}
+        {{ if hasKey . "port" }}{{ $edgeLan }}{{ else }}{{ $host.ip.lan }}{{ end }} {{ .name }}.{{ $domain }}
 {{- end }}
 {{- end }}
 {{- end }}
@@ -36,7 +50,7 @@
 {{- if index $host "ip" }}
         {{ $host.ip.tailscale }} {{ $hostname }}.{{ $domain }}
 {{- range (index $host "endpoints" | default list) }}
-        {{ $host.ip.tailscale }} {{ .name }}.{{ $domain }}
+        {{ if hasKey . "port" }}{{ $edgeTs }}{{ else }}{{ $host.ip.tailscale }}{{ end }} {{ .name }}.{{ $domain }}
 {{- end }}
 {{- end }}
 {{- end }}

@@ -175,6 +175,18 @@ for name in sorted(hosts):
                         "emits no Caddy block, so nothing checks the token"
                         % (name, endpoint["name"]))
 
+# C18 -- the Corefile points every proxied name at the edge host's IP, so exactly
+# one managed host must carry the role, and it must declare an address.
+edge_hosts = [n for n, h in hosts.items()
+              if h.get("managed") is not False and "edge" in (h.get("roles") or [])]
+if len(edge_hosts) != 1:
+    fail("C18", "%d hosts declare the `edge` role (%s) -- the Corefile resolves every "
+                "proxied name to the edge host, so exactly one must carry it"
+                % (len(edge_hosts), ", ".join(sorted(edge_hosts)) or "none"))
+elif not (hosts[edge_hosts[0]].get("ip") or {}).get("lan"):
+    fail("C18", "%s carries the `edge` role but declares no `ip` -- every proxied name "
+                "would resolve to an empty address" % edge_hosts[0])
+
 # C5 -- a oneway folder whose source host does not even run syncthing.
 for folder in folders:
     source = folder.get("source")
