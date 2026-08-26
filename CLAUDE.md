@@ -711,10 +711,11 @@ tools/simulate-host mercury execute-template < dot_local/state/private_syncthing
 # Working in this repo
 
 - The user runs `chezmoi apply` themselves — don't run it for them.
-- **An approved spec goes to `dotfiles/specs/` in the notes store on mars**, not
-  `docs/superpowers/specs/`. Draft locally while brainstorming, publish with `write_note` once
-  it is approved. Plans stay local — they are scaffolding for one execution. The store is where
-  the record survives this laptop; `docs/superpowers/` is in the global gitignore.
+- **Specs and plans go to the notes store on mars**, `dotfiles/specs/` and `dotfiles/plans/`,
+  not `docs/superpowers/`. That path is in the global gitignore, so anything left there exists on
+  exactly one laptop — and a runbook is needed *away* from the checkout, in front of the
+  hardware. Draft locally while brainstorming, publish once approved. Delete a plan once
+  executed: what was decided lives in the spec, not in the scaffolding.
 - **Keep comments short.** State the constraint, not how it was discovered, what it looked like
   when broken, or what an earlier version got wrong. One or two lines is usually enough.
 - **nvim is managed with `exact_` on every directory level** (`dot_config/exact_nvim/`).
