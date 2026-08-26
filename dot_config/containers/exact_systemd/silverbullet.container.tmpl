@@ -13,9 +13,11 @@ Environment=TZ={{ .timezone }}
 EnvironmentFile=%h/.config/containers/systemd/silverbullet.env
 
 # uid 0 so the files it writes belong to the host user and basic-memory can
-# index them. The space root holds SilverBullet's own index, outside personal/.
+# index them.
 User=0
-Volume={{ $external }}/memory:/space
+# The space IS the basic-memory project, so everything SilverBullet creates on
+# its own — Journal, Inbox, tasks — is indexed rather than sitting beside it.
+Volume={{ $external }}/memory/personal:/space
 
 [Service]
 Restart=always

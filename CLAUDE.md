@@ -560,14 +560,17 @@ hosts in `.chezmoidata/hosts.yaml` relocates the whole Caddy/CoreDNS/cloudflared
   sweep, so only the `dash` endpoint probe covers it. Keep `olivetin-bin`
   current: CVE-2026-28790 covers unauthenticated action termination in exactly
   this guests-must-log-in configuration.
-- **The notes store is one directory, two containers.** `/mnt/x9pro/memory/` is
-  SilverBullet's space; `personal/` inside it is the `basic-memory` project. The
-  nesting is load-bearing: the internet-facing MCP server runs
-  `--project personal` and cannot read a sibling directory. `basic-memory`
+- **The notes store is one directory, two containers.** Both point at
+  `/mnt/x9pro/memory/personal/`: SilverBullet's space *is* the `basic-memory`
+  project, so the `Journal` and `Inbox` pages it creates on its own are indexed
+  rather than sitting beside them. The MCP server runs `--project personal` and
   publishes on loopback only, so Caddy — where the bearer token is checked — is
-  the sole route in, and `BASIC_MEMORY_SYNC_CHANGES=true` is what makes a
-  SilverBullet edit reach the index. Claude Code's own memory under `~/.claude/`
-  keeps repo-mechanics facts: it needs no MCP and works with mars powered off.
+  the sole route in, and `BASIC_MEMORY_SYNC_CHANGES=true` is what carries a
+  SilverBullet edit into the index. A `work/` sibling would need its own pair.
+  Nothing under that tree is chezmoi-managed: it is user content, and an
+  `index.md` the templates owned would revert every edit made in the web UI.
+  Claude Code's own memory under `~/.claude/` keeps repo-mechanics facts: it
+  needs no MCP and works with mars powered off.
 
 # Emulation library sync (mars ↔ mercury)
 
