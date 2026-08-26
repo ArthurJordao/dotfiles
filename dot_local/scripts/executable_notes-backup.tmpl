@@ -1,0 +1,36 @@
+{{- $external := includeTemplate "storage-path" (dict "hosts" .hosts "name" "external") -}}
+#!/usr/bin/env bash
+# notes-backup — snapshot the notes store to its private git remote.
+#
+# The store is the only copy of the knowledge that used to live in Claude Code's
+# own memory, so this closes that gap. Run by notes-backup.timer, and by the
+# dashboard button for "before I do something drastic".
+#
+# The git dir is outside the space (--separate-git-dir): git's object churn must
+# not reach the SilverBullet and basic-memory watchers indexing this tree.
+#
+# Commits are unsigned by that repo's own config — machine-made snapshots make no
+# authorship claim, and a passphrase prompt would stop the timer after a reboot.
+set -euo pipefail
+
+SPACE="{{ $external }}/memory/personal"
+
+if [ ! -e "$SPACE/.git" ]; then
+    echo "notes-backup: $SPACE is not a git work tree — nothing to back up."
+    exit 0
+fi
+
+cd "$SPACE"
+
+# exFAT reports every file 0755, so without this every file looks mode-changed.
+git config core.fileMode false
+
+if git diff --quiet HEAD -- && [ -z "$(git status --porcelain)" ]; then
+    echo "notes-backup: no changes."
+    exit 0
+fi
+
+git add -A
+git commit -q -m "Snapshot $(date '+%Y-%m-%d %H:%M')"
+git push -q origin HEAD
+echo "notes-backup: pushed $(git rev-parse --short HEAD)."

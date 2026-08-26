@@ -20,5 +20,6 @@ systemctl --user enable --now syncthing.service
 {{ end -}}
 {{ if has "server" $roles -}}
 systemctl --user enable --now olivetin.service
+systemctl --user enable --now notes-backup.timer
 {{ end -}}
 {{ end }}

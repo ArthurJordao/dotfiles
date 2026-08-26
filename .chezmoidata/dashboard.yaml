@@ -93,6 +93,8 @@ dashboard:
       - {title: Backup Minecraft now, role: minecraft, icon: "mdi:content-save", shell: "systemctl --user start minecraft-backup.service && journalctl --user -u minecraft-backup.service -n 20 --no-pager", timeout: 900, confirm: true, family: true, popup: true}
 
     Server:
+      # The timer runs hourly; the button is for "before I do something drastic".
+      - {title: Back up notes now, icon: "mdi:content-save-cog", shell: "systemctl --user start notes-backup.service && journalctl --user -u notes-backup.service -n 10 --no-pager", timeout: 120, popup: true}
       - {title: Disk space, icon: "mdi:harddisk", shell: "df -h / /mnt/x9pro", timeout: 15, family: true, popup: true}
       # check-live reads gaming-mode's state file, so a stopped stack reports as
       # intentional rather than as drift.

@@ -1,0 +1,9 @@
+[Unit]
+Description=Hourly notes store backup
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+
+[Install]
+WantedBy=timers.target

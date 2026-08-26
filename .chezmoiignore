@@ -57,9 +57,12 @@ minecraft/**
 {{ end }}
 {{ if not (has "server" $roles) }}
 .config/systemd/user/olivetin.service
+.config/systemd/user/notes-backup.service
+.config/systemd/user/notes-backup.timer
 .config/OliveTin
 .config/OliveTin/**
 .local/scripts/dashboard-status
+.local/scripts/notes-backup
 {{ end }}
 {{ if has "arkos" $roles }}
 {{/* The ROM tree is a vfat mount: it cannot store the modes chezmoi wants,
