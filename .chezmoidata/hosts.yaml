@@ -165,12 +165,6 @@ hosts:
     units: []
     endpoints: []
   pluto:
-    # Orange Pi Zero 3 (Allwinner H618, 4 GB, arm64). Every port is USB 2.0, so
-    # the SSD tops out around 40 MB/s and the enclosure never negotiates
-    # SuperSpeed — which is the speed it is unstable at.
-    #
-    # roles is empty on purpose: `server` would deploy OliveTin and the notes
-    # backup here, and `edge` is the cutover, which C18 gates on one host.
     roles: []
     os: linux
     distro: debian
