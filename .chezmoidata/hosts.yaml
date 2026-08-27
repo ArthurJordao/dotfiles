@@ -169,6 +169,9 @@ hosts:
     os: linux
     distro: debian
     user: arthur
+    ip:
+      lan: 192.168.15.31
+      tailscale: 100.122.236.32
     quadlets: []
     units: []
     endpoints: []
