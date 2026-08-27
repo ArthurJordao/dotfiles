@@ -1,4 +1,3 @@
-{{- $external := includeTemplate "storage-path" (dict "hosts" .hosts "name" "external") -}}
 #!/usr/bin/env bash
 # notes-backup — snapshot the notes store to its private git remote.
 #
@@ -13,7 +12,7 @@
 # authorship claim, and a passphrase prompt would stop the timer after a reboot.
 set -euo pipefail
 
-SPACE="{{ $external }}/memory/personal"
+SPACE="$HOME/memory/personal"
 
 if [ ! -e "$SPACE/.git" ]; then
     echo "notes-backup: $SPACE is not a git work tree — nothing to back up."
@@ -22,7 +21,8 @@ fi
 
 cd "$SPACE"
 
-# exFAT reports every file 0755, so without this every file looks mode-changed.
+# Every file carries 0755 from the store's time on exFAT, so without this the
+# first run after any move looks like a whole-tree mode change.
 git config core.fileMode false
 
 if [ -n "$(git status --porcelain)" ]; then

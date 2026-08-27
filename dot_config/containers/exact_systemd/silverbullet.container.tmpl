@@ -1,4 +1,3 @@
-{{- $external := includeTemplate "storage-path" (dict "hosts" .hosts "name" "external") -}}
 [Unit]
 Description=SilverBullet notes
 Wants=network-online.target
@@ -17,7 +16,7 @@ EnvironmentFile=%h/.config/containers/systemd/silverbullet.env
 User=0
 # The space IS the basic-memory project, so everything SilverBullet creates on
 # its own — Journal, Inbox, tasks — is indexed rather than sitting beside it.
-Volume={{ $external }}/memory/personal:/space
+Volume=%h/memory/personal:/space
 
 [Service]
 Restart=always

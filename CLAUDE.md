@@ -561,7 +561,10 @@ hosts in `.chezmoidata/hosts.yaml` relocates the whole Caddy/CoreDNS/cloudflared
   current: CVE-2026-28790 covers unauthenticated action termination in exactly
   this guests-must-log-in configuration.
 - **The notes store is one directory, two containers.** Both point at
-  `/mnt/x9pro/memory/personal/`: SilverBullet's space *is* the `basic-memory`
+  `%h/memory/personal/` — on the internal btrfs, not the external SSD: exFAT
+  rejects `:` in a filename, and SilverBullet names a sync conflict copy
+  `<page>.conflicted:<ms>.md`, so the write failed with `EINVAL` and its client
+  retried forever. SilverBullet's space *is* the `basic-memory`
   project, so the `Journal` and `Inbox` pages it creates on its own are indexed
   rather than sitting beside them. The MCP server runs `--project personal` and
   publishes on loopback only, so Caddy — where the bearer token is checked — is

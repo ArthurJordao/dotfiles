@@ -1,4 +1,3 @@
-{{- $external := includeTemplate "storage-path" (dict "hosts" .hosts "name" "external") -}}
 [Unit]
 Description=basic-memory MCP server
 Wants=network-online.target
@@ -26,7 +25,7 @@ Environment=TZ={{ .timezone }}
 # ssh. Not the PUID/PGID pair the neighbours use — that is an s6 convention this
 # image does not honour. It also moves the config dir to /root.
 User=0
-Volume={{ $external }}/memory/personal:/app/data/personal
+Volume=%h/memory/personal:/app/data/personal
 # Named volume, like every other container's private state here: podman creates
 # one on demand but requires a bind mount's host path to already exist.
 Volume=basic-memory-config:/root/.basic-memory
