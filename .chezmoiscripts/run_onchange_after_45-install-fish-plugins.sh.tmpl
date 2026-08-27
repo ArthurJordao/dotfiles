@@ -1,0 +1,23 @@
+#!/bin/bash
+# `fish_plugins` only declares the plugin list — fisher installs nothing on its
+# own, so a fresh host ends up with the manifest and no plugins. The list is
+# inlined below: that is what makes run_onchange re-fire when it changes.
+set -euo pipefail
+
+{{ range (includeTemplate "fish-plugins" . | trim | splitList "\n") -}}
+# plugin: {{ . }}
+{{ end }}
+if ! command -v fish >/dev/null 2>&1; then
+    echo "fish is not installed yet — skipping plugin install."
+    echo "Re-run 'chezmoi apply' after packages are installed."
+    exit 0
+fi
+
+# fisher is itself in the manifest, so it has to be sourced before it can
+# install itself. `fisher update` then reconciles against fish_plugins.
+fish -c '
+    if not functions -q fisher
+        curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source
+    end
+    fisher update
+'
