@@ -195,3 +195,5 @@ packages:
       - syncthing
     podman:
       - podman
+      - passt
+      - uidmap
