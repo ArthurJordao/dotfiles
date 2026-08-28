@@ -35,12 +35,15 @@ esac
 # Warn late: disks fill slowly and a nag is worse than no signal.
 disk_color() {
     local n=${1%\%}
+    # Not every host has every mount; a missing one is not a warning to colour.
+    case $n in '' | *[!0-9]*) printf '%s' "$WARN"; return ;; esac
     if [ "$n" -ge 90 ]; then printf '%s' "$BAD"
     elif [ "$n" -ge 75 ]; then printf '%s' "$WARN"
     else printf '%s' "$GOOD"; fi
 }
 root=$(df --output=pcent / 2>/dev/null | tail -1 | tr -d ' ')
 ext=$(df --output=pcent /mnt/x9pro 2>/dev/null | tail -1 | tr -d ' ')
+ext=${ext:-n/a}
 
 # Service probes. Each argument is name:port -- a TCP connect on loopback, which
 # answers "is something listening" without caring about TLS or HTTP semantics.
