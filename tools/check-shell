@@ -45,19 +45,39 @@ for f in $(git ls-files --cached --others --exclude-standard); do
     is_shell "$f" && check "$f" "$f"
 done
 
+# Rendering is the slow half — one chezmoi per template per host — and every
+# render is independent, so they run concurrently. Dedup and linting stay
+# serial afterwards: `seen` is shared state, and shellcheck is fast.
+# Invoked through xargs, which shellcheck cannot see.
+# shellcheck disable=SC2329
+render_one() { # $1 = host, $2 = template
+    local h=$1 f=$2 out
+    out="$RENDER/$(printf '%s' "${f%.tmpl}" | tr / _).$h"
+    ./tools/simulate-host "$h" execute-template < "$f" > "$out" 2>/dev/null || { rm -f "$out"; return 0; }
+    [ -s "$out" ] || { rm -f "$out"; return 0; }
+    is_shell "$out" || { rm -f "$out"; return 0; }
+    printf '%s [%s]\n' "$f" "$h" > "$out.label"
+}
+export RENDER
+export -f render_one is_shell
+
+JOBS=$(mktemp)
 for f in $(git ls-files --cached --others --exclude-standard '*.tmpl'); do
-    for h in $HOSTS; do
-        out="$RENDER/$(printf '%s' "${f%.tmpl}" | tr / _).$h"
-        ./tools/simulate-host "$h" execute-template < "$f" > "$out" 2>/dev/null || { rm -f "$out"; continue; }
-        [ -s "$out" ] || { rm -f "$out"; continue; }
-        is_shell "$out" || { rm -f "$out"; continue; }
-        sum=$(shasum "$out" | cut -d' ' -f1)
-        case "$seen" in
-            *"$sum"*) rm -f "$out"; continue ;;
-        esac
-        seen="$seen $sum"
-        check "$out" "$f [$h]"
-    done
+    for h in $HOSTS; do printf '%s %s\n' "$h" "$f"; done
+done > "$JOBS"
+xargs -P "${PAR:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)}" -L1 \
+    bash -c 'render_one "$@"' _ < "$JOBS"
+rm -f "$JOBS"
+
+for out in "$RENDER"/*.label; do
+    [ -e "$out" ] || break
+    rendered=${out%.label}
+    sum=$(shasum "$rendered" | cut -d' ' -f1)
+    case "$seen" in
+        *"$sum"*) continue ;;
+    esac
+    seen="$seen $sum"
+    check "$rendered" "$(cat "$out")"
 done
 
 if [ "$fail" -eq 0 ]; then

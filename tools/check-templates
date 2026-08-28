@@ -1,43 +1,69 @@
 #!/usr/bin/env bash
 # Render every template for every host and report any that fail.
 #
-#   tools/check-templates
+#   tools/check-templates          # one job per core
+#   PAR=1 tools/check-templates    # serial, for debugging
 #
 # Catches what `simulate-host <host> managed` does not: a stale `include` or
 # path reference. `managed` only lists target paths, so a broken include inside
 # a run_onchange script passes it and blows up during a real apply.
+#
+# Every render is independent, so they run concurrently: each one spawns a
+# chezmoi that re-reads the whole source state, and serially that dominated
+# `just check`. Failures are written to files and collated afterwards, because
+# concurrent writers to stdout interleave.
 #
 # 1Password calls go to tools/mock-op, so no template has to be skipped.
 set -uo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
 HOSTS=$(./tools/hosts)
+PAR=${PAR:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)}
 
-fail=0 n=0
+FAILDIR=$(mktemp -d)
+trap 'rm -rf "$FAILDIR"' EXIT
+export FAILDIR
+
+render_one() { # $1 = kind, $2 = host, $3 = path
+    local kind=$1 h=$2 path=$3 out label
+    case "$kind" in
+        tmpl)
+            label=$path
+            out=$(./tools/simulate-host "$h" execute-template < "$path" 2>&1 >/dev/null) && return 0
+            ;;
+        edge)
+            label=".chezmoitemplates/etc/$path"
+            out=$(./tools/render-edge "$h" "$path" 2>&1 >/dev/null) && return 0
+            ;;
+        *) return 0 ;;
+    esac
+    {
+        printf 'FAIL %-9s %s\n' "$h" "$label"
+        printf '     %s\n' "$(echo "$out" | head -2)"
+    } > "$FAILDIR/$(printf '%s' "$h-$label" | tr /. __)"
+}
+export -f render_one
+
+JOBS=$(mktemp)
+trap 'rm -rf "$FAILDIR" "$JOBS"' EXIT
 for h in $HOSTS; do
     for t in $(git ls-files --cached --others --exclude-standard | grep -E '\.tmpl$'); do
-        n=$((n + 1))
-        if ! out=$(./tools/simulate-host "$h" execute-template < "$t" 2>&1 >/dev/null); then
-            printf 'FAIL %-9s %s\n' "$h" "$t"
-            printf '     %s\n' "$(echo "$out" | head -2)"
-            fail=1
-        fi
+        printf 'tmpl %s %s\n' "$h" "$t"
     done
     # The /etc bodies live in .chezmoitemplates, so they have no .tmpl to feed
     # in. They are only reached through the edge host's deploy script otherwise.
     for e in $(./tools/render-edge --list); do
-        n=$((n + 1))
-        if ! out=$(./tools/render-edge "$h" "$e" 2>&1 >/dev/null); then
-            printf 'FAIL %-9s %s\n' "$h" ".chezmoitemplates/etc/$e"
-            printf '     %s\n' "$(echo "$out" | head -2)"
-            fail=1
-        fi
+        printf 'edge %s %s\n' "$h" "$e"
     done
-done
+done > "$JOBS"
 
-if [ "$fail" -eq 0 ]; then
-    echo "ok: $n renders across $(echo "$HOSTS" | wc -w | tr -d ' ') hosts"
-else
+n=$(wc -l < "$JOBS" | tr -d ' ')
+xargs -P "$PAR" -L1 bash -c 'render_one "$@"' _ < "$JOBS"
+
+if [ -n "$(ls -A "$FAILDIR" 2>/dev/null)" ]; then
+    cat "$FAILDIR"/*
     echo "FAILURES above" >&2
+    exit 1
 fi
-exit "$fail"
+
+echo "ok: $n renders across $(echo "$HOSTS" | wc -w | tr -d ' ') hosts"

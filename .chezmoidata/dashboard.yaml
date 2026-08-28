@@ -38,11 +38,10 @@ dashboard:
   # Status shown at the top of a Controls fieldset, beside the buttons that
   # change it. Keys match `actions`; `field` names come from dashboard-status,
   # which also emits a <field>_color for each.
+  # Only fields for services on the dashboard's own host: dashboard-status
+  # probes locally, so a widget for another host would report confident
+  # nonsense. The `on:` buttons answer for mars accurately, on demand.
   status:
-    Gaming mode:
-      - {field: gm, label: Gaming mode, icon: "mdi:gamepad-variant"}
-    Minecraft:
-      - {field: mc, label: Server, icon: "mdi:minecraft"}
     Server:
       - {field: failed, label: Failed units, icon: "mdi:alert-circle"}
       - {field: root, label: "/", icon: "mdi:harddisk"}
