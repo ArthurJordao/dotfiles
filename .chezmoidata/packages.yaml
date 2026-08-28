@@ -193,3 +193,5 @@ packages:
       - tailscale
     emulation:
       - syncthing
+    podman:
+      - podman

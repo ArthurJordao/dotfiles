@@ -165,7 +165,7 @@ hosts:
     units: []
     endpoints: []
   pluto:
-    roles: []
+    roles: [podman]
     os: linux
     distro: debian
     user: arthur
