@@ -194,6 +194,8 @@ packages:
     emulation:
       - syncthing
     podman:
-      - podman
+      - aardvark-dns
+      - nftables
       - passt
+      - podman
       - uidmap
