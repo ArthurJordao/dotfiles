@@ -10,8 +10,8 @@ inlined so this document is enough on its own.
 The generated files are **not** here: `/etc/caddy/Caddyfile`, `/etc/coredns/Corefile`,
 `/etc/cloudflared/config.yml` and `/etc/caddy/caddy.env` are rendered from
 `.chezmoidata/` and installed by `run_onchange_after_70-deploy-etc.sh.tmpl`. Never write
-them by hand — the next apply overwrites them. Only the *units* that run those services
-are unmanaged.
+them by hand — the next apply overwrites them. The systemd units that run those services are generated
+too, as of 2026-08-28 — only the hand-built caddy binary below is still yours to reproduce.
 
 ---
 
@@ -31,17 +31,6 @@ sudo install -m755 ./caddy /usr/bin/caddy
 
 Verify: `caddy list-modules | grep dns.providers.cloudflare` must print that line.
 Currently running v2.11.2.
-
-### The caddy user
-
-`caddy.service` runs as `User=caddy`, and no package creates the account.
-
-```sh
-sudo useradd --system --home-dir /var/lib/caddy --shell /sbin/nologin caddy
-```
-
-`/var/lib/caddy` holds Caddy's ACME state, including issued certificates. Losing it
-forces a re-issue of every certificate, which is subject to Let's Encrypt rate limits.
 
 ### Linger for turisa
 
@@ -107,93 +96,15 @@ hosts: mymachines mdns_minimal [NOTFOUND=return] resolve [!UNAVAIL=return] files
 A copy of the original is at `/etc/nsswitch.conf.pre-mdns`. `avahi-daemon` provides
 `.local` service discovery independently, which is why dropping resolved's mDNS is safe.
 
-### System units
+### System units — no longer hand-written
 
-None of these are packaged. `coredns` and `cloudflared` binaries *are* package-owned —
-only their units are missing.
+`caddy.service`, `coredns.service`, `cloudflared.service` and
+`cloudflared-update.{service,timer}` are generated from `.chezmoitemplates/etc/systemd/` and
+installed into `/etc/systemd/system` by `run_onchange_after_70-deploy-etc.sh.tmpl`, which also
+creates the `caddy` account and enables the units. Editing them in `/etc` is editing a file the
+next apply overwrites.
 
-```ini
-# /etc/systemd/system/caddy.service
-[Unit]
-Description=Caddy Web Server
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-User=caddy
-Group=caddy
-ExecStart=/usr/bin/caddy run --config /etc/caddy/Caddyfile
-ExecReload=/usr/bin/caddy reload --config /etc/caddy/Caddyfile
-EnvironmentFile=/etc/caddy/caddy.env
-TimeoutStopSec=5s
-Restart=on-failure
-AmbientCapabilities=CAP_NET_BIND_SERVICE
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```ini
-# /etc/systemd/system/coredns.service
-[Unit]
-Description=CoreDNS DNS Server
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-ExecStart=/usr/bin/coredns -conf /etc/coredns/Corefile
-Restart=on-failure
-AmbientCapabilities=CAP_NET_BIND_SERVICE
-NoNewPrivileges=true
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```ini
-# /etc/systemd/system/cloudflared.service
-[Unit]
-Description=cloudflared
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-TimeoutStartSec=15
-Type=notify
-ExecStart=/usr/bin/cloudflared --no-autoupdate --config /etc/cloudflared/config.yml tunnel run
-Restart=on-failure
-RestartSec=5s
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```ini
-# /etc/systemd/system/cloudflared-update.service
-[Unit]
-Description=Update cloudflared
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-ExecStart=/bin/bash -c '/usr/bin/cloudflared update; code=$?; if [ $code -eq 11 ]; then systemctl restart cloudflared; exit 0; fi; exit $code'
-```
-
-```ini
-# /etc/systemd/system/cloudflared-update.timer
-[Unit]
-Description=Update cloudflared
-
-[Timer]
-OnCalendar=daily
-
-[Install]
-WantedBy=timers.target
-```
-
-Enable with `sudo systemctl enable --now caddy coredns cloudflared cloudflared-update.timer`.
-
-blocky needs nothing here: it is a quadlet, and it refreshes its own blocklists.
+blocky needs nothing here either: it is a quadlet, and it refreshes its own blocklists.
 
 ### Drop-ins
 

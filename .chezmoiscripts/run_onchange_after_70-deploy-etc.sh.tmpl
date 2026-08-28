@@ -44,8 +44,24 @@ cat > "$STAGE/out" <<'EDGE_EOF'
 EDGE_EOF
 install_edge /etc/cloudflared/{{ .cloudflare.tunnel_id }}.json 600
 
+# The units themselves, so a fresh edge host needs nothing hand-written. The
+# caddy account is not packaged either, and caddy.service runs as it.
+getent passwd caddy >/dev/null || \
+    sudo useradd --system --home-dir /var/lib/caddy --shell /usr/sbin/nologin caddy
+sudo install -d -m 755 -o caddy -g caddy /var/lib/caddy
+
+{{ range $unit := list "caddy.service" "coredns.service" "cloudflared.service" "cloudflared-update.service" "cloudflared-update.timer" -}}
+cat > "$STAGE/out" <<'EDGE_EOF'
+{{ includeTemplate (printf "etc/systemd/%s" $unit) $ | trimSuffix "\n" }}
+EDGE_EOF
+install_edge /etc/systemd/system/{{ $unit }} 644
+
+{{ end -}}
+sudo systemctl daemon-reload
+
 echo "Reloading services..."
-sudo systemctl reload caddy || true
-sudo systemctl restart coredns || true
-sudo systemctl restart cloudflared || true
+sudo systemctl enable --now caddy coredns cloudflared cloudflared-update.timer
+sudo systemctl reload caddy || sudo systemctl restart caddy
+sudo systemctl restart coredns
+sudo systemctl restart cloudflared
 {{ end }}
