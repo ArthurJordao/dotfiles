@@ -26,7 +26,6 @@ dashboard:
       notes: {icon: "selfhst:silverbullet", label: SilverBullet, description: Notes}
 
     Media:
-      immich: {icon: "selfhst:immich", label: Immich, description: Photos}
       music: {icon: "selfhst:navidrome", label: Navidrome, description: Music}
       slskd: {icon: "selfhst:slskd", label: slskd, description: Soulseek}
       soulsync: {icon: "mdi:playlist-music", label: SoulSync}
@@ -46,7 +45,6 @@ dashboard:
     Server:
       - {field: failed, label: Failed units, icon: "mdi:alert-circle"}
       - {field: root, label: "/", icon: "mdi:harddisk"}
-      - {field: ext, label: x9pro, icon: "mdi:harddisk"}
 
   # Keyed by the Controls fieldset the buttons sit in -- the group is the key,
   # so it cannot name a section that does not exist. Fieldsets render in sorted
@@ -95,7 +93,7 @@ dashboard:
     Server:
       # The timer runs hourly; the button is for "before I do something drastic".
       - {title: Back up notes now, icon: "mdi:content-save-cog", shell: "systemctl --user start notes-backup.service && journalctl --user -u notes-backup.service -n 10 --no-pager", timeout: 120, popup: true}
-      - {title: Disk space, icon: "mdi:harddisk", shell: "df -h / /mnt/x9pro", timeout: 15, family: true, popup: true}
+      - {title: Disk space, icon: "mdi:harddisk", shell: "df -h /", timeout: 15, family: true, popup: true}
       # check-live reads gaming-mode's state file, so a stopped stack reports as
       # intentional rather than as drift.
       - {title: Stack health, icon: "mdi:heart-pulse", shell: check-live, timeout: 120, popup: true}

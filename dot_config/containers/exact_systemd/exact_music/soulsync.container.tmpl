@@ -1,4 +1,4 @@
-{{- $external := includeTemplate "storage-path" (dict "hosts" .hosts "name" "external") -}}
+{{- $media := includeTemplate "storage-path" (dict "hosts" .hosts "name" "media") -}}
 [Unit]
 Description=SoulSync Music Discovery
 Wants=network-online.target
@@ -22,8 +22,8 @@ Environment=TZ={{ .timezone }}
 Volume=soulsync-config:/app/config
 Volume=soulsync-data:/app/data
 Volume=soulsync-logs:/app/logs
-Volume={{ $external }}/downloads:/app/downloads
-Volume={{ $external }}/music:/app/Transfer
+Volume={{ $media }}/downloads:/app/downloads
+Volume={{ $media }}/music:/app/Transfer
 
 [Service]
 Restart=always

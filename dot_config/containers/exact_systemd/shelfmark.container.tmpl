@@ -1,4 +1,4 @@
-{{- $external := includeTemplate "storage-path" (dict "hosts" .hosts "name" "external") -}}
+{{- $media := includeTemplate "storage-path" (dict "hosts" .hosts "name" "media") -}}
 [Unit]
 Description=Shelfmark book search/downloader (feeds the CWA ingest folder)
 Wants=network-online.target
@@ -20,7 +20,7 @@ Environment=TZ={{ .timezone }}
 Volume=shelfmark-config:/config
 # /books is Shelfmark's download target; point it at the SAME host dir that CWA
 # watches (/cwa-book-ingest) so finished downloads are auto-imported.
-Volume={{ $external }}/book-ingest:/books
+Volume={{ $media }}/book-ingest:/books
 
 [Service]
 Restart=always

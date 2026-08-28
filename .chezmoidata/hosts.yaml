@@ -52,7 +52,7 @@ hosts:
       tailscale: 100.84.63.99
 
   mars:
-    roles: [server, podman, gui, dev, gaming, minecraft, sunshine, emulation, edge]
+    roles: [podman, gui, dev, gaming, minecraft, sunshine, emulation, edge]
     os: linux
     distro: arch
     user: turisa
@@ -66,52 +66,18 @@ hosts:
       external: /mnt/x9pro
 
     quadlets:
-      - basic-memory
       - blocky
-      - calibre-web-automated
-      - cloudflare-ddns
-      - immich
-      - music
-      - shelfmark
-      - silverbullet
       - teamspeak3
 
     units:
-      # Every immich unit, not just the pod: starting immich-pod alone brings
-      # up an empty pod (Requires= propagates stop, not start).
-      - {name: immich-pod}
-      - {name: immich-db}
-      - {name: immich-valkey}
-      - {name: immich-ml}
-      - {name: immich-server}
-      - {name: navidrome}
-      - {name: slskd}
-      - {name: soulsync}
-      - {name: calibre-web-automated}
-      - {name: cloudflare-ddns}
-      - {name: shelfmark}
       - {name: teamspeak3}
       - {name: syncthing}
-      - {name: olivetin, stop_for_gaming: false}
       - {name: sunshine, stop_for_gaming: false}
       - {name: blocky, stop_for_gaming: false}
-      # Capturing an idea while a game runs is the use case, and neither
-      # container is heavy.
-      - {name: basic-memory, stop_for_gaming: false}
-      - {name: silverbullet, stop_for_gaming: false}
 
     endpoints:
-      - {name: books, port: 8083, public: true}
-      - {name: dash, port: 1337, served_by: olivetin}
       - {name: dns, port: 8053, scheme: https, tls_insecure: true, log: false, served_by: coredns}
-      - {name: immich, port: 2283, public: true}
-      - {name: memory, port: 8086, public: true, auth: bearer}
       - {name: minecraft, ddns: true}
-      - {name: music, port: 4533}
-      - {name: notes, port: 8087}
-      - {name: shelfmark, port: 8084}
-      - {name: slskd, port: 5030}
-      - {name: soulsync, port: 8008}
       # Config UI only — moonlight talks straight to the host, not via Caddy.
       - {name: sunshine, port: 47990, scheme: https, tls_insecure: true, served_by: sunshine}
 
@@ -163,16 +129,42 @@ hosts:
     endpoints: []
 
   pluto:
-    roles: [podman]
+    roles: [podman, server]
     os: linux
     distro: debian
     user: arthur
     ip:
       lan: 192.168.15.31
       tailscale: 100.122.236.32
+    storage:
+      media: "%h/media"
+
     quadlets:
+      - basic-memory
+      - calibre-web-automated
+      - cloudflare-ddns
+      - music
+      - shelfmark
+      - silverbullet
       - wallabag
     units:
+      - {name: navidrome}
+      - {name: slskd}
+      - {name: soulsync}
+      - {name: calibre-web-automated}
+      - {name: cloudflare-ddns}
+      - {name: shelfmark}
       - {name: wallabag}
+      - {name: olivetin, stop_for_gaming: false}
+      - {name: basic-memory, stop_for_gaming: false}
+      - {name: silverbullet, stop_for_gaming: false}
     endpoints:
+      - {name: books, port: 8083, public: true}
+      - {name: dash, port: 1337, served_by: olivetin}
+      - {name: memory, port: 8086, public: true, auth: bearer}
+      - {name: music, port: 4533}
+      - {name: notes, port: 8087}
+      - {name: shelfmark, port: 8084}
+      - {name: slskd, port: 5030}
+      - {name: soulsync, port: 8008}
       - {name: wallabag, port: 8085}

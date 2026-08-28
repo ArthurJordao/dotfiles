@@ -126,7 +126,7 @@
               },
               {
                 "const": "moonlight",
-                "description": "Moonlight client — streams from a `sunshine` host. Linux only; on macOS the cask is in the Brewfile, which is not role-gated."
+                "description": "Moonlight client \u2014 streams from a `sunshine` host. Linux only; on macOS the cask is in the Brewfile, which is not role-gated."
               },
               {
                 "const": "emulation",
@@ -145,7 +145,7 @@
         },
         "os": {
           "type": "string",
-          "description": "Platform this host runs. Read by templates instead of .chezmoi.os, which cannot be overridden — so simulate-host renders another host's platform correctly.",
+          "description": "Platform this host runs. Read by templates instead of .chezmoi.os, which cannot be overridden \u2014 so simulate-host renders another host's platform correctly.",
           "oneOf": [
             {
               "const": "linux",
@@ -159,7 +159,7 @@
         },
         "distro": {
           "type": "string",
-          "description": "Package family. Linux only — picks the group under `packages` and the installer (paru / apt).",
+          "description": "Package family. Linux only \u2014 picks the group under `packages` and the installer (paru / apt).",
           "oneOf": [
             {
               "const": "arch",
@@ -189,8 +189,8 @@
           },
           "additionalProperties": {
             "type": "string",
-            "pattern": "^/",
-            "description": "Absolute path, no trailing slash — consumers append their own subdirectory.",
+            "pattern": "^(/|%h/)",
+            "description": "Absolute path, or one starting with systemd's %h \u2014 these land in unit files, where %h expands to the home dir and keeps the username out of the data. No trailing slash; consumers append their own subdirectory.",
             "not": {
               "pattern": "/$"
             }
@@ -198,7 +198,7 @@
         },
         "quadlets": {
           "type": "array",
-          "description": "Podman quadlet filename PREFIXES, matched as <prefix>* — so `immich` picks up immich.pod and the whole immich/ subdir. Only deploys where the host also has the `podman` role.",
+          "description": "Podman quadlet filename PREFIXES, matched as <prefix>* \u2014 so `immich` picks up immich.pod and the whole immich/ subdir. Only deploys where the host also has the `podman` role.",
           "uniqueItems": true,
           "items": {
             "type": "string",
@@ -206,7 +206,7 @@
             "not": {
               "pattern": "\\.(container|pod|network|volume|image|build)$"
             },
-            "description": "A prefix, not a filename — leave the extension off."
+            "description": "A prefix, not a filename \u2014 leave the extension off."
           }
         },
         "units": {
@@ -226,7 +226,7 @@
                 "not": {
                   "pattern": "\\.service$"
                 },
-                "description": "Without the .service suffix — the consumers append it. minecraft@<instance> entries also generate the Conflicts= line in minecraft@.service. An alias is fine: check-live resolves it."
+                "description": "Without the .service suffix \u2014 the consumers append it. minecraft@<instance> entries also generate the Conflicts= line in minecraft@.service. An alias is fine: check-live resolves it."
               },
               "stop_for_gaming": {
                 "type": "boolean",
@@ -286,12 +286,12 @@
       "properties": {
         "name": {
           "type": "string",
-          "description": "Label only — <name>.<domain> is the full hostname, so leave the domain off. Need not match the quadlet: calibre-web-automated is served as `books`.",
+          "description": "Label only \u2014 <name>.<domain> is the full hostname, so leave the domain off. Need not match the quadlet: calibre-web-automated is served as `books`.",
           "pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?$"
         },
         "port": {
           "type": "integer",
-          "description": "Upstream port. OMIT for a DNS record with no reverse-proxy block and no tunnel rule — that is how minecraft is reached over its own TCP port.",
+          "description": "Upstream port. OMIT for a DNS record with no reverse-proxy block and no tunnel rule \u2014 that is how minecraft is reached over its own TCP port.",
           "minimum": 1,
           "maximum": 65535
         },
@@ -315,7 +315,7 @@
             },
             {
               "const": "https",
-              "description": "Upstream speaks TLS — usually wants tls_insecure too."
+              "description": "Upstream speaks TLS \u2014 usually wants tls_insecure too."
             }
           ]
         },
@@ -326,7 +326,9 @@
         },
         "auth": {
           "description": "bearer requires `Authorization: Bearer <token>` on every request, checked in the generated Caddy block against <NAME>_BEARER_TOKEN from caddy.env. Also re-points this hostname's tunnel ingress at Caddy, since that is where the check lives. Every client sends it, LAN included.",
-          "enum": ["bearer"]
+          "enum": [
+            "bearer"
+          ]
         },
         "tls_insecure": {
           "type": "boolean",

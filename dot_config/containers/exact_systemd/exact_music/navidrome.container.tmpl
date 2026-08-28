@@ -1,4 +1,4 @@
-{{- $external := includeTemplate "storage-path" (dict "hosts" .hosts "name" "external") -}}
+{{- $media := includeTemplate "storage-path" (dict "hosts" .hosts "name" "media") -}}
 [Unit]
 Description=Navidrome Music Server
 Wants=network-online.target
@@ -18,7 +18,7 @@ Environment=ND_PORT=4533
 Environment=ND_SCANNER_PURGEMISSING=always
 Environment=TZ={{ .timezone }}
 
-Volume={{ $external }}/music:/music:ro
+Volume={{ $media }}/music:/music:ro
 Volume=navidrome-data:/data
 
 [Service]
