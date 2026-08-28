@@ -38,6 +38,11 @@ cat > "$STAGE/out" <<'EDGE_EOF'
 EDGE_EOF
 install_edge /etc/cloudflared/config.yml 644
 
+cat > "$STAGE/out" <<'EDGE_EOF'
+{{ includeTemplate "etc/cloudflared/credentials.json" . | trimSuffix "\n" }}
+EDGE_EOF
+install_edge /etc/cloudflared/{{ .cloudflare.tunnel_id }}.json 600
+
 echo "Reloading services..."
 sudo systemctl reload caddy || true
 sudo systemctl restart coredns || true

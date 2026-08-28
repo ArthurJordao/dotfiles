@@ -191,6 +191,8 @@ packages:
       - fzf
       # Not in Debian's archive; install-packages.sh adds the repo.
       - tailscale
+    edge:
+      - cloudflared
     emulation:
       - syncthing
     podman:

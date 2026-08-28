@@ -84,6 +84,13 @@ if grep -qx tailscale "$LIST" && [ ! -f /etc/apt/sources.list.d/tailscale.list ]
     curl -fsSL "https://pkgs.tailscale.com/stable/debian/${codename}.tailscale-keyring.list" \
         | sudo tee /etc/apt/sources.list.d/tailscale.list >/dev/null
 fi
+# cloudflared is not in Debian's archive either.
+if grep -qx cloudflared "$LIST" && [ ! -f /etc/apt/sources.list.d/cloudflared.list ]; then
+    curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg \
+        | sudo tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null
+    echo "deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared any main" \
+        | sudo tee /etc/apt/sources.list.d/cloudflared.list >/dev/null
+fi
 sudo apt-get update
 xargs -a "$LIST" sudo apt-get install -y
 {{ end -}}

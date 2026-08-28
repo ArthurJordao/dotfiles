@@ -1,14 +1,10 @@
 {{- $domain := .domain -}}
 {{- $tunnel := .cloudflare.tunnel_id -}}
-{{- $user := "" -}}
-{{- range $host := .hosts -}}
-{{- if has "edge" (index $host "roles" | default list) -}}
-{{- $user = index $host "user" -}}
-{{- end -}}
-{{- end -}}
 # GENERATED from .chezmoidata/hosts.yaml — set `public: true` on an endpoint there.
 tunnel: {{ $tunnel }}
-credentials-file: /home/{{ $user }}/.cloudflared/{{ $tunnel }}.json
+# Rendered from 1Password by run_onchange_after_70-deploy-etc, beside this file.
+# A home directory would tie a root-run unit to whichever user holds `edge`.
+credentials-file: /etc/cloudflared/{{ $tunnel }}.json
 
 # Public ingress via Cloudflare Tunnel — no open ports. LAN/Tailscale clients
 # still resolve via CoreDNS, so these routes only affect outside traffic.
