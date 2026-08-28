@@ -15,7 +15,8 @@ trap 'rm -rf "$STAGE"' EXIT
 # Stage before installing: `sudo tee` would truncate the live config first.
 install_edge() {
     # $1 = destination, $2 = mode
-    sudo install -m "$2" -o root -g root "$STAGE/out" "$1"
+    # -D: a fresh edge host has none of these directories yet.
+    sudo install -D -m "$2" -o root -g root "$STAGE/out" "$1"
 }
 
 cat > "$STAGE/out" <<'EDGE_EOF'
