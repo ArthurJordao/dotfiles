@@ -146,6 +146,11 @@
                   "minLength": 1,
                   "description": "Only render this action on a host with this role. Omit for actions that work anywhere."
                 },
+                "on": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Run this action over ssh on the named host instead of locally. The host must be a key in hosts.yaml."
+                },
                 "argument": {
                   "type": "object",
                   "additionalProperties": false,

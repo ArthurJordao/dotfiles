@@ -53,7 +53,7 @@ dashboard:
   # key order.
   #
   # `shell` is data, never a template, so OliveTin's own {{ arg }} placeholders
-  # are written literally here. `role` keeps an action off hosts that lack it.
+  # are written literally here. `on` runs the action over ssh on that host.
   actions:
     DNS:
       - {title: Ad blocking status, icon: "mdi:shield-check", shell: blocky status, timeout: 15, family: true, popup: true}
@@ -70,27 +70,27 @@ dashboard:
       - {title: Refresh blocklists, icon: "mdi:refresh", shell: blocky refresh, timeout: 300, popup: true}
 
     Gaming mode:
-      - {title: Gaming mode on, icon: "mdi:gamepad-variant", shell: gaming-mode on, timeout: 180, confirm: true, family: true}
-      - {title: Gaming mode off, icon: "mdi:server", shell: gaming-mode off, timeout: 180, family: true}
+      - {title: Gaming mode on, on: mars, icon: "mdi:gamepad-variant", shell: gaming-mode on, timeout: 180, confirm: true, family: true}
+      - {title: Gaming mode off, on: mars, icon: "mdi:server", shell: gaming-mode off, timeout: 180, family: true}
       # The widget is a minute stale at worst; this is the authoritative answer,
       # and it names the units gaming mode stopped.
-      - {title: Gaming mode status, icon: "mdi:information", shell: gaming-mode status, timeout: 15, family: true, popup: true}
+      - {title: Gaming mode status, on: mars, icon: "mdi:information", shell: gaming-mode status, timeout: 15, family: true, popup: true}
 
     Minecraft:
       # `use` implicitly stops the others (instances are mutually exclusive) and
       # syncs the enabled unit, so the right server returns after a reboot.
       - title: Start Minecraft server
-        role: minecraft
+        on: mars
         icon: "mdi:minecraft"
         shell: "minecraft use {{ instance }}"
         timeout: 120
         family: true
         argument: {name: instance, title: Server, choices_from: minecraft-instances}
-      - {title: Stop Minecraft server, role: minecraft, icon: "mdi:stop", shell: minecraft stop, timeout: 120, family: true}
+      - {title: Stop Minecraft server, on: mars, icon: "mdi:stop", shell: minecraft stop, timeout: 120, family: true}
       # Also reports which instance is enabled at boot, which the widget omits.
-      - {title: Minecraft status, role: minecraft, icon: "mdi:information", shell: minecraft status, timeout: 15, family: true, popup: true}
+      - {title: Minecraft status, on: mars, icon: "mdi:information", shell: minecraft status, timeout: 15, family: true, popup: true}
       # The timer runs this daily; the button is for "before I install a mod".
-      - {title: Backup Minecraft now, role: minecraft, icon: "mdi:content-save", shell: "systemctl --user start minecraft-backup.service && journalctl --user -u minecraft-backup.service -n 20 --no-pager", timeout: 900, confirm: true, family: true, popup: true}
+      - {title: Backup Minecraft now, on: mars, icon: "mdi:content-save", shell: "systemctl --user start minecraft-backup.service && journalctl --user -u minecraft-backup.service -n 20 --no-pager", timeout: 900, confirm: true, family: true, popup: true}
 
     Server:
       # The timer runs hourly; the button is for "before I do something drastic".
