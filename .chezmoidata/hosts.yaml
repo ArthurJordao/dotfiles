@@ -52,7 +52,7 @@ hosts:
       tailscale: 100.84.63.99
 
   mars:
-    roles: [podman, gui, dev, gaming, minecraft, sunshine, emulation, edge]
+    roles: [podman, gui, dev, gaming, minecraft, sunshine, emulation]
     os: linux
     distro: arch
     user: turisa
@@ -66,17 +66,14 @@ hosts:
       external: /mnt/x9pro
 
     quadlets:
-      - blocky
       - teamspeak3
 
     units:
       - {name: teamspeak3}
       - {name: syncthing}
       - {name: sunshine, stop_for_gaming: false}
-      - {name: blocky, stop_for_gaming: false}
 
     endpoints:
-      - {name: dns, port: 8053, scheme: https, tls_insecure: true, log: false, served_by: coredns}
       - {name: minecraft, ddns: true}
       # Config UI only — moonlight talks straight to the host, not via Caddy.
       - {name: sunshine, port: 47990, scheme: https, tls_insecure: true, served_by: sunshine}
@@ -129,7 +126,7 @@ hosts:
     endpoints: []
 
   pluto:
-    roles: [podman, server]
+    roles: [podman, server, edge]
     os: linux
     distro: debian
     user: arthur
@@ -141,6 +138,7 @@ hosts:
 
     quadlets:
       - basic-memory
+      - blocky
       - calibre-web-automated
       - cloudflare-ddns
       - music
@@ -156,11 +154,13 @@ hosts:
       - {name: shelfmark}
       - {name: wallabag}
       - {name: olivetin, stop_for_gaming: false}
+      - {name: blocky, stop_for_gaming: false}
       - {name: basic-memory, stop_for_gaming: false}
       - {name: silverbullet, stop_for_gaming: false}
     endpoints:
       - {name: books, port: 8083, public: true}
       - {name: dash, port: 1337, served_by: olivetin}
+      - {name: dns, port: 8053, scheme: https, tls_insecure: true, log: false, served_by: coredns}
       - {name: memory, port: 8086, public: true, auth: bearer}
       - {name: music, port: 4533}
       - {name: notes, port: 8087}
