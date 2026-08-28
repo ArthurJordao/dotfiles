@@ -1,0 +1,25 @@
+{{- $me := index .hosts .hostname -}}
+{{- $bin := "/usr/bin/olivetin" -}}
+{{- $webui := "/usr/share/webapps/olivetin" -}}
+{{- if eq (index $me "distro" | default "") "debian" -}}
+{{- $bin = "/usr/local/bin/OliveTin" -}}
+{{- $webui = "/var/www/olivetin" -}}
+{{- end -}}
+[Unit]
+Description=OliveTin — web buttons for the self-hosted stack
+After=network.target
+
+[Service]
+# A user unit, not a container: gaming-mode drives systemctl --user and the
+# container actions call podman directly.
+# Actions run through a non-login sh -c, which inherits the user manager's
+# PATH -- ~/.local/scripts (gaming-mode) is not on it otherwise.
+Environment=PATH=%h/.local/scripts:/usr/local/bin:/usr/bin:/bin
+# The webui is found relative to the working directory, or every request 404s.
+# Arch and Debian disagree on both this path and the binary's.
+WorkingDirectory={{ $webui }}
+ExecStart={{ $bin }} --configdir %h/.config/OliveTin
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
