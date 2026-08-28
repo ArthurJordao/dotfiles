@@ -160,6 +160,12 @@ dashboards:
 {{- if hasKey . "port" }}{{ $_ := set $ported .name true }}{{ end }}
 {{- end }}
 {{- end }}
+{{- /* dashboard-status probes loopback, so only this host's endpoints have a
+       status field. A tile for a service on another host still links to it. */ -}}
+{{- $local := dict }}
+{{- range (index $me "endpoints" | default list) }}
+{{- if hasKey . "port" }}{{ $_ := set $local .name true }}{{ end }}
+{{- end }}
 {{- $tiled := dict }}
 {{- range $group, $members := .dashboard.tiles }}
 {{- range $name, $tile := $members }}{{ $_ := set $tiled $name true }}{{ end }}
@@ -182,8 +188,10 @@ dashboards:
               {{- with index $tile "description" }}
               <div style="opacity:.7;font-size:.85em">{{ . }}</div>
               {{- end }}
+              {{- if hasKey $local $name }}
               {{- $key := replace "-" "_" $name }}
               <div style="font-size:.8em;font-weight:600;color:{{ printf "{{ status.svc_%s_color }}" $key }}">{{ printf "{{ status.svc_%s }}" $key }}</div>
+              {{- end }}
               </a>
 {{- end }}
 {{- end }}

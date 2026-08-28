@@ -23,7 +23,8 @@ dashboard:
       sunshine: {icon: "selfhst:sunshine", label: Sunshine, description: Game streaming}
 
     Notes:
-      notes: {icon: "selfhst:silverbullet", label: SilverBullet, description: Notes}
+      notes: {icon: "mdi:notebook-outline", label: SilverBullet, description: Notes}
+      memory: {icon: "selfhst:basic-memory", label: basic-memory, description: Notes MCP}
 
     Media:
       music: {icon: "selfhst:navidrome", label: Navidrome, description: Music}

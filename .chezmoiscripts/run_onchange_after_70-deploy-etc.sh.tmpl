@@ -34,10 +34,15 @@ fi
 
 # systemd-resolved's stub holds 127.0.0.53:53 and stops CoreDNS binding :53.
 # With it off, resolved writes the real upstreams into resolv.conf instead.
-if [ ! -f /etc/systemd/resolved.conf.d/10-no-stub.conf ]; then
-    sudo install -d -m 755 /etc/systemd/resolved.conf.d
-    printf '[Resolve]\nDNSStubListener=no\n' \
-        | sudo tee /etc/systemd/resolved.conf.d/10-no-stub.conf >/dev/null
+# DNS=127.0.0.1 with Domains=~. sends every query to the CoreDNS above rather
+# than to whatever DHCP hands out — the edge host should not need the router's
+# cooperation to resolve the names it is itself authoritative for.
+sudo install -d -m 755 /etc/systemd/resolved.conf.d
+printf '[Resolve]\nDNSStubListener=no\nDNS=127.0.0.1\nDomains=~.\nFallbackDNS=1.1.1.1\n' \
+    | sudo tee "$STAGE/resolved" >/dev/null
+if ! cmp -s "$STAGE/resolved" /etc/systemd/resolved.conf.d/10-coredns.conf; then
+    sudo install -m 644 -o root -g root "$STAGE/resolved" /etc/systemd/resolved.conf.d/10-coredns.conf
+    sudo rm -f /etc/systemd/resolved.conf.d/10-no-stub.conf
     sudo systemctl restart systemd-resolved
 fi
 
