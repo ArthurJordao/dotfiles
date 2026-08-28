@@ -193,6 +193,7 @@ packages:
       - tailscale
     edge:
       - cloudflared
+      - openssl
     emulation:
       - syncthing
     podman:

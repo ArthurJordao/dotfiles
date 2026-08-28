@@ -12,6 +12,35 @@ echo "Deploying /etc/ configs..."
 STAGE="$(mktemp -d)"
 trap 'rm -rf "$STAGE"' EXIT
 
+# --- prerequisites a fresh edge host has none of ---
+
+# caddy.service runs as this account, and no package creates it.
+getent passwd caddy >/dev/null || \
+    sudo useradd --system --home-dir /var/lib/caddy --shell /usr/sbin/nologin caddy
+# ACME state, and the access logs the Caddyfile writes.
+sudo install -d -m 755 -o caddy -g caddy /var/lib/caddy /var/log/caddy
+
+# CoreDNS serves DoT on the `dns` endpoint and refuses to start without a cert.
+# Self-signed is the point: the endpoint carries tls_insecure, so nothing
+# validates it.
+if [ ! -f /etc/coredns/cert.pem ]; then
+    sudo install -d -m 755 /etc/coredns
+    sudo openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes \
+        -subj "/CN=localhost" \
+        -keyout /etc/coredns/key.pem -out /etc/coredns/cert.pem 2>/dev/null
+    sudo chmod 644 /etc/coredns/cert.pem
+    sudo chmod 600 /etc/coredns/key.pem
+fi
+
+# systemd-resolved's stub holds 127.0.0.53:53 and stops CoreDNS binding :53.
+# With it off, resolved writes the real upstreams into resolv.conf instead.
+if [ ! -f /etc/systemd/resolved.conf.d/10-no-stub.conf ]; then
+    sudo install -d -m 755 /etc/systemd/resolved.conf.d
+    printf '[Resolve]\nDNSStubListener=no\n' \
+        | sudo tee /etc/systemd/resolved.conf.d/10-no-stub.conf >/dev/null
+    sudo systemctl restart systemd-resolved
+fi
+
 # Stage before installing: `sudo tee` would truncate the live config first.
 install_edge() {
     # $1 = destination, $2 = mode
@@ -43,12 +72,6 @@ cat > "$STAGE/out" <<'EDGE_EOF'
 {{ includeTemplate "etc/cloudflared/credentials.json" . | trimSuffix "\n" }}
 EDGE_EOF
 install_edge /etc/cloudflared/{{ .cloudflare.tunnel_id }}.json 600
-
-# The units themselves, so a fresh edge host needs nothing hand-written. The
-# caddy account is not packaged either, and caddy.service runs as it.
-getent passwd caddy >/dev/null || \
-    sudo useradd --system --home-dir /var/lib/caddy --shell /usr/sbin/nologin caddy
-sudo install -d -m 755 -o caddy -g caddy /var/lib/caddy
 
 {{ range $unit := list "caddy.service" "coredns.service" "cloudflared.service" "cloudflared-update.service" "cloudflared-update.timer" -}}
 cat > "$STAGE/out" <<'EDGE_EOF'
