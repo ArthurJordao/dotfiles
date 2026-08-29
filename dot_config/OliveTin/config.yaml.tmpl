@@ -2,9 +2,14 @@
 {{- $user := index $me "user" | default "" -}}
 {{- $roles := index $me "roles" | default list -}}
 {{- $pal := index .palettes .theme.active -}}
+{{- $tiles := includeTemplate "dashboard-tiles" (dict "hosts" .hosts "hostname" .hostname "tiles" .dashboard.tiles) | fromJson -}}
 {{- $specs := "" -}}
+{{- /* Skipping `web: false`: dashboard-status probes over HTTP, and the
+       only consumer of a status field is a tile that endpoint no longer has. */ -}}
 {{- range (index $me "endpoints" | default list) -}}
-{{- if hasKey . "port" }}{{ $specs = printf "%s %s:%v" $specs .name .port }}{{ end -}}
+{{- $web := true -}}
+{{- if hasKey . "web" }}{{ $web = .web }}{{ end -}}
+{{- if and (hasKey . "port") $web }}{{ $specs = printf "%s %s:%v" $specs .name .port }}{{ end -}}
 {{- end -}}
 {{- $statusRefresh := printf "mkdir -p /home/%s/.local/state/olivetin && GOOD='%s' BAD='%s' WARN='%s' dashboard-status%s > /home/%s/.local/state/olivetin/status.json" $user $pal.base0B $pal.base08 $pal.base0A $specs $user -}}
 {{- $op := onepasswordItemFields .secrets.items.olivetin .secrets.vault -}}
@@ -153,65 +158,28 @@ entities:
 dashboards:
   - title: Services
     contents:
-{{- /* Only endpoints with a port have a web UI to link to. */ -}}
-{{- $ported := dict }}
-{{- range $hostname, $host := .hosts }}
-{{- range (index $host "endpoints" | default list) }}
-{{- if hasKey . "port" }}{{ $_ := set $ported .name true }}{{ end }}
-{{- end }}
-{{- end }}
-{{- /* dashboard-status probes loopback, so only this host's endpoints have a
-       status field. A tile for a service on another host still links to it. */ -}}
-{{- $local := dict }}
-{{- range (index $me "endpoints" | default list) }}
-{{- if hasKey . "port" }}{{ $_ := set $local .name true }}{{ end }}
-{{- end }}
-{{- $tiled := dict }}
-{{- range $group, $members := .dashboard.tiles }}
-{{- range $name, $tile := $members }}{{ $_ := set $tiled $name true }}{{ end }}
-{{- $shown := list }}
-{{- range $name, $tile := $members }}
-{{- if hasKey $ported $name }}{{ $shown = append $shown $name }}{{ end }}
-{{- end }}
-{{- if $shown }}
+{{- range $g := $tiles.groups }}
       - type: fieldset
+{{- /* "Other" is not entity-bound: it collects endpoints with no tile, which
+       have no status field to show. */ -}}
+{{- if not $g.other }}
         entity: status
-        title: {{ $group }}
+{{- end }}
+        title: {{ $g.name }}
         contents:
-{{- range $name := $shown }}
-{{- $tile := index $members $name }}
+{{- range $t := $g.tiles }}
           - type: display
             title: |
-              <a href="https://{{ $name }}.{{ $.domain }}" style="text-decoration:none;display:block">
-              <iconify-icon icon="{{ index $tile "icon" | default "mdi:link-variant" }}" style="font-size:2.6em"></iconify-icon>
-              <div style="font-weight:600">{{ index $tile "label" | default $name }}</div>
-              {{- with index $tile "description" }}
+              <a href="https://{{ $t.name }}.{{ $.domain }}" style="text-decoration:none;display:block">
+              <iconify-icon icon="{{ $t.icon | default "mdi:link-variant" }}" style="font-size:2.6em"></iconify-icon>
+              <div style="font-weight:600">{{ $t.label }}</div>
+              {{- with $t.description }}
               <div style="opacity:.7;font-size:.85em">{{ . }}</div>
               {{- end }}
-              {{- if hasKey $local $name }}
-              {{- $key := replace "-" "_" $name }}
+              {{- if and $t.local (not $g.other) }}
+              {{- $key := replace "-" "_" $t.name }}
               <div style="font-size:.8em;font-weight:600;color:{{ printf "{{ status.svc_%s_color }}" $key }}">{{ printf "{{ status.svc_%s }}" $key }}</div>
               {{- end }}
-              </a>
-{{- end }}
-{{- end }}
-{{- end }}
-{{- /* An endpoint in no group still gets a tile, so a new service is never
-       silently missing from the dashboard. */ -}}
-{{- $other := list }}
-{{- range $name := (keys $ported | sortAlpha) }}
-{{- if not (hasKey $tiled $name) }}{{ $other = append $other $name }}{{ end }}
-{{- end }}
-{{- if $other }}
-      - type: fieldset
-        title: Other
-        contents:
-{{- range $name := $other }}
-          - type: display
-            title: |
-              <a href="https://{{ $name }}.{{ $.domain }}" style="text-decoration:none;display:block">
-              <iconify-icon icon="mdi:link-variant" style="font-size:2.6em"></iconify-icon>
-              <div style="font-weight:600">{{ $name }}</div>
               </a>
 {{- end }}
 {{- end }}

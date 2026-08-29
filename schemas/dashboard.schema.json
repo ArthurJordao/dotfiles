@@ -48,6 +48,11 @@
                   "type": "string",
                   "pattern": "^[a-z0-9-]+:[a-z0-9-]+$",
                   "description": "Iconify name, `prefix:name`, from https://icon-sets.iconify.design -- `selfhst:` covers most self-hosted apps. The template wraps it in <iconify-icon>. A name that does not exist renders blank, so check it before adding."
+                },
+                "container": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "podman container name, which homepage reads state and CPU/memory from. A coordinate, not derivable: the endpoint name differs from the quadlet stem (`books` is `systemd-calibre-web-automated`), and podman prefixes `systemd-` only where the quadlet sets no ContainerName. Omit for anything that is not a container."
                 }
               }
             }

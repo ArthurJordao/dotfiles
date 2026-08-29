@@ -324,6 +324,11 @@
           "description": "Non-container service listening on this port. Absent means a quadlet must publish it, which is what tools/check-consistency enforces.",
           "minLength": 1
         },
+        "web": {
+          "type": "boolean",
+          "default": true,
+          "description": "false means the port is not a browser UI. It still gets its Caddy block, DNS records and tunnel rule; what it loses is the dashboards -- no tile on OliveTin or homepage, and no HTTP status probe, both of which would otherwise present a 404 as a service. For an API-only listener like the basic-memory MCP server."
+        },
         "auth": {
           "description": "bearer requires `Authorization: Bearer <token>` on every request, checked in the generated Caddy block against <NAME>_BEARER_TOKEN from caddy.env. Also re-points this hostname's tunnel ingress at Caddy, since that is where the check lives. Every client sends it, LAN included.",
           "enum": [

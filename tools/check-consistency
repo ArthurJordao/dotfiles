@@ -281,6 +281,16 @@ for group, members in sorted((dashboard.get("tiles") or {}).items()):
             fail("C12", "dashboard.tiles[%r][%r] names no endpoint in hosts.yaml"
                         % (group, tile))
 
+# C19 -- a tile on a `web: false` endpoint renders on no dashboard. The tile is
+# not wrong, it is unreachable, and nothing else would say so.
+non_web = set(e["name"] for h in hosts.values()
+              for e in (h.get("endpoints") or []) if e.get("web") is False)
+for group, members in sorted((dashboard.get("tiles") or {}).items()):
+    for tile in sorted(members or {}):
+        if tile in non_web:
+            fail("C19", "dashboard.tiles[%r][%r] names an endpoint marked "
+                        "`web: false` -- no dashboard renders it" % (group, tile))
+
 # C13 -- OliveTin identifies an action by its title, so a duplicate makes one
 # of them unreachable rather than erroring.
 seen = set()

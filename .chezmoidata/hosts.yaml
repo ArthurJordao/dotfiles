@@ -141,6 +141,7 @@ hosts:
       - blocky
       - calibre-web-automated
       - cloudflare-ddns
+      - homepage
       - music
       - shelfmark
       - silverbullet
@@ -154,6 +155,8 @@ hosts:
       - {name: shelfmark}
       - {name: wallabag}
       - {name: olivetin, stop_for_gaming: false}
+      # The dashboards are how you turn gaming mode back off.
+      - {name: homepage, stop_for_gaming: false}
       - {name: blocky, stop_for_gaming: false}
       - {name: basic-memory, stop_for_gaming: false}
       - {name: silverbullet, stop_for_gaming: false}
@@ -161,7 +164,8 @@ hosts:
       - {name: books, port: 8083, public: true}
       - {name: dash, port: 1337, served_by: olivetin}
       - {name: dns, port: 8053, scheme: https, tls_insecure: true, log: false, served_by: coredns}
-      - {name: memory, port: 8086, public: true, auth: bearer}
+      - {name: home, port: 8088}
+      - {name: memory, port: 8086, public: true, auth: bearer, web: false}
       - {name: music, port: 4533}
       - {name: notes, port: 8087}
       - {name: shelfmark, port: 8084}

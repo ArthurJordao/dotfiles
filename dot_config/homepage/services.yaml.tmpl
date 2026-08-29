@@ -1,0 +1,21 @@
+{{- $tiles := includeTemplate "dashboard-tiles" (dict "hosts" .hosts "hostname" .hostname "tiles" .dashboard.tiles) | fromJson -}}
+# GENERATED from .chezmoidata/ — edit hosts.yaml and dashboard.yaml, not this.
+{{ range $g := $tiles.groups }}
+- {{ $g.name | quote }}:
+{{- range $t := $g.tiles }}
+{{- /* Our icons are Iconify `prefix:name`; homepage wants `prefix-name`, and
+       calls the selfh.st set `sh`. An unmapped prefix renders blank. */}}
+    - {{ $t.label | quote }}:
+        href: https://{{ $t.name }}.{{ $.domain }}
+{{- with $t.description }}
+        description: {{ . | quote }}
+{{- end }}
+{{- with $t.icon }}
+        icon: {{ . | replace "selfhst:" "sh:" | replace ":" "-" }}
+{{- end }}
+{{- if and $t.local $t.container }}
+        server: podman
+        container: {{ $t.container }}
+{{- end }}
+{{- end }}
+{{ end }}

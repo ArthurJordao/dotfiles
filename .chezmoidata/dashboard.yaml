@@ -6,30 +6,38 @@
 #
 # `tiles` is keyed by ENDPOINT NAME -- the URL comes from hosts.yaml, never from
 # here. An endpoint with no entry still gets a plain, ungrouped tile.
+#
+# Two dashboards render these: OliveTin and homepage, both through
+# .chezmoitemplates/dashboard-tiles.
 dashboard:
   # Keyed by fieldset, then by ENDPOINT NAME -- the URL still comes from
   # hosts.yaml, never from here. Fieldsets render in sorted key order. An
   # endpoint listed in no group still gets a plain tile under "Other", so a new
   # service is never silently missing.
+  #
+  # `container` is what homepage reads state and CPU/memory from. It is a
+  # coordinate, not derivable: `books` is `systemd-calibre-web-automated`, and
+  # podman only prefixes `systemd-` where the quadlet sets no ContainerName.
+  # Omit it for anything that is not a container.
   tiles:
     Books:
-      books: {icon: "selfhst:calibre-web", label: Calibre, description: Library}
-      shelfmark: {icon: "selfhst:shelfmark", label: Shelfmark, description: Reading sync}
-      wallabag: {icon: "selfhst:wallabag", label: wallabag, description: Read later}
+      books: {icon: "selfhst:calibre-web", label: Calibre, description: Library, container: systemd-calibre-web-automated}
+      shelfmark: {icon: "selfhst:shelfmark", label: Shelfmark, description: Reading sync, container: systemd-shelfmark}
+      wallabag: {icon: "selfhst:wallabag", label: wallabag, description: Read later, container: systemd-wallabag}
 
     Infra:
-      dash: {icon: "mdi:view-dashboard", label: This dashboard}
+      dash: {icon: "mdi:view-dashboard", label: OliveTin, description: Controls}
+      home: {icon: "selfhst:homepage", label: Homepage, description: Service overview, container: systemd-homepage}
       dns: {icon: "selfhst:coredns", label: CoreDNS, description: Split-horizon DNS}
       sunshine: {icon: "selfhst:sunshine", label: Sunshine, description: Game streaming}
 
     Notes:
-      notes: {icon: "mdi:notebook-outline", label: SilverBullet, description: Notes}
-      memory: {icon: "selfhst:basic-memory", label: basic-memory, description: Notes MCP}
+      notes: {icon: "mdi:notebook-outline", label: SilverBullet, description: Notes, container: systemd-silverbullet}
 
     Media:
-      music: {icon: "selfhst:navidrome", label: Navidrome, description: Music}
-      slskd: {icon: "selfhst:slskd", label: slskd, description: Soulseek}
-      soulsync: {icon: "mdi:playlist-music", label: SoulSync}
+      music: {icon: "selfhst:navidrome", label: Navidrome, description: Music, container: navidrome}
+      slskd: {icon: "selfhst:slskd", label: slskd, description: Soulseek, container: slskd}
+      soulsync: {icon: "mdi:playlist-music", label: SoulSync, container: systemd-soulsync}
 
   users:
     arthur: {group: admins, secret: ARTHUR_PASSWORD_HASH}

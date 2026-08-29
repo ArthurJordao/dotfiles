@@ -96,6 +96,10 @@ Emulation/**
 .config/blocky/**
 .local/scripts/blocky
 {{ end }}
+{{ if not (has "homepage" (index $me "quadlets" | default list)) }}
+.config/homepage
+.config/homepage/**
+{{ end }}
 {{ if not (has "podman" $roles) }}
 .config/containers
 .config/containers/**

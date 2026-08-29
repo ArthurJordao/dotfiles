@@ -1,0 +1,4 @@
+# The rootless podman socket, bind-mounted at the docker path by the quadlet.
+# `server: podman` on a service in services.yaml refers to this name.
+podman:
+  socket: /var/run/docker.sock

@@ -15,7 +15,7 @@
       },
       "additionalProperties": {
         "type": "object",
-        "required": ["palette", "vivid", "fish", "bat", "wezterm", "nvim"],
+        "required": ["palette", "vivid", "fish", "bat", "wezterm", "homepage", "nvim"],
         "additionalProperties": false,
         "properties": {
           "palette": {
@@ -34,6 +34,21 @@
           "wezterm": {
             "type": "string",
             "description": "A wezterm built-in color scheme name."
+          },
+          "homepage": {
+            "type": "object",
+            "description": "Homepage takes light/dark plus one of its own fixed palette names -- it cannot accept hex, so palettes.yaml never reaches it.",
+            "required": ["theme", "color"],
+            "additionalProperties": false,
+            "properties": {
+              "theme": {"enum": ["light", "dark"]},
+              "color": {
+                "description": "One of homepage's built-in palette names; anything else falls back to slate.",
+                "enum": ["slate", "gray", "zinc", "neutral", "stone", "amber", "yellow",
+                         "lime", "green", "emerald", "teal", "cyan", "sky", "blue",
+                         "indigo", "violet", "purple", "fuchsia", "pink", "rose", "red", "white"]
+              }
+            }
           },
           "nvim": {
             "type": "object",

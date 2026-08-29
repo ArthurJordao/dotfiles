@@ -321,7 +321,7 @@ dependents but start only to dependencies — stopping `immich-pod` takes the co
 starting it alone brings up an empty pod.
 
 Endpoint fields: `name` (required), `port` (omit ⇒ DNS-only, no Caddy block, no tunnel),
-`public`, `ddns`, `scheme`, `tls_insecure`, `log`, `served_by`, `auth`.
+`public`, `ddns`, `scheme`, `tls_insecure`, `log`, `served_by`, `web`, `auth`.
 
 `ddns: true` makes the `cloudflare-ddns` container keep that hostname's public A record on the
 current WAN IP. Independent of `public`, which routes a hostname through the tunnel instead.
@@ -329,6 +329,12 @@ current WAN IP. Independent of `public`, which routes a hostname through the tun
 `served_by` names the non-container service listening on that port — `dns` → coredns, `sunshine` →
 the package. Without it, `check-consistency` requires one of that host's quadlets to publish the
 port, so the field is what separates "intentionally not a container" from "forgot the quadlet".
+
+`web: false` says the port is not a browser UI. It keeps its Caddy block, DNS records and tunnel
+rule and loses only the dashboards — no tile, and no HTTP status probe, both of which would
+otherwise present a 404 as a service. `memory` (the basic-memory MCP server) is the one so far.
+Read it with `hasKey`, never `| default`: sprig treats `false` as empty and flips it to `true`.
+C19 rejects a tile on such an endpoint, which would render nowhere.
 
 `auth: bearer` makes the Caddy block require `Authorization: Bearer <token>`, matched against
 `<NAME>_BEARER_TOKEN` — hyphens in the name become underscores — which `caddy.env` reads off the
@@ -383,7 +389,7 @@ the script's own bytes, `run_onchange` re-fires exactly when the output changes.
 hash here; `trimSuffix "\n"` on each `includeTemplate` keeps the heredoc terminator on its own
 line.
 
-All thirteen scripts live in **`.chezmoiscripts/`** and every one carries the **`after_`** attribute, so
+All fifteen scripts live in **`.chezmoiscripts/`** and every one carries the **`after_`** attribute, so
 they run once every file has been deployed and the numeric prefix orders only the scripts among
 themselves. Keep both properties on any new script: without `after_`, `.chezmoiscripts` sorts ahead
 of `.config`, `.local`, `Brewfile` and `Pictures`, and the script runs before anything lands.
@@ -402,6 +408,7 @@ Anything needing a package goes after 10; gaps of 10 leave room to insert. Keep 
 | 70 | `deploy-etc` | `caddy`, `coredns` (edge role) |
 | 75 | `deploy-resolver` | darwin only |
 | 80 | `restart-syncthing` | `syncthing` (emulation role) |
+| 85 | `restart-homepage` | homepage config deployed (claims the quadlet) |
 | 90 | `restart-olivetin` | OliveTin config deployed (server role) |
 | 95 | `restart-blocky` | blocky config deployed (claims the quadlet) |
 
@@ -557,7 +564,29 @@ hosts in `.chezmoidata/hosts.yaml` relocates the whole Caddy/CoreDNS/cloudflared
   the wrong headings, and the built-in Actions view returns. blocky simply reads its config once at
   start, so a new blocklist URL needs the restart; `/lists/refresh` only re-downloads lists it
   already knows.
-- **The dashboard is OliveTin**, a systemd *user* unit rather than a container —
+- **Two dashboards render the same tiles.** `.chezmoitemplates/dashboard-tiles`
+  is the single model — which endpoints have a port, are not `web: false`, and
+  what tile metadata they carry — emitted as JSON that each consumer reads with
+  `fromJson`. A group renders only if something in it has a port, and a ported
+  endpoint in no group lands in "Other", so a service cannot appear on one
+  dashboard and not the other. Tile `container` is a coordinate that has to be
+  declared: the endpoint name is not the quadlet stem, and podman prefixes
+  `systemd-` only where the quadlet sets no `ContainerName`.
+- **Homepage is the read-only half**, a quadlet on the host claiming it.
+  `.config/homepage` is a plain managed directory — never `exact_`, since
+  homepage writes `logs/` into it. It has no authentication of its own, so the
+  quadlet publishes on loopback and Caddy is the only way in; that also means
+  `HOMEPAGE_ALLOWED_HOSTS` must name the proxied hostname, or every request
+  gets a 400. Per-tile container state and CPU/memory come from the rootless
+  podman socket bind-mounted at the docker path, which is why the container
+  runs as uid 0 and `podman.socket` is enabled in script 50. The `resources`
+  widget reads the disk through the config bind mount: statfs reports the
+  filesystem the source lives on, so no extra volume. Icons are translated from
+  our Iconify `prefix:name` to homepage's `prefix-name`, with `selfhst` → `sh`;
+  an unmapped prefix renders blank rather than erroring. Theme names come from
+  `theme.yaml`'s `homepage` key — it cannot accept hex, so `palettes.yaml` never
+  reaches it.
+- **OliveTin is the control half**, a systemd *user* unit rather than a container —
   `gaming-mode` drives `systemctl --user` and the container buttons call
   `podman` directly. Its whole config is generated: tiles come from `endpoints`,
   and presentation, logins and buttons from `.chezmoidata/dashboard.yaml`.

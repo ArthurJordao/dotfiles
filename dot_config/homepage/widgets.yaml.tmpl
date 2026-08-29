@@ -1,0 +1,18 @@
+# GENERATED from .chezmoidata/ — edit this template, not the deployed file.
+#
+# statfs through a bind mount reports the filesystem the source lives on, so
+# the config mount already measures the host disk; no extra volume for it.
+- resources:
+    cpu: true
+    memory: true
+    disk: /app/config
+- datetime:
+    text_size: xl
+    format:
+      timeStyle: short
+      dateStyle: long
+      hourCycle: h23
+      timeZone: {{ .timezone }}
+- search:
+    provider: duckduckgo
+    target: _blank
