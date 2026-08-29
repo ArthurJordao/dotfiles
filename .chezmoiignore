@@ -44,7 +44,12 @@ Pictures/**
 minecraft
 minecraft/**
 {{ end }}
-{{ if not (and (has "server" $roles) (has "gaming" $roles)) }}
+{{/* One role, not a conjunction: the old `server` AND `gaming` gate matched
+      nobody once the services moved to pluto, and a gate that can silently
+      match no host is the failure this is avoiding. CANDIDATES is derived per
+      host, so a gaming box with nothing to stop gets a no-op rather than a
+      missing script. */}}
+{{ if not (has "gaming" $roles) }}
 .local/scripts/gaming-mode
 {{ end }}
 {{ if not (has "podman" $roles) }}

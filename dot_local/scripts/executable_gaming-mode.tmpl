@@ -50,12 +50,17 @@ cmd_on() {
         fi
     done
 
-    printf '%s\n' "${active[@]}" > "$STATE"
-
+    # An empty state file still means gaming mode is on -- check-live reads it
+    # to tell an intentionally stopped stack from drift. It has to be written
+    # with `:` rather than printf, which would emit one blank line: `off` reads
+    # that back as a unit named "" and dies before it can clear the file.
     if [[ ${#active[@]} -eq 0 ]]; then
+        : > "$STATE"
         echo "Gaming mode ON — nothing was running."
         exit 0
     fi
+
+    printf '%s\n' "${active[@]}" > "$STATE"
 
     echo "Gaming mode ON — stopping:"
     printf '  %s\n' "${active[@]}"
