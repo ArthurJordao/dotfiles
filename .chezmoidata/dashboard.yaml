@@ -25,22 +25,23 @@ dashboard:
       shelfmark: {icon: "selfhst:shelfmark", label: Shelfmark, description: Reading sync, container: systemd-shelfmark}
       wallabag: {icon: "selfhst:wallabag", label: wallabag, description: Read later, container: systemd-wallabag}
 
+    Games:
+      # No port, so nothing links to it -- the widget is the whole point.
+      minecraft: {icon: "mdi:minecraft", label: Minecraft, description: Game server,
+                  widget: {type: minecraft, scheme: udp, port: 25565}}
+      sunshine: {icon: "selfhst:sunshine", label: Sunshine, description: Game streaming}
+
     Infra:
       dash: {icon: "mdi:view-dashboard", label: OliveTin, description: Controls}
       home: {icon: "selfhst:homepage", label: Homepage, description: Service overview, container: systemd-homepage}
       dns: {icon: "selfhst:coredns", label: CoreDNS, description: Split-horizon DNS}
-      sunshine: {icon: "selfhst:sunshine", label: Sunshine, description: Game streaming}
-      # No port, so nothing links to it -- the widget is the whole point.
-      minecraft: {icon: "mdi:minecraft", label: Minecraft, description: Game server,
-                  widget: {type: minecraft, scheme: udp, port: 25565}}
 
     Notes:
       notes: {icon: "mdi:notebook-outline", label: SilverBullet, description: Notes, container: systemd-silverbullet}
 
     Media:
       music: {icon: "selfhst:navidrome", label: Navidrome, description: Music, container: navidrome}
-      slskd: {icon: "selfhst:slskd", label: slskd, description: Soulseek, container: slskd,
-              widget: {type: slskd, item: slskd, fields: {key: SLSKD_API_KEY}}}
+      slskd: {icon: "selfhst:slskd", label: slskd, description: Soulseek, container: slskd}
       soulsync: {icon: "mdi:playlist-music", label: SoulSync, container: systemd-soulsync}
 
   users:

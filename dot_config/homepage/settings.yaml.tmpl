@@ -15,5 +15,6 @@ layout:
 {{- range $g := $tiles.groups }}
   {{ $g.name }}:
     style: row
-    columns: 4
+    # 3, not 4: the groups hold three tiles each, so a row fills exactly.
+    columns: 3
 {{- end }}
