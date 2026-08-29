@@ -28,13 +28,18 @@
 {{- $shown := list -}}
 {{- range $name, $tile := $members -}}
 {{- $_ := set $tiled $name true -}}
-{{- if hasKey $ported $name -}}
+{{- /* A widget earns a tile on its own: `minecraft` has no port to link to,
+       but its status is worth showing. `link` is what separates the two --
+       OliveTin renders only linkable tiles, since its tile IS the link. */ -}}
+{{- if or (hasKey $ported $name) (hasKey $tile "widget") -}}
 {{- $shown = append $shown (dict
       "name" $name
       "label" (index $tile "label" | default $name)
       "description" (index $tile "description" | default "")
       "icon" (index $tile "icon" | default "")
       "container" (index $tile "container" | default "")
+      "widget" (index $tile "widget" | default dict)
+      "link" (hasKey $ported $name)
       "local" (hasKey $local $name)) -}}
 {{- end -}}
 {{- end -}}
@@ -47,7 +52,7 @@
 {{- if not (hasKey $tiled $name) -}}
 {{- $other = append $other (dict
       "name" $name "label" $name "description" "" "icon" "" "container" ""
-      "local" (hasKey $local $name)) -}}
+      "widget" dict "link" true "local" (hasKey $local $name)) -}}
 {{- end -}}
 {{- end -}}
 {{- if $other -}}

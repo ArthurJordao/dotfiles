@@ -53,6 +53,59 @@
                   "type": "string",
                   "minLength": 1,
                   "description": "podman container name, which homepage reads state and CPU/memory from. A coordinate, not derivable: the endpoint name differs from the quadlet stem (`books` is `systemd-calibre-web-automated`), and podman prefixes `systemd-` only where the quadlet sets no ContainerName. Omit for anything that is not a container."
+                },
+                "widget": {
+                  "type": "object",
+                  "description": "A homepage widget on this tile. A tile with one renders even if its endpoint has no port -- `minecraft` has nothing to link to but a status worth showing. OliveTin ignores widgets; its tile is only a link.",
+                  "additionalProperties": false,
+                  "required": [
+                    "type"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Homepage widget name, e.g. slskd, minecraft, calibreweb. An unknown name renders an error card."
+                    },
+                    "scheme": {
+                      "type": "string",
+                      "enum": [
+                        "http",
+                        "https",
+                        "udp"
+                      ],
+                      "default": "https",
+                      "description": "Scheme of the widget's url. The url itself is built as <scheme>://<name>.<domain>[:<port>], so the domain is never written here."
+                    },
+                    "port": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 65535,
+                      "description": "Appended to the widget url. For a service the widget reaches on its own port rather than through Caddy."
+                    },
+                    "item": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Key in secrets.items holding this widget's credentials. Required if `fields` is set."
+                    },
+                    "fields": {
+                      "type": "object",
+                      "minProperties": 1,
+                      "description": "Maps a homepage widget field to the 1Password field on `item` holding it. Rendered into homepage.env and referenced from services.yaml as {{HOMEPAGE_VAR_<TILE>_<FIELD>}}, so no secret lands in a config file.",
+                      "propertyNames": {
+                        "pattern": "^[a-z][a-zA-Z0-9_]*$"
+                      },
+                      "additionalProperties": {
+                        "type": "string",
+                        "pattern": "^[A-Z][A-Z0-9_]*$"
+                      }
+                    }
+                  },
+                  "dependentRequired": {
+                    "fields": [
+                      "item"
+                    ]
+                  }
                 }
               }
             }

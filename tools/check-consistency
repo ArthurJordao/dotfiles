@@ -85,12 +85,14 @@ def fail(rule, msg):
 
 data = json.loads(render("_checker", text=(
     '{{ dict "hosts" .hosts "packages" .packages "syncthing" .syncthing '
-    '"minecraft" .minecraft "dashboard" .dashboard | toJson }}')))
+    '"minecraft" .minecraft "dashboard" .dashboard "secrets" .secrets | toJson }}')))
 hosts = data["hosts"]
 packages = data.get("packages") or {}
 folders = (data.get("syncthing") or {}).get("folders") or []
 instances = (data.get("minecraft") or {}).get("instances") or []
 dashboard = data.get("dashboard") or {}
+# Item titles only -- no secret value is ever read here.
+secrets = data.get("secrets") or {}
 
 files = quadlet_files()
 top_level = set(f.split(os.sep)[0] for f in files)
@@ -290,6 +292,15 @@ for group, members in sorted((dashboard.get("tiles") or {}).items()):
         if tile in non_web:
             fail("C19", "dashboard.tiles[%r][%r] names an endpoint marked "
                         "`web: false` -- no dashboard renders it" % (group, tile))
+
+# C20 -- a widget whose credentials name an item that does not exist renders
+# HOMEPAGE_VAR_* lines the apply cannot fill.
+for group, members in sorted((dashboard.get("tiles") or {}).items()):
+    for tile, spec in sorted((members or {}).items()):
+        item = ((spec or {}).get("widget") or {}).get("item")
+        if item and item not in (secrets.get("items") or {}):
+            fail("C20", "dashboard.tiles[%r][%r] widget reads item %r, which is "
+                        "not in secrets.items" % (group, tile, item))
 
 # C13 -- OliveTin identifies an action by its title, so a duplicate makes one
 # of them unreachable rather than erroring.

@@ -30,13 +30,17 @@ dashboard:
       home: {icon: "selfhst:homepage", label: Homepage, description: Service overview, container: systemd-homepage}
       dns: {icon: "selfhst:coredns", label: CoreDNS, description: Split-horizon DNS}
       sunshine: {icon: "selfhst:sunshine", label: Sunshine, description: Game streaming}
+      # No port, so nothing links to it -- the widget is the whole point.
+      minecraft: {icon: "mdi:minecraft", label: Minecraft, description: Game server,
+                  widget: {type: minecraft, scheme: udp, port: 25565}}
 
     Notes:
       notes: {icon: "mdi:notebook-outline", label: SilverBullet, description: Notes, container: systemd-silverbullet}
 
     Media:
       music: {icon: "selfhst:navidrome", label: Navidrome, description: Music, container: navidrome}
-      slskd: {icon: "selfhst:slskd", label: slskd, description: Soulseek, container: slskd}
+      slskd: {icon: "selfhst:slskd", label: slskd, description: Soulseek, container: slskd,
+              widget: {type: slskd, item: slskd, fields: {key: SLSKD_API_KEY}}}
       soulsync: {icon: "mdi:playlist-music", label: SoulSync, container: systemd-soulsync}
 
   users:

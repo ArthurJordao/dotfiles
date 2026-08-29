@@ -159,6 +159,9 @@ dashboards:
   - title: Services
     contents:
 {{- range $g := $tiles.groups }}
+{{- $linked := list }}
+{{- range $t := $g.tiles }}{{ if $t.link }}{{ $linked = append $linked $t }}{{ end }}{{ end }}
+{{- if $linked }}
       - type: fieldset
 {{- /* "Other" is not entity-bound: it collects endpoints with no tile, which
        have no status field to show. */ -}}
@@ -167,7 +170,7 @@ dashboards:
 {{- end }}
         title: {{ $g.name }}
         contents:
-{{- range $t := $g.tiles }}
+{{- range $t := $linked }}
           - type: display
             title: |
               <a href="https://{{ $t.name }}.{{ $.domain }}" style="text-decoration:none;display:block">
@@ -181,6 +184,7 @@ dashboards:
               <div style="font-size:.8em;font-weight:600;color:{{ printf "{{ status.svc_%s_color }}" $key }}">{{ printf "{{ status.svc_%s }}" $key }}</div>
               {{- end }}
               </a>
+{{- end }}
 {{- end }}
 {{- end }}
   - title: Controls

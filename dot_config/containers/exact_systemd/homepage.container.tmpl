@@ -18,6 +18,8 @@ Environment=TZ={{ .timezone }}
 # hit on the port. Comma-separated, no spaces.
 Environment=HOMEPAGE_ALLOWED_HOSTS=home.{{ .domain }}
 
+EnvironmentFile=%h/.config/containers/systemd/homepage.env
+
 Volume=%h/.config/homepage:/app/config
 # The rootless socket speaks the docker API. uid 0 so container-root maps to
 # the host user that owns it.
