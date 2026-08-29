@@ -131,7 +131,7 @@ hosts:
     distro: debian
     user: arthur
     ip:
-      lan: 192.168.15.31
+      lan: 192.168.15.32
       tailscale: 100.122.236.32
     storage:
       media: "%h/media"
