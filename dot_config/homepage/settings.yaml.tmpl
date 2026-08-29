@@ -10,11 +10,11 @@ statusStyle: dot
 hideVersion: true
 
 # Same groups, same order as the OliveTin dashboard: both read
-# .chezmoitemplates/dashboard-tiles.
+# .chezmoitemplates/dashboard-tiles. 3 columns, not 4, is what the groups
+# actually hold, so a row fills instead of leaving a gap on the right.
 layout:
 {{- range $g := $tiles.groups }}
   {{ $g.name }}:
     style: row
-    # 3, not 4: the groups hold three tiles each, so a row fills exactly.
     columns: 3
 {{- end }}
