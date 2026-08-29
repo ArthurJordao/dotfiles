@@ -327,7 +327,13 @@
         "web": {
           "type": "boolean",
           "default": true,
-          "description": "false means the port is not a browser UI. It still gets its Caddy block, DNS records and tunnel rule; what it loses is the dashboards -- no tile on OliveTin or homepage, and no HTTP status probe, both of which would otherwise present a 404 as a service. For an API-only listener like the basic-memory MCP server."
+          "description": "false means the port is not a browser UI. It still gets its Caddy block, DNS records and tunnel rule; what it loses is the dashboards -- no tile on the dashboard, and no HTTP status probe, both of which would otherwise present a 404 as a service. For an API-only listener like the basic-memory MCP server."
+        },
+        "probe_port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "description": "Port to health-check when the service is not HTTP behind Caddy. Unlike `port` it emits no Caddy block and no tunnel rule -- it only gives the endpoint a svc_<name> status field on the dashboard, reached over the network by hostname rather than on loopback. For minecraft, whose endpoint is a bare DNS record."
         },
         "auth": {
           "description": "bearer requires `Authorization: Bearer <token>` on every request, checked in the generated Caddy block against <NAME>_BEARER_TOKEN from caddy.env. Also re-points this hostname's tunnel ingress at Caddy, since that is where the check lives. Every client sends it, LAN included.",

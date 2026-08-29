@@ -6,26 +6,11 @@
   "properties": {
     "theme": {
       "type": "object",
-      "required": ["active", "homepage"],
+      "required": ["active"],
       "properties": {
         "active": {
           "type": "string",
           "description": "Key of the theme block below. The single switch."
-        },
-        "homepage": {
-          "type": "object",
-          "description": "The dashboard's own light/dark and palette name. Deliberately not per-theme: homepage cannot take hex, so nothing about it follows from `active`.",
-          "required": ["theme", "color"],
-          "additionalProperties": false,
-          "properties": {
-            "theme": {"enum": ["light", "dark"]},
-            "color": {
-              "description": "One of homepage's built-in palette names; anything else falls back to slate.",
-              "enum": ["slate", "gray", "zinc", "neutral", "stone", "amber", "yellow",
-                     "lime", "green", "emerald", "teal", "cyan", "sky", "blue",
-                     "indigo", "violet", "purple", "fuchsia", "pink", "rose", "red", "white"]
-            }
-          }
         }
       },
       "additionalProperties": {

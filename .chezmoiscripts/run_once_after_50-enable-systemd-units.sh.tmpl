@@ -1,6 +1,4 @@
-{{- $me := index .hosts .hostname -}}
-{{- $roles := $me.roles -}}
-{{- $quadlets := index $me "quadlets" | default list -}}
+{{- $roles := (index .hosts .hostname).roles -}}
 {{ if or (has "minecraft" $roles) (has "podman" $roles) (has "sunshine" $roles) (has "emulation" $roles) (has "server" $roles) -}}
 #!/bin/bash
 set -euo pipefail
@@ -8,11 +6,6 @@ set -euo pipefail
 systemctl --user daemon-reload
 {{ if has "podman" $roles -}}
 systemctl --user enable --now podman-auto-update.timer
-{{ end -}}
-{{ if has "homepage" $quadlets -}}
-# homepage reads container state through the docker-compatible API, which only
-# exists once this socket is up.
-systemctl --user enable --now podman.socket
 {{ end -}}
 {{ if has "minecraft" $roles -}}
 systemctl --user enable --now minecraft-backup.timer

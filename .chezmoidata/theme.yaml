@@ -3,12 +3,8 @@
 # Switch the whole fleet by editing `active`, then `just apply` and restart the
 # terminal. Colors live in palettes.yaml (generated); this file only names things.
 #
-# Six consumers take a name because their upstream ports encode work 16 colors
+# Five consumers take a name because their upstream ports encode work 16 colors
 # cannot carry. Only FZF and lazygit are generated from `palette`.
-#
-# `theme.homepage` sits outside the palettes on purpose: a light terminal and a
-# dark dashboard are separate preferences, and homepage cannot take hex anyway,
-# so nothing about it follows from `active`.
 #
 # `bat` must be a name bat ships built in (`bat --list-themes`) -- an unknown
 # name only warns, then falls back to a dark default.
@@ -20,8 +16,6 @@
 
 theme:
   active: catppuccin-latte
-
-  homepage: {theme: dark, color: slate}
 
   catppuccin-latte:
     palette: catppuccin-latte

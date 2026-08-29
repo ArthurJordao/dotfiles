@@ -45,14 +45,20 @@ root=$(df --output=pcent / 2>/dev/null | tail -1 | tr -d ' ')
 ext=$(df --output=pcent /mnt/x9pro 2>/dev/null | tail -1 | tr -d ' ')
 ext=${ext:-n/a}
 
-# Service probes. Each argument is name:port -- a TCP connect on loopback, which
-# answers "is something listening" without caring about TLS or HTTP semantics.
+# Service probes. A TCP connect, which answers "is something listening" without
+# caring about TLS or HTTP semantics. Each argument is name:port for a service
+# on this host, or name:host:port for one reached over the network -- minecraft
+# lives on another box and still earns a field.
 svc_fields=""
 for spec in "$@"; do
     name=${spec%%:*}
     port=${spec##*:}
+    rest=${spec#*:}
+    # Two fields means no host was given; probe loopback. 127.0.0.1, never
+    # localhost: rootless containers use pasta, which forwards IPv4 only.
+    if [ "$rest" = "$port" ]; then host=127.0.0.1; else host=${rest%:*}; fi
     key=${name//-/_}
-    if timeout 2 bash -c "exec 3<>/dev/tcp/127.0.0.1/$port" 2>/dev/null; then
+    if timeout 2 bash -c "exec 3<>/dev/tcp/$host/$port" 2>/dev/null; then
         svc_fields="$svc_fields\"svc_$key\":\"up\",\"svc_${key}_color\":\"$GOOD\","
     else
         svc_fields="$svc_fields\"svc_$key\":\"down\",\"svc_${key}_color\":\"$BAD\","
