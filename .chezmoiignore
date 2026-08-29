@@ -31,9 +31,12 @@ Pictures/**
 
 # Axis 2: role — gated by what the box is FOR.
 
-{{ if not (or (has "minecraft" $roles) (has "server" $roles)) }}
+{{ if not (or (has "minecraft" $roles) (has "server" $roles) (has "agent" $roles)) }}
 .config/systemd
 .config/systemd/**
+{{ end }}
+{{ if not (has "agent" $roles) }}
+.config/systemd/user/claude-remote-control.service
 {{ end }}
 {{ if not (has "minecraft" $roles) }}
 .config/systemd/user/minecraft@.service

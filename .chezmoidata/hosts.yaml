@@ -5,6 +5,7 @@
 #   podman     rootless podman quadlets
 #   gui        graphical session
 #   dev        a host commits are authored on: signing key + SSH push remote
+#   agent      Claude Code remote-control server, reachable from the phone
 #   work       the work laptop: employer API keys and JVM tooling (sdkman)
 #   gaming     used for games
 #   minecraft  minecraft@ units + helper scripts
@@ -52,7 +53,7 @@ hosts:
       tailscale: 100.84.63.99
 
   mars:
-    roles: [podman, gui, dev, gaming, minecraft, sunshine, emulation]
+    roles: [podman, gui, dev, agent, gaming, minecraft, sunshine, emulation]
     os: linux
     distro: arch
     user: turisa
@@ -71,6 +72,8 @@ hosts:
     units:
       - {name: teamspeak3}
       - {name: syncthing}
+      # Remote access to this checkout; idle when nobody is connected.
+      - {name: claude-remote-control, stop_for_gaming: false}
       - {name: sunshine, stop_for_gaming: false}
 
     endpoints:

@@ -1,0 +1,21 @@
+[Unit]
+Description=Claude Code remote-control server for the dotfiles checkout
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+# Server mode: it waits for the phone or claude.ai to open a session against
+# this checkout. Nothing listens locally -- the process dials out.
+WorkingDirectory=%h/dev/personal/dotfiles
+# Tools run through a non-login shell, which inherits the user manager's PATH.
+Environment=PATH=%h/.local/bin:%h/.local/scripts:/usr/local/bin:/usr/bin:/bin
+# Every session gets its own git worktree under .claude/worktrees/, branched
+# from origin/HEAD: this directory is the chezmoi source dir, so a session
+# editing it in place would be live state the next apply deploys.
+ExecStart=/usr/bin/claude remote-control --spawn worktree --no-create-session-in-dir --permission-mode acceptEdits
+# Not on-failure: the server exits cleanly after ~10 minutes without network.
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=default.target

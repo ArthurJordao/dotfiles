@@ -109,6 +109,10 @@
                 "description": "A host commits are authored on: imports the GPG signing key and switches the source-dir remote to SSH. Both need credentials no other host should carry."
               },
               {
+                "const": "agent",
+                "description": "Runs the Claude Code remote-control server against the dotfiles checkout, so the session is reachable from claude.ai and the phone. Needs a `claude` login on the host; the credentials are unmanaged."
+              },
+              {
                 "const": "work",
                 "description": "The work laptop. Carries the employer's API keys and the JVM tooling (sdkman) used only there; neither should reach a personal or shared machine."
               },
