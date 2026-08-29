@@ -1,5 +1,5 @@
 {{- $tiles := includeTemplate "dashboard-tiles" (dict "hosts" .hosts "hostname" .hostname "tiles" .dashboard.tiles) | fromJson -}}
-{{- $hp := (index .theme .theme.active).homepage -}}
+{{- $hp := .theme.homepage -}}
 # GENERATED from .chezmoidata/ — edit theme.yaml, hosts.yaml and dashboard.yaml,
 # not this.
 title: {{ .hostname }}
