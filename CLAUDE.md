@@ -501,7 +501,22 @@ hosts in `.chezmoidata/hosts.yaml` relocates the whole Caddy/CoreDNS/cloudflared
 ## Other mars pieces
 
 - `dot_config/systemd/user/` — hand-written units: `minecraft@.service.tmpl` (unit template;
-  instances are mutually exclusive) and `minecraft-backup` (service+timer; daily world backup).
+  instances are mutually exclusive), `minecraft-backup` (service+timer; daily world backup) and
+  `claude-remote-control` (the `agent` role).
+- **The `agent` role runs `claude remote-control` against `~/dev/personal/dotfiles`**, reachable
+  from claude.ai and the phone. Server mode dials out, so there is no endpoint, no Caddy block and
+  no tunnel — nothing listens locally.
+  - **`--spawn worktree` is load-bearing.** That checkout *is* the chezmoi source dir, so a
+    session editing it in place would be live state the next apply deploys. Worktrees land in
+    `.claude/worktrees/` (gitignored, and dot-prefixed so chezmoi ignores it too), branched from
+    `origin/master`. `--no-create-session-in-dir` is what keeps the server from opening one in the
+    source dir itself.
+  - **Two first-run prompts need a TTY once** — Remote Control consent and spawn mode. Started
+    headless before they are answered, the unit reports `active` while connected to nothing:
+    stdin is `/dev/null`, so it parks on the prompt. Answer them by running
+    `claude remote-control` by hand in the checkout; the answers persist per project.
+  - `/usr/bin/claude` is the package's wrapper, which sets `DISABLE_UPDATES=1` so paru owns
+    updates. Point the unit at it, never at `/opt/claude-code/bin/claude`.
 - **Minecraft instances are declared in exactly one place**: `.chezmoidata/minecraft.yaml`. A host
   runs them by having the `minecraft` role — `units` carries no minecraft entries. Both
   `minecraft@.service`'s `Conflicts=` and `gaming-mode`'s `CANDIDATES` derive from that list, so
@@ -734,11 +749,12 @@ tools/simulate-host mercury execute-template < dot_local/state/private_syncthing
 # Working in this repo
 
 - The user runs `chezmoi apply` themselves — don't run it for them.
-- **Specs and plans go to the notes store on mars**, `dotfiles/specs/` and `dotfiles/plans/`,
+- **Specs and plans go to the notes store on pluto**, `dotfiles/specs/` and `dotfiles/plans/`,
   not `docs/superpowers/`. That path is in the global gitignore, so anything left there exists on
   exactly one laptop — and a runbook is needed *away* from the checkout, in front of the
   hardware. Draft locally while brainstorming, publish once approved. Delete a plan once
-  executed: what was decided lives in the spec, not in the scaffolding.
+  executed: what was decided lives in the spec, not in the scaffolding. An executed spec moves to
+  `dotfiles/specs/archive/`, so `specs/` shows only what is in flight.
 - **Keep comments short.** State the constraint, not how it was discovered, what it looked like
   when broken, or what an earlier version got wrong. One or two lines is usually enough.
 - **nvim is managed with `exact_` on every directory level** (`dot_config/exact_nvim/`).
