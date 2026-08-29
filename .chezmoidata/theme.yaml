@@ -9,8 +9,10 @@
 # `bat` must be a name bat ships built in (`bat --list-themes`) -- an unknown
 # name only warns, then falls back to a dark default.
 #
-# Adding a theme needs a palette (tools/fetch-palette) and a vendored fish
-# .theme. A name with no matching .theme file makes fish fall back silently.
+# Adding a theme needs a palette (tools/fetch-palette) and a .theme the fish
+# plugin ships. `fish` is the path under ~/.config/fish/themes without the
+# extension: catppuccin keeps the flat themes in static/, and the top-level
+# names are fish 4.3 adaptive variants that pick their own light/dark.
 
 theme:
   active: catppuccin-latte
@@ -18,7 +20,7 @@ theme:
   catppuccin-latte:
     palette: catppuccin-latte
     vivid:   catppuccin-latte
-    fish:    Catppuccin Latte
+    fish:    static/catppuccin-latte
     bat:     Catppuccin Latte
     wezterm: Catppuccin Latte
     nvim:
@@ -30,7 +32,7 @@ theme:
   catppuccin-mocha:
     palette: catppuccin-mocha
     vivid:   catppuccin-mocha
-    fish:    Catppuccin Mocha
+    fish:    static/catppuccin-mocha
     bat:     Catppuccin Mocha
     wezterm: Catppuccin Mocha
     nvim:
