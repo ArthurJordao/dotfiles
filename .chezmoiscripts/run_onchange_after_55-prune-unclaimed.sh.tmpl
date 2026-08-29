@@ -1,0 +1,62 @@
+{{- $me := index .hosts .hostname -}}
+{{- $roles := index $me "roles" | default list -}}
+{{- $mine := index $me "quadlets" | default list -}}
+{{- $stale := list -}}
+{{- if has "podman" $roles -}}
+{{- range $h := .hosts -}}
+{{- range (index $h "quadlets" | default list) -}}
+{{- if not (has . $mine) -}}
+{{- $stale = append $stale (printf ".config/containers/systemd/%s" .) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- if not (has "blocky" $mine) -}}
+{{- $stale = append $stale ".config/blocky" -}}
+{{- end -}}
+{{- if not (has "server" $roles) -}}
+{{- $stale = append $stale ".config/OliveTin" -}}
+{{- $stale = append $stale ".config/systemd/user/olivetin.service" -}}
+{{- $stale = append $stale ".config/systemd/user/notes-backup.service" -}}
+{{- $stale = append $stale ".config/systemd/user/notes-backup.timer" -}}
+{{- end -}}
+{{- if not (has "minecraft" $roles) -}}
+{{- $stale = append $stale ".config/systemd/user/minecraft@.service" -}}
+{{- $stale = append $stale ".config/systemd/user/minecraft-backup.service" -}}
+{{- $stale = append $stale ".config/systemd/user/minecraft-backup.timer" -}}
+{{- end -}}
+{{- $stale = $stale | uniq | sortAlpha -}}
+{{- if $stale -}}
+#!/bin/bash
+# Delete files this host used to own. Retiring a service already works —
+# `exact_` prunes anything no host claims — but *moving* one does not: the
+# moment another host claims it, .chezmoiignore suppresses it here, and
+# ignored files are exempt from `exact_` deletion. They then sit unmanaged
+# forever, and each `<svc>.env` is a rendered secrets file nothing will ever
+# update or rotate.
+#
+# .chezmoiremove cannot do this either — verified 2026-08-28: a path in both
+# .chezmoiremove and .chezmoiignore is skipped entirely, and the ignore is
+# what stops the file deploying here in the first place, so it cannot go.
+#
+# Only ever paths this repo generates, named exactly, never a prefix.
+set -euo pipefail
+
+pruned=0
+prune() {
+    local p
+    for p in "$@"; do
+        [ -e "$p" ] || continue
+        rm -rf "$p"
+        echo "pruned ${p#"$HOME"/}"
+        pruned=1
+    done
+}
+
+{{ range $stale -}}
+prune "$HOME/{{ . }}" "$HOME/{{ . }}".*
+{{ end }}
+if [ "$pruned" -eq 1 ]; then
+    systemctl --user daemon-reload 2>/dev/null || true
+fi
+{{ end -}}

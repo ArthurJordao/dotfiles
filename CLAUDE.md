@@ -100,6 +100,12 @@ Silent failures worth knowing:
   "has changed since chezmoi last wrote it" every apply); a flatpak data dir does not. On the
   quadlets, `exact_` goes on `systemd/` and never on `containers/` — that one is podman's own
   (`auth.json`, `containers.conf`), and nothing in it is managed.
+- **`exact_` prunes a *retired* service, never a *moved* one.** A quadlet or role-gated unit no
+  host claims stays unignored and `exact_` deletes it. But the moment another host claims it,
+  `.chezmoiignore` suppresses it here — and ignored files are exempt from `exact_` deletion, so it
+  survives unmanaged forever, each `<svc>.env` a rendered secrets file nothing will ever rotate.
+  `.chezmoiremove` cannot fix this either: a path in both is skipped entirely. That is what
+  `run_onchange_after_55-prune-unclaimed.sh.tmpl` is for — plain `rm`, immune to the ignore.
 - **`exact_` does not recurse.** Each directory level needs its own prefix — `exact_nvim/exact_lua/
   exact_plugins/`. A level without it silently keeps stray files. Files matching `.chezmoiignore`
   are exempt from `exact_` deletion.
@@ -377,7 +383,7 @@ the script's own bytes, `run_onchange` re-fires exactly when the output changes.
 hash here; `trimSuffix "\n"` on each `includeTemplate` keeps the heredoc terminator on its own
 line.
 
-All eleven scripts live in **`.chezmoiscripts/`** and every one carries the **`after_`** attribute, so
+All thirteen scripts live in **`.chezmoiscripts/`** and every one carries the **`after_`** attribute, so
 they run once every file has been deployed and the numeric prefix orders only the scripts among
 themselves. Keep both properties on any new script: without `after_`, `.chezmoiscripts` sorts ahead
 of `.config`, `.local`, `Brewfile` and `Pictures`, and the script runs before anything lands.
@@ -391,8 +397,10 @@ Anything needing a package goes after 10; gaps of 10 leave room to insert. Keep 
 | 35 | `reset-bat` | — |
 | 40 | `setup-gpg-key` | `gpg`, `op` |
 | 50 | `enable-systemd-units` | units deployed |
+| 55 | `prune-unclaimed` | — |
 | 60 | `set-wallpaper` | `Pictures/` deployed |
 | 70 | `deploy-etc` | `caddy`, `coredns` (edge role) |
+| 75 | `deploy-resolver` | darwin only |
 | 80 | `restart-syncthing` | `syncthing` (emulation role) |
 | 90 | `restart-olivetin` | OliveTin config deployed (server role) |
 | 95 | `restart-blocky` | blocky config deployed (claims the quadlet) |

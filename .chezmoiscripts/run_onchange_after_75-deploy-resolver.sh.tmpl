@@ -1,0 +1,37 @@
+{{- $me := index .hosts .hostname -}}
+{{- if eq (index $me "os") "darwin" -}}
+{{- $edge := dict -}}
+{{- range $host := .hosts -}}
+{{- if has "edge" (index $host "roles" | default list) -}}
+{{- $edge = $host -}}
+{{- end -}}
+{{- end -}}
+{{- $ip := index $edge "ip" -}}
+#!/bin/bash
+# macOS sends every *.{{ .domain }} query to the nameservers named here,
+# ahead of DHCP and ahead of Tailscale's own split-DNS route. Without it an
+# internal-only name does not resolve away from home; with it stale, nothing
+# resolves at all — which is how moving `edge` broke neptune while the phone,
+# which follows the tailnet route, kept working.
+#
+# The tailnet's split-DNS entry for this domain is set in the Cloudflare-style
+# admin console and is NOT managed here. Moving `edge` means updating both.
+set -euo pipefail
+
+STAGE="$(mktemp)"
+trap 'rm -f "$STAGE"' EXIT
+
+cat > "$STAGE" <<'RESOLVER_EOF'
+nameserver {{ $ip.lan }}
+nameserver {{ $ip.tailscale }}
+RESOLVER_EOF
+
+if cmp -s "$STAGE" "/etc/resolver/{{ .domain }}"; then
+    exit 0
+fi
+
+echo "Updating /etc/resolver/{{ .domain }} -> {{ $ip.lan }}, {{ $ip.tailscale }}"
+sudo install -d -m 755 /etc/resolver
+sudo install -m 644 -o root -g wheel "$STAGE" "/etc/resolver/{{ .domain }}"
+sudo killall -HUP mDNSResponder
+{{ end -}}
