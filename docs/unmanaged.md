@@ -298,16 +298,19 @@ None of this is reconstructible from the repo.
 | immich library | `/mnt/x9pro` | none |
 | media (music, books, book-ingest) | `/mnt/x9pro` | none |
 | minecraft worlds, mods, plugins | `~/minecraft/<instance>/` | world trees only, below |
-| minecraft backups | `/mnt/x9pro/minecraft-backups` | newest 3 tarballs per instance |
+| minecraft backups | `~/minecraft-backups` (mars) + `~/backups/minecraft` (pluto) | newest 3 tarballs per instance locally, newest 30 days pushed to pluto |
 | notes and memory store | `/mnt/x9pro/memory/` | none |
 | podman named volumes | `~/.local/share/containers` | none |
 | syncthing identity | `~/.local/state/syncthing/{cert,key}.pem` | none — regenerating changes the device ID |
 | syncthing database | `~/.local/state/syncthing/` (SQLite) | none, rebuildable by rescanning |
 
-`minecraft-backup.timer` runs daily and keeps the newest 3 tarballs of every instance's
-world tree. Only worlds: the server jar, plugins, mods and `server.properties` are not
-backed up. **Nothing here has an offsite copy**, and the external SSD is a single exfat
-volume with no redundancy.
+`minecraft-backup.timer` runs daily, keeps the newest 3 tarballs of every instance's world
+tree locally, and pushes each tarball to pluto (`~/backups/minecraft`) over SSH, pruning
+pluto's copies past 30 days. Only worlds: the server jar, plugins, mods and
+`server.properties` are not backed up. The push needs mars's `~/.ssh/id_ed25519.pub`
+authorized on pluto for the `arthur` user — not chezmoi-managed, set up by hand on both
+boxes. Everything else in this table has **no offsite copy**; `/mnt/x9pro`, when it's
+plugged in at all, is a single exfat volume with no redundancy of its own.
 
 The syncthing device ID is derived from `cert.pem`. Regenerating it means editing
 `syncthing_id` in `.chezmoidata/hosts.yaml` and re-approving the device on every peer.

@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# minecraft-backup — daily tarball of every instance's world onto the external SSD,
-# so a root-disk failure doesn't take the backups with it. Keeps the newest KEEP
-# per instance.
+# minecraft-backup — daily tarball of every instance's world, kept locally (newest
+# KEEP) and pushed to pluto for real off-host retention.
 #
 # GENERATED — the instance list is .chezmoidata/minecraft.yaml.
 #
@@ -12,6 +11,10 @@
 # If an instance is running, its saves are paused and flushed through its tmux
 # console first. One instance's failure doesn't stop the rest; the exit status
 # still reports it. Run by minecraft-backup.timer; safe by hand.
+#
+# The push to pluto is best-effort: a failure there marks the instance failed
+# for the exit status, but never touches the local tarball already in place —
+# mars's own copy must not regress because pluto was unreachable.
 set -euo pipefail
 
 INSTANCES=(
@@ -19,7 +22,10 @@ INSTANCES=(
     "{{ .name }}"
 {{- end }}
 )
-DEST_DIR="{{ includeTemplate "storage-path" (dict "hosts" .hosts "name" "external") }}/minecraft-backups"
+DEST_DIR="$HOME/minecraft-backups"
+REMOTE_HOST="pluto"
+REMOTE_DIR="backups/minecraft"
+REMOTE_KEEP_DAYS=30
 KEEP=3
 
 mkdir -p "$DEST_DIR"
@@ -98,6 +104,14 @@ backup_instance() {
     fi
 
     echo "minecraft-backup: $instance: wrote $archive ($(du -h "$archive" | cut -f1)) [dirs: ${worlds[*]}]; kept newest $KEEP"
+
+    if ! ssh "$REMOTE_HOST" "mkdir -p '$REMOTE_DIR'" ||
+       ! rsync -az "$archive" "$REMOTE_HOST:$REMOTE_DIR/" ||
+       ! ssh "$REMOTE_HOST" "find '$REMOTE_DIR' -name '${instance}-*.tar.gz' -mtime +$REMOTE_KEEP_DAYS -delete"; then
+        echo "minecraft-backup: $instance: push to $REMOTE_HOST failed (local copy is unaffected)" >&2
+        return 1
+    fi
+    echo "minecraft-backup: $instance: pushed to $REMOTE_HOST:$REMOTE_DIR, kept newest ${REMOTE_KEEP_DAYS}d"
 }
 
 failed=()

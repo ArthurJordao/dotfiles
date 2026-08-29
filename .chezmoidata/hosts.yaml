@@ -63,9 +63,6 @@ hosts:
     # Read off the host after its first syncthing start; empty omits it.
     syncthing_id: "34WVFBB-7BPUYSO-PIU3HJU-LQ7MA53-FIMPVUR-Q6YAKGI-DCTMY4D-VSTRKQB"
 
-    storage:
-      external: /mnt/x9pro
-
     quadlets:
       - teamspeak3
 
