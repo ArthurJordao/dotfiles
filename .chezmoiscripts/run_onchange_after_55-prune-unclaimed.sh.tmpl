@@ -42,21 +42,39 @@
 # Only ever paths this repo generates, named exactly, never a prefix.
 set -euo pipefail
 
-pruned=0
-prune() {
+# Collect first, delete second: nothing should be removed before it has been
+# shown. Same shape as install-packages -- declining exits 0, and a headless
+# apply prints and does nothing rather than deleting unattended.
+STALE=()
+consider() {
     local p
     for p in "$@"; do
-        [ -e "$p" ] || continue
-        rm -rf "$p"
-        echo "pruned ${p#"$HOME"/}"
-        pruned=1
+        [ -e "$p" ] && STALE+=("$p")
     done
+    return 0
 }
 
 {{ range $stale -}}
-prune "$HOME/{{ . }}" "$HOME/{{ . }}".*
+consider "$HOME/{{ . }}" "$HOME/{{ . }}".*
 {{ end }}
-if [ "$pruned" -eq 1 ]; then
-    systemctl --user daemon-reload 2>/dev/null || true
+[ "${#STALE[@]}" -gt 0 ] || exit 0
+
+echo "No longer claimed by {{ $.hostname }}, and no longer managed here:"
+printf '%s\n' "${STALE[@]}" | sed "s|^$HOME/|  ~/|"
+
+if [ ! -t 0 ]; then
+    echo "Not a terminal -- leaving them in place. Re-run 'chezmoi apply' from a shell to remove." >&2
+    exit 0
 fi
+
+printf 'Delete these? [y/N] '
+read -r reply || reply=n
+case "$reply" in
+    [yY]*) ;;
+    *) echo "Left in place."; exit 0 ;;
+esac
+
+rm -rf "${STALE[@]}"
+echo "Removed ${#STALE[@]} path(s)."
+systemctl --user daemon-reload 2>/dev/null || true
 {{ end -}}
