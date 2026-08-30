@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=../schemas/binaries.schema.json
+#
+# Binaries installed from an upstream release rather than a package manager --
+# the only place their versions are pinned. Keyed by distro, then by group:
+# "common" plus one key per role name, the same shape as packages.arch.
+#
+# The versions render into run_onchange_after_10-install-packages.sh.tmpl, so a
+# bump here changes that script's hash and the bump IS the upgrade. No
+# fingerprint on this file is needed -- do not add one.
+#
+# `tag` and `asset` take {version} and {arch}. Arch is resolved on the host
+# (dpkg --print-architecture), so one declaration serves amd64 and arm64.
+#
+# install:
+#   deb      fetch the .deb, dpkg -i; installed version comes from dpkg-query
+#   tarball  fetch, extract `name`, install -m755 into /usr/bin
+#   manual   never installed -- pinned and reported only
+
+binaries:
+  debian:
+    edge:
+      # Built with xcaddy, never fetched: the release binaries carry no
+      # Cloudflare DNS provider, and without it every certificate fails to
+      # issue. The pin is what makes the hand-built copy visible to
+      # binaries-check; the build itself is in docs/unmanaged.md.
+      - name: caddy
+        repo: caddyserver/caddy
+        version: "2.11.4"
+        install: manual
+        tag: "v{version}"
+        version_cmd: "caddy version"
+      - name: coredns
+        repo: coredns/coredns
+        version: "1.14.7"
+        install: tarball
+        tag: "v{version}"
+        asset: "coredns_{version}_linux_{arch}.tgz"
+        version_cmd: "coredns --version"
+        restart: "sudo systemctl restart coredns"
+    server:
+      # The .deb installs /usr/local/bin/OliveTin -- capitalised, and not on
+      # /usr/bin. olivetin.service already renders that path for debian.
+      - name: olivetin
+        repo: OliveTin/OliveTin
+        version: "3000.19.0"
+        install: deb
+        tag: "{version}"
+        asset: "OliveTin_linux_{arch}.deb"
+        restart: "systemctl --user restart olivetin"

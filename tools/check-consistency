@@ -85,12 +85,24 @@ def fail(rule, msg):
 
 data = json.loads(render("_checker", text=(
     '{{ dict "hosts" .hosts "packages" .packages "syncthing" .syncthing '
-    '"minecraft" .minecraft "dashboard" .dashboard | toJson }}')))
+    '"minecraft" .minecraft "dashboard" .dashboard "binaries" .binaries '
+    '| toJson }}')))
 hosts = data["hosts"]
 packages = data.get("packages") or {}
 folders = (data.get("syncthing") or {}).get("folders") or []
 instances = (data.get("minecraft") or {}).get("instances") or []
 dashboard = data.get("dashboard") or {}
+binaries = data.get("binaries") or {}
+
+
+def declared_for(host, table):
+    """Names a host's distro+roles declare in `table` (packages or binaries)."""
+    family = table.get(host.get("distro") or "") or {}
+    out = set()
+    for group in ["common"] + (host.get("roles") or []):
+        for entry in family.get(group) or []:
+            out.add(entry if isinstance(entry, str) else entry.get("name"))
+    return out
 
 files = quadlet_files()
 top_level = set(f.split(os.sep)[0] for f in files)
@@ -175,6 +187,34 @@ for name in sorted(hosts):
                         "emits no Caddy block, so nothing checks the token"
                         % (name, endpoint["name"]))
 
+# C20 -- a name declared as both a package and a binary races: whichever runs
+# last wins, and the pinned version is silently not the one installed.
+for name in sorted(hosts):
+    host = hosts[name]
+    if host.get("managed") is False:
+        continue
+    both = declared_for(host, packages) & declared_for(host, binaries)
+    for dupe in sorted(both):
+        fail("C20", "%s: %r is declared both as a package and in "
+                    ".chezmoidata/binaries.yaml" % (name, dupe))
+
+# C21 -- `served_by` names the non-container service on that port, which is the
+# field that separates "intentionally not a container" from "forgot the
+# quadlet". If nothing declares it either, nothing installs it: that is how
+# coredns and olivetin ran on pluto undeclared.
+for name in sorted(hosts):
+    host = hosts[name]
+    if host.get("managed") is False:
+        continue
+    declared = declared_for(host, packages) | declared_for(host, binaries)
+    for endpoint in host.get("endpoints") or []:
+        server = endpoint.get("served_by")
+        if server and server not in declared:
+            fail("C21", "%s: endpoint %r is served_by %r, which is neither a "
+                        "declared package nor a declared binary for %s"
+                        % (name, endpoint["name"], server,
+                           host.get("distro") or "?"))
+
 # C18 -- the Corefile points every proxied name at the edge host's IP, so exactly
 # one managed host must carry the role, and it must declare an address.
 edge_hosts = [n for n, h in hosts.items()
@@ -205,6 +245,13 @@ for family in ("arch", "debian"):
     for key in sorted(packages.get(family) or {}):
         if key != "common" and key not in all_roles:
             fail("C6", "packages.%s.%s is not a role any host declares"
+                       % (family, key))
+
+# C6 -- same rule for binaries: a group nothing declares installs nothing.
+for family in sorted(binaries):
+    for key in sorted(binaries.get(family) or {}):
+        if key != "common" and key not in all_roles:
+            fail("C6", "binaries.%s.%s is not a role any host declares"
                        % (family, key))
 
 # C16 -- an `except` naming no host excludes nothing, silently.

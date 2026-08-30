@@ -1,0 +1,99 @@
+#!/bin/bash
+# binaries-check -- what the repo pins, what is installed, what upstream has.
+#
+#   binaries-check              pinned vs installed; no network
+#   binaries-check --upstream   also ask GitHub for the newest release
+#   binaries-check --cache      write the summary dashboard-status reads
+#
+# Two different questions, and they fail differently: installed != pinned means
+# this host is behind the repo (fix with `chezmoi update`), pinned != latest
+# means the repo is behind upstream (fix by editing .chezmoidata/binaries.yaml,
+# which re-fires the installer). Exits non-zero on either, except under --cache,
+# whose job is to feed a widget -- a failing unit there would show up as drift
+# of its own in dashboard-status.
+set -uo pipefail
+
+UPSTREAM=0
+CACHE=""
+for arg in "$@"; do
+    case "$arg" in
+        --upstream) UPSTREAM=1 ;;
+        --cache) CACHE="${XDG_STATE_HOME:-$HOME/.local/state}/binaries-check.status"; UPSTREAM=1 ;;
+        -h | --help) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        *) echo "unknown argument: $arg" >&2; exit 2 ;;
+    esac
+done
+
+{{ template "binaries.sh" . }}
+{{ template "binaries-net.sh" . }}
+
+drifted=""   # installed != pinned
+outdated=""  # pinned != latest
+rows=""
+
+while IFS='|' read -r bname brepo bversion bkind _ _ bvercmd _; do
+    [ -n "$bname" ] || continue
+    have=$(bin_installed "$bname" "$bkind" "$bvercmd")
+    latest="-"
+    if [ "$UPSTREAM" = "1" ]; then
+        latest=$(bin_latest "$brepo")
+        [ -n "$latest" ] || latest="?"
+    fi
+
+    note=""
+    if [ -z "$have" ]; then
+        note="not installed"
+        drifted="$drifted $bname"
+    elif [ "$have" != "$bversion" ]; then
+        note="host behind repo"
+        drifted="$drifted $bname"
+    fi
+    if [ "$latest" != "-" ] && [ "$latest" != "?" ] && [ "$latest" != "$bversion" ]; then
+        note="${note:+$note; }upstream $latest"
+        outdated="$outdated $bname"
+    fi
+    [ "$bkind" = "manual" ] && note="${note:+$note; }built by hand"
+
+    rows="$rows$(printf '%-10s %-12s %-12s %-12s %s' \
+        "$bname" "$bversion" "${have:-absent}" "$latest" "$note")
+"
+done <<BINEOF
+$BINARIES
+BINEOF
+
+if [ -z "$rows" ]; then
+    echo "No binaries declared for this host."
+    exit 0
+fi
+
+printf '%-10s %-12s %-12s %-12s %s\n' NAME PINNED INSTALLED LATEST NOTE
+printf '%s' "$rows"
+
+# One line for the dashboard, so the widget says something useful without
+# re-running the network check on every status refresh.
+if [ -n "$drifted" ]; then
+    summary="drifted:$drifted"
+    state="bad"
+elif [ -n "$outdated" ]; then
+    n=$(printf '%s' "$outdated" | wc -w | tr -d ' ')
+    if [ "$n" = "1" ]; then
+        summary="$(printf '%s' "$outdated" | tr -d ' ') behind upstream"
+    else
+        summary="$n behind upstream"
+    fi
+    state="warn"
+else
+    summary="up to date"
+    state="good"
+fi
+
+if [ -n "$CACHE" ]; then
+    mkdir -p "$(dirname "$CACHE")"
+    printf '%s\n%s\n' "$summary" "$state" > "$CACHE"
+    exit 0
+fi
+
+[ "$state" = "good" ] && exit 0
+echo
+echo "$summary"
+exit 1

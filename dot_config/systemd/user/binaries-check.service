@@ -1,0 +1,10 @@
+[Unit]
+Description=Check hand-installed binaries against their pins and upstream
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+# --cache exits 0 even on drift: this unit feeds a widget, and a failed unit
+# here would itself show up as drift in dashboard-status.
+ExecStart=%h/.local/scripts/binaries-check --upstream --cache

@@ -333,6 +333,8 @@ current WAN IP. Independent of `public`, which routes a hostname through the tun
 `served_by` names the non-container service listening on that port — `dns` → coredns, `sunshine` →
 the package. Without it, `check-consistency` requires one of that host's quadlets to publish the
 port, so the field is what separates "intentionally not a container" from "forgot the quadlet".
+C21 then requires the name to be a declared package *or* a declared binary: nothing installing it
+is how coredns and olivetin ran on pluto undeclared for a month.
 
 `web: false` says the port is not a browser UI. It keeps its Caddy block, DNS records and tunnel
 rule and loses only the dashboards — no tile, and no HTTP status probe, both of which would
@@ -476,6 +478,31 @@ or answering `y` to a few missing packages would silently upgrade every unrelate
 `schemas/packages.schema.json` lives in `schemas/`, not `.chezmoidata/` — see the shadowing trap
 above.
 
+**A binary with no package is declared in `.chezmoidata/binaries.yaml`**, keyed by distro then by
+group the same way `packages.arch` is. Each entry pins a `version` and names the GitHub `repo`,
+the release `tag` and the `asset` to fetch; `{version}` and `{arch}` are substituted on the host,
+so one declaration serves amd64 and arm64. `install` is `deb`, `tarball`, or `manual` — the last
+is pinned and *reported* but never fetched, which is caddy, whose release binaries carry no
+Cloudflare DNS provider and so must come from `xcaddy`. `restart` runs after a successful install,
+or the old process keeps running and nothing says so.
+
+The names render into `run_onchange_after_10-install-packages.sh.tmpl` alongside the package
+names, so **a version bump in that file is the upgrade** — no separate mechanism, and no
+fingerprint to add. Three templates back it: `.chezmoitemplates/binaries.sh` (the table plus
+`bin_installed`), `binaries-net.sh` (the upstream lookup), `binaries-install.sh` (fetch and
+install). They are split so neither consumer carries a function it never calls — shellcheck's
+SC2329 is what says so.
+
+`dot_local/scripts/executable_binaries-check.tmpl` answers both questions at once and they fail
+differently: **installed ≠ pinned** means the host is behind the repo (`chezmoi update`),
+**pinned ≠ latest** means the repo is behind upstream (edit the data). `binaries-check.timer`
+runs it daily into `~/.local/state/binaries-check.status`, which `dashboard-status` reads for
+OliveTin's `binaries` field — a file read, never a network call, since that script runs on every
+status refresh. `--cache` exits 0 even on drift: a failed unit there would show up as drift of its
+own in the `failed` field. Deploy is gated on `.chezmoitemplates/has-binaries`, which is neither
+OS nor role but falls out of both — one template, read by `.chezmoiignore`, the justfile and
+`50-enable-systemd-units`.
+
 **The Brewfile is generated, so `brew bundle dump` is retired as an authoring workflow** — a
 re-dump would be overwritten on the next apply and would destroy every `trusted` flag. Add
 packages to the YAML by hand. `.chezmoitemplates/brewfile` is the shared body, rendered by
@@ -491,8 +518,14 @@ The install is `paru -S`, never `-Syu` (partial upgrades break Arch). `just upgr
 first, which also avoids the 404s `paru -S` hits against a stale DB. No `cleanup` counterpart on
 Linux — that would mean pacman orphan removal, which isn't implemented.
 
+**`just upgrade` branches on `distro`, not on `os`.** Debian gets `apt-get update && apt-get
+upgrade -y` — `upgrade`, not `full-upgrade`, which removes packages to satisfy dependencies. The
+recipe body has to stay indented, so the branch picks a command *string* rather than wrapping the
+lines: a trimming action (`-}}`) eats the leading spaces and `just` then rejects the file.
+
 ```
 just check           # every repo check: templates, schemas, consistency, shellcheck
+just binaries-check  # pinned vs installed vs upstream for hand-installed binaries
 just packages        # install this host's declared packages, no prompt
 just packages-check  # macOS only: report installed-but-undeclared, removes nothing
 just packages-prune  # macOS only: remove installed-but-undeclared

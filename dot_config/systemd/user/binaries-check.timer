@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily hand-installed binary version check
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+# GitHub's unauthenticated API is per-IP; no reason to ask at exactly midnight.
+RandomizedDelaySec=1h
+
+[Install]
+WantedBy=timers.target

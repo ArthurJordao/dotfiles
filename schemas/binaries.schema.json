@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "chezmoi hand-installed binary declarations",
+  "type": "object",
+  "required": ["binaries"],
+  "properties": {
+    "binaries": {
+      "type": "object",
+      "description": "Binaries fetched from an upstream release, keyed by OS family.",
+      "additionalProperties": {
+        "type": "object",
+        "description": "Keyed by group: 'common' plus one key per role name.",
+        "additionalProperties": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/binary"}
+        }
+      }
+    }
+  },
+  "definitions": {
+    "binary": {
+      "type": "object",
+      "required": ["name", "repo", "version", "install", "tag"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Binary name. Also the dpkg package name for install: deb, and the file extracted from a tarball."
+        },
+        "repo": {
+          "type": "string",
+          "pattern": "^[^/]+/[^/]+$",
+          "description": "GitHub owner/repo, used for the release download and the upstream freshness check."
+        },
+        "version": {
+          "type": "string",
+          "description": "Pinned version, without a leading v."
+        },
+        "install": {
+          "enum": ["deb", "tarball", "manual"],
+          "description": "How it is installed. 'manual' is never fetched -- pinned and reported only."
+        },
+        "tag": {
+          "type": "string",
+          "description": "Release tag pattern; {version} is substituted. Usually 'v{version}' or '{version}'."
+        },
+        "asset": {
+          "type": "string",
+          "description": "Release asset filename; {version} and {arch} are substituted. Required unless install is manual."
+        },
+        "version_cmd": {
+          "type": "string",
+          "description": "Command printing the installed version. Unused for install: deb, which reads dpkg-query."
+        },
+        "restart": {
+          "type": "string",
+          "description": "Command run after a successful install, so the new binary is the one running."
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"install": {"enum": ["deb", "tarball"]}}},
+          "then": {"required": ["asset"]}
+        },
+        {
+          "if": {"properties": {"install": {"const": "manual"}}},
+          "then": {"required": ["version_cmd"]}
+        }
+      ]
+    }
+  }
+}

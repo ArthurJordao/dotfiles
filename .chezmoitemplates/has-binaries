@@ -1,0 +1,12 @@
+{{- /* "yes" when this host declares any hand-installed binary, else empty.
+       One place computing it: .chezmoiignore gates the script and its units on
+       this, and the justfile gates the recipe on the same answer. */ -}}
+{{- $me := index .hosts .hostname -}}
+{{- $fam := index .binaries (index $me "distro" | default "") | default dict -}}
+{{- $out := "" -}}
+{{- range (prepend $me.roles "common") -}}
+{{- if hasKey $fam . -}}
+{{- if index $fam . }}{{ $out = "yes" }}{{ end -}}
+{{- end -}}
+{{- end -}}
+{{- $out -}}

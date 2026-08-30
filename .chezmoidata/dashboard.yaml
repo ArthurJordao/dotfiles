@@ -46,6 +46,8 @@ dashboard:
 
     Server:
       - {field: failed, label: Failed units, icon: "mdi:alert-circle"}
+      # Written daily by binaries-check.timer; "n/a" until it first runs.
+      - {field: binaries, label: Binaries, icon: "mdi:package-variant"}
       - {field: root, label: "/", icon: "mdi:harddisk"}
 
   # Keyed by the Controls fieldset the buttons sit in -- the group is the key,
@@ -100,6 +102,9 @@ dashboard:
       # intentional rather than as drift.
       - {title: Stack health, icon: "mdi:heart-pulse", shell: check-live, timeout: 120, popup: true}
       - {title: Uptime, icon: "mdi:speedometer", shell: "uptime && free -h", timeout: 15, family: true, popup: true}
+      # The widget is a day stale at worst; this asks GitHub now, and is the
+      # only thing that names which binary is behind what.
+      - {title: Binary versions, icon: "mdi:package-variant-closed", shell: "binaries-check --upstream", timeout: 60, popup: true}
       # The timer already does this; the button is "pull now". It restarts
       # whatever it updates, hence the confirmation.
       - {title: Update containers, icon: "mdi:update", shell: "systemctl --user start podman-auto-update.service && journalctl --user -u podman-auto-update.service -n 30 --no-pager", timeout: 600, confirm: true, popup: true}

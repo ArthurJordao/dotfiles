@@ -1,5 +1,6 @@
 {{- $roles := (index .hosts .hostname).roles -}}
-{{ if or (has "minecraft" $roles) (has "podman" $roles) (has "sunshine" $roles) (has "emulation" $roles) (has "server" $roles) (has "agent" $roles) -}}
+{{- $binaries := includeTemplate "has-binaries" . -}}
+{{ if or (has "minecraft" $roles) (has "podman" $roles) (has "sunshine" $roles) (has "emulation" $roles) (has "server" $roles) (has "agent" $roles) $binaries -}}
 #!/bin/bash
 set -euo pipefail
 
@@ -21,6 +22,9 @@ systemctl --user enable --now syncthing.service
 {{ if has "server" $roles -}}
 systemctl --user enable --now olivetin.service
 systemctl --user enable --now notes-backup.timer
+{{ end -}}
+{{ if $binaries -}}
+systemctl --user enable --now binaries-check.timer
 {{ end -}}
 {{ if has "agent" $roles -}}
 # Needs a `claude` login on this host first; without one it restarts forever.

@@ -1,8 +1,8 @@
 # What lives only on mars
 
 Things mars depends on that `chezmoi apply` does not create. Rebuilding the box means
-walking this list by hand. A second section at the end covers **phobos**, the RG353V
-handheld, which has a short list of its own.
+walking this list by hand. Sections at the end cover **pluto**, which runs the edge, and
+**phobos**, the RG353V handheld.
 
 Everything here was read off the running host. Where a file is short, its whole body is
 inlined so this document is enough on its own.
@@ -11,26 +11,12 @@ The generated files are **not** here: `/etc/caddy/Caddyfile`, `/etc/coredns/Core
 `/etc/cloudflared/config.yml` and `/etc/caddy/caddy.env` are rendered from
 `.chezmoidata/` and installed by `run_onchange_after_70-deploy-etc.sh.tmpl`. Never write
 them by hand — the next apply overwrites them. The systemd units that run those services are generated
-too, as of 2026-08-28 — only the hand-built caddy binary below is still yours to reproduce.
+too, and coredns and OliveTin are installed from their pins in `.chezmoidata/binaries.yaml`.
+Caddy is the one binary still yours to reproduce — see pluto below.
 
 ---
 
 ## A. Host state to recreate
-
-### The caddy binary is hand-built
-
-`/usr/bin/caddy` is owned by **no package**. `xcaddy-bin` ships only the builder; the
-binary running in production was built with the Cloudflare DNS provider compiled in.
-Without that module Caddy cannot answer the DNS-01 challenge and **every certificate
-fails to issue**.
-
-```sh
-xcaddy build --with github.com/caddy-dns/cloudflare
-sudo install -m755 ./caddy /usr/bin/caddy
-```
-
-Verify: `caddy list-modules | grep dns.providers.cloudflare` must print that line.
-Currently running v2.11.2.
 
 ### Linger for turisa
 
@@ -324,6 +310,38 @@ a future reader does not mistake them for load-bearing.
 
 - `/etc/systemd/system/wifi-linklog.service`
 - `/usr/local/bin/wifi-linklog`
+
+---
+
+# What lives only on pluto
+
+The Debian box carrying the `edge` role: Caddy, CoreDNS and cloudflared. Only what has
+been verified on the box is listed here.
+
+coredns and OliveTin are **not** on this list any more. Both are pinned in
+`.chezmoidata/binaries.yaml` and installed by
+`run_onchange_after_10-install-packages.sh.tmpl`, so a version bump in that file is the
+upgrade. `binaries-check` reports pinned vs installed vs upstream — daily via
+`binaries-check.timer`, on demand from the dashboard's Server fieldset, and as
+`just binaries-check`.
+
+### The caddy binary is hand-built
+
+`/usr/bin/caddy` is owned by **no package**. The release binaries carry no Cloudflare DNS
+provider, and without it Caddy cannot answer the DNS-01 challenge — **every certificate
+fails to issue**.
+
+```sh
+xcaddy build --with github.com/caddy-dns/cloudflare
+sudo install -m755 ./caddy /usr/bin/caddy
+```
+
+Verify: `caddy list-modules | grep dns.providers.cloudflare` must print that line.
+
+pluto has neither `go` nor `xcaddy`, and neither is declared for debian, so the build
+happens off-host and the binary is copied over. The version is pinned in
+`.chezmoidata/binaries.yaml` with `install: manual`: that is what makes a stale copy show
+up in `binaries-check`, but the build itself is still not reproducible from a clone.
 
 ---
 

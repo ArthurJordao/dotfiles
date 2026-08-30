@@ -32,6 +32,24 @@ case ${#bad_units[@]} in
     *) failed="${#bad_units[@]} units"; failed_color="$BAD" ;;
 esac
 
+# Hand-installed binaries -- binaries-check.timer writes this daily. A file
+# read, not a network call: this runs on every status refresh.
+bin_cache="${XDG_STATE_HOME:-$HOME/.local/state}/binaries-check.status"
+if [ -r "$bin_cache" ]; then
+    bins=$(sed -n 1p "$bin_cache")
+    case $(sed -n 2p "$bin_cache") in
+        good) bins_color="$GOOD" ;;
+        warn) bins_color="$WARN" ;;
+        *)    bins_color="$BAD" ;;
+    esac
+else
+    bins="n/a"
+    bins_color="$WARN"
+fi
+# The value goes into JSON built by printf; a quote or backslash would break it.
+bins=${bins//\"/}
+bins=${bins//\\/}
+
 # Warn late: disks fill slowly and a nag is worse than no signal.
 disk_color() {
     local n=${1%\%}
@@ -65,6 +83,7 @@ for spec in "$@"; do
     fi
 done
 
-printf '{%s"mc":"%s","mc_color":"%s","gm":"%s","gm_color":"%s","failed":"%s","failed_color":"%s","root":"%s","root_color":"%s","ext":"%s","ext_color":"%s"}\n' \
+printf '{%s"mc":"%s","mc_color":"%s","gm":"%s","gm_color":"%s","failed":"%s","failed_color":"%s","binaries":"%s","binaries_color":"%s","root":"%s","root_color":"%s","ext":"%s","ext_color":"%s"}\n' \
     "$svc_fields" "$mc" "$mc_color" "$gm" "$gm_color" "$failed" "$failed_color" \
+    "$bins" "$bins_color" \
     "$root" "$(disk_color "$root")" "$ext" "$(disk_color "$ext")"

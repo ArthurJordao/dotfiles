@@ -36,13 +36,20 @@ packages-prune:
 upgrade: packages
     brew upgrade --cask --greedy
 {{ else -}}
+{{- $sysupgrade := "paru -Syu" -}}
+{{- if eq (index (index .hosts .hostname) "distro" | default "") "debian" -}}
+{{- $sysupgrade = "sudo apt-get update\n    sudo apt-get upgrade -y" -}}
+{{- end -}}
 # Install declared packages
 packages:
     ~/.local/scripts/install-packages
 
-# Full system upgrade, then install declared
+# Full system upgrade, then install declared.
+# Arch: -Syu, because `paru -S` against a stale database 404s, and a partial
+# upgrade breaks Arch. Debian: upgrade, not full-upgrade, which would remove
+# packages to satisfy dependencies.
 upgrade:
-    paru -Syu
+    {{ $sysupgrade }}
     ~/.local/scripts/install-packages
 {{ end }}
 {{ if has "emulation" (index .hosts .hostname).roles }}
@@ -58,4 +65,9 @@ emu-merge-gamelists:
 # Report where this host disagrees with what the repo declares
 check-live:
     ~/.local/scripts/check-live
+{{ end }}
+{{ if includeTemplate "has-binaries" . }}
+# Report pinned vs installed vs upstream for hand-installed binaries
+binaries-check:
+    ~/.local/scripts/binaries-check --upstream
 {{ end }}
