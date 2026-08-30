@@ -54,11 +54,11 @@ Four rules that matter more than they look:
 JDKs, `packages.yaml` the package declarations, `binaries.yaml` the pinned upstream-release
 binaries, `secrets.yaml` the 1Password vault and item names, `cloudflare.yaml` the tunnel ID,
 `dns.yaml` the filter's lists and upstream, `dashboard.yaml` OliveTin's presentation and buttons,
-and `theme.yaml`/`palettes.yaml` the colour scheme. chezmoi merges every file in that directory
-into one template data namespace, so templates read `.hosts` / `.domain` / `.syncthing` /
-`.minecraft` / `.packages` / `.binaries` / `.secrets` / `.cloudflare` / `.dns` / `.dashboard` /
-`.theme` / `.palettes` directly. Gate on the axis that is the actual reason a file isn't
-universal:
+`etc.yaml` the `/etc` deploy table keyed by role, and `theme.yaml`/`palettes.yaml` the colour
+scheme. chezmoi merges every file in that directory into one template data namespace, so templates
+read `.hosts` / `.domain` / `.syncthing` / `.minecraft` / `.packages` / `.binaries` / `.secrets` /
+`.cloudflare` / `.dns` / `.dashboard` / `.etc` / `.theme` / `.palettes` directly. Gate on the axis
+that is the actual reason a file isn't universal:
 
 | Axis | Mechanism | Use for |
 |---|---|---|
@@ -185,6 +185,16 @@ Silent failures worth knowing:
   every chezmoi command fails with `read-source-state: pre: ...: no such file or directory`, not
   just `apply`. Recovery: edit or delete the `[hooks.read-source-state.pre]` stanza by hand, or
   re-run `chezmoi init`.
+- **`bind interfaces only` is wrong for a service that must answer on `tailscale0`.** The
+  interface may not exist when the unit starts, and Samba then never listens there until a
+  reload. Gate with `hosts allow`/`hosts deny` and ufw instead.
+- **Samba's password is not the Unix password.** It lives in `passdb.tdb`, set with `smbpasswd`,
+  and no amount of managing `/etc` puts it there.
+- **Never interpolate a secret into a quoted shell literal in a template.** A value containing `'`
+  either silently loses the quotes — so `smbpasswd` succeeds with the WRONG password and nothing
+  reports it — or merges arguments and aborts the script under `set -euo pipefail`. Feed it through
+  a quoted heredoc (`<<'EOF'`), whose body is literal and never reaches argv. Rendering with
+  `tools/mock-op` cannot catch this: the mock value contains no quote.
 
 # The self-hosted stack
 
@@ -419,19 +429,28 @@ endpoints in declaration order within a host.
 
 ## Deploy flow
 
-**`run_onchange_after_70-deploy-etc.sh.tmpl`** carries the Caddyfile, Corefile, cloudflared config
-and `caddy.env` **inline**, one quoted heredoc each via `includeTemplate`, then installs them into
-`/etc` with `sudo` and reloads caddy / restarts coredns / restarts cloudflared. Each body is
-written to a staging file before `install`, because `sudo tee` truncates the live config first.
-The quadlet files under `dot_config/` deploy normally to `~/.config/...`.
+**`run_onchange_after_70-deploy-etc.sh.tmpl`** is data-driven from `.chezmoidata/etc.yaml`, keyed by
+the role that owns each group — a host renders every group whose key is one of its roles. Each
+file is inlined **and installed** as a quoted heredoc via `includeTemplate`, one per entry, then
+installed into `/etc` with `sudo`, enabled/reloaded/restarted per the group's `enable`/`reload`/
+`restart` lists. Each body is written to a staging file before `install`, because `sudo tee`
+truncates the live config first. The quadlet files under `dot_config/` deploy normally to
+`~/.config/...`.
 
 **Inlining is what makes it correct, and it needs no hash header.** Shelling out to a nested
 `chezmoi execute-template` gave the child its own `op` session and no `--config` — so an apply
-needed an interactive 1Password unlock and `simulate-host` rendered these four with the *local*
+needed an interactive 1Password unlock and `simulate-host` rendered these bodies with the *local*
 hostname, silently. Rendering in the main pass fixes both, and since the configs are now part of
 the script's own bytes, `run_onchange` re-fires exactly when the output changes. Add no `# data:`
 hash here; `trimSuffix "\n"` on each `includeTemplate` keeps the heredoc terminator on its own
 line.
+
+A `dest` may carry `{tunnel_id}`, substituted at render time because chezmoi does not re-template a
+data value — the same placeholder trick `binaries.yaml` uses for `{version}`/`{arch}`. Setup that
+is not a file — the `caddy` system user, the CoreDNS self-signed cert, the `resolved` drop-in,
+Samba's `passdb` entry — stays imperative in the script, gated on its own role. `check-consistency`
+C23 enforces that each group key is a real role and each `src` exists under
+`.chezmoitemplates/etc/`.
 
 All fourteen scripts live in **`.chezmoiscripts/`** and every one carries the **`after_`** attribute, so
 they run once every file has been deployed and the numeric prefix orders only the scripts among
@@ -449,7 +468,7 @@ Anything needing a package goes after 10; gaps of 10 leave room to insert. Keep 
 | 50 | `enable-systemd-units` | units deployed |
 | 55 | `prune-unclaimed` | — |
 | 60 | `set-wallpaper` | `Pictures/` deployed |
-| 70 | `deploy-etc` | `caddy`, `coredns` (edge role) |
+| 70 | `deploy-etc` | a role declared in `.chezmoidata/etc.yaml` |
 | 75 | `deploy-resolver` | darwin only |
 | 80 | `restart-syncthing` | `syncthing` (emulation role) |
 | 90 | `restart-olivetin` | OliveTin config deployed (server role) |
@@ -571,8 +590,9 @@ just packages-prune  # macOS only: remove installed-but-undeclared
 just upgrade         # full system upgrade, then install declared (macOS: installs declared first, then upgrades)
 ```
 
-`run_onchange_after_70-deploy-etc.sh.tmpl` is gated on the **`edge`** role, so moving `edge` between
-hosts in `.chezmoidata/hosts.yaml` relocates the whole Caddy/CoreDNS/cloudflared edge.
+`run_onchange_after_70-deploy-etc.sh.tmpl` renders whichever `.chezmoidata/etc.yaml` groups match a
+host's roles, so moving `edge` between hosts in `.chezmoidata/hosts.yaml` relocates the whole
+Caddy/CoreDNS/cloudflared edge.
 
 ## Other managed pieces
 
@@ -825,7 +845,7 @@ tools/simulate-host mercury execute-template < dot_local/state/private_syncthing
 - Never re-create a static `dot_local/scripts/executable_gaming-mode`,
   `dot_config/systemd/user/minecraft@.service` or `private_dot_ssh/private_config`. The `.tmpl`
   files are the only source; a static sibling would be silently ignored and drift forever. Same
-  for the four bodies in `.chezmoitemplates/etc/` — a sibling under `etc/` would deploy nowhere.
+  for the bodies in `.chezmoitemplates/etc/` — a sibling under `etc/` would deploy nowhere.
 - On a fresh Linux host, `run_once_after_30-set-default-shell.sh` needs `fish` present. It's in
   the `common` group of `packages.arch`, but if the shell change is skipped on first apply (the
   install prompt declined, or packages not installed yet), just run `chezmoi apply` again.
