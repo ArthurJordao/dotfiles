@@ -27,3 +27,9 @@ etc:
     enable:  [caddy, coredns, cloudflared, cloudflared-update.timer]
     reload:  [caddy]
     restart: [coredns, cloudflared]
+  samba:
+    files:
+      - {src: samba/smb.conf, dest: /etc/samba/smb.conf, mode: "644"}
+      - {src: avahi/smb.service, dest: /etc/avahi/services/smb.service, mode: "644"}
+    enable:  [smb, wsdd]
+    restart: [smb, wsdd]
