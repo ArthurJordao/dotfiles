@@ -281,8 +281,15 @@ ETC_BODIES = os.path.join(ROOT, ".chezmoitemplates/etc")
 for group in sorted(etc):
     if group not in all_roles:
         fail("C23", "etc.%s is not a role any host declares" % group)
-    for entry in etc[group].get("files") or []:
-        src = entry.get("src")
+    entries = etc[group].get("files") if isinstance(etc[group], dict) else None
+    if not isinstance(entries, list):
+        fail("C23", "etc.%s declares no `files` list" % group)
+        continue
+    for entry in entries:
+        src = entry.get("src") if isinstance(entry, dict) else None
+        if not src:
+            fail("C23", "etc.%s has a file entry with no `src`" % group)
+            continue
         if not os.path.isfile(os.path.join(ETC_BODIES, src)):
             fail("C23", "etc.%s: src %r does not exist under "
                         ".chezmoitemplates/etc/" % (group, src))
