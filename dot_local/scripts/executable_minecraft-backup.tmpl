@@ -105,6 +105,9 @@ backup_instance() {
 
     echo "minecraft-backup: $instance: wrote $archive ($(du -h "$archive" | cut -f1)) [dirs: ${worlds[*]}]; kept newest $KEEP"
 
+    # $REMOTE_DIR and $instance are local values; expanding them client-side
+    # before they reach the remote shell is intended, not a mistake.
+    # shellcheck disable=SC2029
     if ! ssh "$REMOTE_HOST" "mkdir -p '$REMOTE_DIR'" ||
        ! rsync -az "$archive" "$REMOTE_HOST:$REMOTE_DIR/" ||
        ! ssh "$REMOTE_HOST" "find '$REMOTE_DIR' -name '${instance}-*.tar.gz' -mtime +$REMOTE_KEEP_DAYS -delete"; then
