@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=../schemas/etc.schema.json
+#
+# What this repo installs under /etc, keyed by the role that owns it.
+# run_onchange_after_70-deploy-etc.sh.tmpl renders every group whose key is one
+# of the host's roles, inlining each body from .chezmoitemplates/etc/.
+#
+# `dest` may carry {tunnel_id}: chezmoi does not re-template a data value, so it
+# is substituted at render time. Same placeholder trick as binaries.yaml.
+#
+# Setup that is not a file -- the caddy system user, the CoreDNS self-signed
+# cert, the resolved drop-in -- stays imperative in the script. This table
+# covers files and units only.
+
+etc:
+  edge:
+    files:
+      - {src: caddy/Caddyfile, dest: /etc/caddy/Caddyfile, mode: "644"}
+      - {src: caddy/caddy.env, dest: /etc/caddy/caddy.env, mode: "600"}
+      - {src: coredns/Corefile, dest: /etc/coredns/Corefile, mode: "644"}
+      - {src: cloudflared/config.yml, dest: /etc/cloudflared/config.yml, mode: "644"}
+      - {src: cloudflared/credentials.json, dest: "/etc/cloudflared/{tunnel_id}.json", mode: "600"}
+      - {src: systemd/caddy.service, dest: /etc/systemd/system/caddy.service, mode: "644"}
+      - {src: systemd/coredns.service, dest: /etc/systemd/system/coredns.service, mode: "644"}
+      - {src: systemd/cloudflared.service, dest: /etc/systemd/system/cloudflared.service, mode: "644"}
+      - {src: systemd/cloudflared-update.service, dest: /etc/systemd/system/cloudflared-update.service, mode: "644"}
+      - {src: systemd/cloudflared-update.timer, dest: /etc/systemd/system/cloudflared-update.timer, mode: "644"}
+    enable:  [caddy, coredns, cloudflared, cloudflared-update.timer]
+    reload:  [caddy]
+    restart: [coredns, cloudflared]

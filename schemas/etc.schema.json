@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "etc",
+  "type": "object",
+  "required": ["etc"],
+  "additionalProperties": false,
+  "properties": {
+    "etc": {
+      "type": "object",
+      "description": "Files installed under /etc, keyed by the role that owns them. A key matching none of a host's roles installs nothing there.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["files"],
+        "properties": {
+          "files": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["src", "dest", "mode"],
+              "properties": {
+                "src": {
+                  "type": "string",
+                  "description": "Path under .chezmoitemplates/etc/, inlined into the deploy script.",
+                  "minLength": 1
+                },
+                "dest": {
+                  "type": "string",
+                  "description": "Absolute destination. May contain {tunnel_id}, substituted at render time.",
+                  "pattern": "^/etc/"
+                },
+                "mode": {
+                  "type": "string",
+                  "description": "Octal mode passed to install(1).",
+                  "pattern": "^[0-7]{3,4}$"
+                }
+              }
+            }
+          },
+          "enable":  {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true,
+                      "description": "Units to `systemctl enable --now` after installing."},
+          "reload":  {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true,
+                      "description": "Units to reload, falling back to restart."},
+          "restart": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true,
+                      "description": "Units to restart outright."}
+        }
+      }
+    }
+  }
+}
