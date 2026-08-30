@@ -10,7 +10,7 @@ set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
 
 fail=0
-for c in check-templates check-schemas check-consistency check-shell; do
+for c in check-templates check-schemas check-consistency check-coverage check-shell; do
     printf '\n=== %s ===\n' "$c"
     ./tools/"$c" || fail=1
 done

@@ -61,13 +61,17 @@ everything and is what to run after moving or renaming any source file:
 | `tools/check-templates` | renders every template for every host, `.chezmoitemplates/etc/` included |
 | `tools/check-schemas` | each `.chezmoidata` file against the schema its own header names |
 | `tools/check-consistency` | the quadlets/units/endpoints/folders/packages cross-references |
+| `tools/check-coverage` | every source file's target path lands in some host's `chezmoi managed` union |
 | `tools/check-shell` | shellcheck, rendering `.tmpl` scripts per host first |
 
 CI runs the same `tools/check` on every push. It needs no secrets.
 
 `just check` proves the repo is self-consistent and runs anywhere. **`just check-live` runs on a
 `podman` host and proves that host matches it** — declared units active and wanted at boot,
-containers accounted for by a quadlet file, endpoints answering, no failed units of ours.
+containers accounted for by a quadlet file, endpoints answering, no failed units of ours, every
+quadlet's `Volume=` bind-mount host path actually exists (a missing one fails the unit at start
+with `statfs ...: no such file or directory`, invisible until then — `just check` can't catch it,
+since none of these paths exist on a CI runner or a laptop).
 Read-only, no credentials. It reads `gaming-mode`'s state file, so a stopped stack reports as
 intentional rather than as drift.
 

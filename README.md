@@ -341,6 +341,7 @@ just check     # everything below, in one pass
 | `tools/check-templates` | renders every template for every host |
 | `tools/check-schemas` | each `.chezmoidata` file against the schema named in its own header |
 | `tools/check-consistency` | quadlets, units, endpoints, syncthing folders and package groups against each other |
+| `tools/check-coverage` | every source file's target path lands in some host's `chezmoi managed` union |
 | `tools/check-shell` | shellcheck, rendering `.tmpl` scripts per host first |
 
 They need `shellcheck` and `check-jsonschema`, both declared in `packages.yaml`. The same

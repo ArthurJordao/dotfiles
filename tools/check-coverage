@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+"""Catch a source file no host receives.
+
+    tools/check-coverage
+
+A `.chezmoiignore` gate is a template conditional, and a conjunction can end up
+matching nobody -- `gaming-mode` went missing for a week this way, silently: the
+script rendered fine wherever it *was* claimed, nothing said a host should have
+claimed it and didn't.
+
+Method: union `chezmoi managed` over every managed host, translate every
+git-tracked source file to its target path (naming convention only --
+`target-path` ignores `.chezmoiignore` on purpose, which is what lets it see a
+file the ignore ate everywhere), and fail on anything whose target falls under
+a directory some host actually deploys into but that no host's union contains.
+
+Files chezmoi's own source-state walk hides -- a dot-prefixed basename with no
+`dot_` attribute, e.g. `.gitignore` sitting inside a managed directory -- are
+skipped: `target-path` computes a value for them anyway, but chezmoi never
+looks at them as source state to begin with.
+
+Bounded to directories at least one host deploys into (`.config`, `.local`,
+...) rather than every tracked file, so repo infrastructure that deploys
+nowhere on purpose -- tools/, docs/, schemas/, README.md -- is never in
+scope; nothing needs to be told about those explicitly.
+"""
+
+import os
+import subprocess
+import sys
+import tempfile
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def hosts():
+    out = subprocess.run([os.path.join(ROOT, "tools/hosts")],
+                         capture_output=True, text=True, check=True)
+    return [h for h in out.stdout.splitlines() if h]
+
+
+def config(host, dest_dir):
+    path = os.path.join(dest_dir, "config.toml")
+    home = os.path.join(dest_dir, "home")
+    os.makedirs(home, exist_ok=True)
+    with open(path, "w") as f:
+        f.write('sourceDir = %r\ndestDir = %r\n[data]\n  hostname = %r\n'
+                '[onepassword]\n  command = %r\n'
+                % (ROOT, home, host, os.path.join(ROOT, "tools/mock-op")))
+    return path, home
+
+
+def chezmoi(config_path, *args):
+    proc = subprocess.run(["chezmoi", "--config=" + config_path, "--no-tty", *args],
+                          capture_output=True, text=True)
+    if proc.returncode != 0:
+        sys.exit("chezmoi %s failed:\n%s" % (" ".join(args), proc.stderr))
+    return proc.stdout
+
+
+def git_files():
+    out = subprocess.run(["git", "-C", ROOT, "ls-files"],
+                         capture_output=True, text=True, check=True)
+    return [f for f in out.stdout.splitlines() if f]
+
+
+with tempfile.TemporaryDirectory() as tmp:
+    union = set()
+    # target-path is naming-convention only, so any one host's config maps
+    # every source file the same way -- reuse the first host's for it.
+    first_cfg = first_home = None
+    for host in hosts():
+        cfg, home = config(host, os.path.join(tmp, host))
+        first_cfg, first_home = first_cfg or cfg, first_home or home
+        # `managed`'s default path style is already destDir-relative.
+        union.update(p for p in chezmoi(cfg, "managed", "-i", "files,symlinks").splitlines() if p)
+
+    deploy_roots = set(p.split(os.sep, 1)[0] for p in union)
+
+    sources = [f for f in git_files() if not os.path.basename(f).startswith(".")]
+    targets = chezmoi(first_cfg, "target-path", *sources).splitlines()
+
+    failures = []
+    for src, tgt in zip(sources, targets):
+        rel = os.path.relpath(tgt, first_home)
+        if rel.split(os.sep, 1)[0] not in deploy_roots:
+            continue
+        if rel not in union:
+            failures.append("%s -> %s is claimed by no host's `managed` list" % (src, rel))
+
+if failures:
+    for line in sorted(failures):
+        print(line)
+    print("\n%d coverage failures" % len(failures), file=sys.stderr)
+    sys.exit(1)
+print("ok: %d source files, all claimed by some host" % len(sources))

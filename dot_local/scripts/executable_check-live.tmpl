@@ -145,6 +145,26 @@ for c in json.load(sys.stdin):
 ')
 [ "$orphans" -eq 0 ] && ok "  none"
 
+echo
+echo "=== bind-mount host paths ==="
+# Podman creates a *named* volume on demand, but requires a bind mount's host
+# path to already exist -- a missing one fails the unit at start with
+# `statfs ...: no such file or directory`, invisible until then. check-live
+# runs on the real host, so it is the one check that can actually stat these.
+missing=0
+while IFS= read -r src; do
+    case "$src" in
+        %h/*) path="$HOME/${src#%h/}" ;;
+        /*)   path="$src" ;;
+        *)    continue ;;  # no leading slash: a named volume, podman creates it
+    esac
+    [ -e "$path" ] && continue
+    bad "  $path: does not exist"
+    missing=$((missing + 1))
+done < <(find "$QUADLET_DIR" -type f -name '*.container' -exec grep -h '^Volume=' {} + 2>/dev/null \
+    | sed -e 's/^Volume=//' -e 's/:.*//' | sort -u)
+[ "$missing" -eq 0 ] && ok "  none"
+
 if [ "${#ENDPOINTS[@]}" -gt 0 ]; then
     echo
     echo "=== endpoints ==="
