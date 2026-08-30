@@ -44,6 +44,7 @@ packages:
     moonlight:
       - moonlight-qt
     samba:
+      - avahi
       - samba
       # Windows browses via WSD, not mDNS -- without this mars never appears
       # under Network in Explorer.

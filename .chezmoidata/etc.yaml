@@ -31,5 +31,5 @@ etc:
     files:
       - {src: samba/smb.conf, dest: /etc/samba/smb.conf, mode: "644"}
       - {src: avahi/smb.service, dest: /etc/avahi/services/smb.service, mode: "644"}
-    enable:  [smb, wsdd]
+    enable:  [avahi-daemon, smb, wsdd]
     restart: [smb, wsdd]
