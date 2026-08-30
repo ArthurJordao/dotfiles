@@ -24,6 +24,8 @@ packages:
       - tailscale
     agent:
       - claude-code
+    dev:
+      - github-cli
     edge:
       - cloudflared
       - coredns
