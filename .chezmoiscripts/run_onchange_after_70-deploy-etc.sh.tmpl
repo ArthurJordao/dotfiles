@@ -68,10 +68,12 @@ fi
 
 # Samba keeps its own password database, so this is NOT the Unix password. Set
 # it only when absent: on steady state the secret is never piped anywhere.
-sudo install -d -m 755 /var/log/samba
+[ -d /var/log/samba ] || sudo install -d -m 755 /var/log/samba
 if ! sudo pdbedit -L -u {{ (index .hosts .hostname).user }} >/dev/null 2>&1; then
-    printf '%s\n%s\n' '{{ (index $op "SMB_PASSWORD").value }}' '{{ (index $op "SMB_PASSWORD").value }}' \
-        | sudo smbpasswd -s -a {{ (index .hosts .hostname).user }}
+    sudo smbpasswd -s -a {{ (index .hosts .hostname).user }} <<'SMBPW_EOF'
+{{ (index $op "SMB_PASSWORD").value }}
+{{ (index $op "SMB_PASSWORD").value }}
+SMBPW_EOF
 fi
 
 {{ end -}}
