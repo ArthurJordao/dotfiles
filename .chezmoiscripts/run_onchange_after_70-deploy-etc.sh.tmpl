@@ -1,18 +1,34 @@
-{{ if has "edge" (index .hosts .hostname).roles -}}
+{{- $roles := (index .hosts .hostname).roles -}}
+{{- $groups := list -}}
+{{- range $name, $g := .etc -}}
+{{- if has $name $roles -}}{{ $groups = append $groups $name }}{{ end -}}
+{{- end -}}
+{{ if $groups -}}
 #!/bin/bash
 set -euo pipefail
 
-# The configs are inlined below rather than rendered by a nested
+# The bodies are inlined below rather than rendered by a nested
 # `chezmoi execute-template`: that child run gets no --config and its own op
 # session, which breaks simulate-host and any headless apply. Inlining also
 # makes this script's own bytes the run_onchange trigger.
+#
+# What lands where comes from .chezmoidata/etc.yaml, keyed by role. Setup that
+# is not a file stays imperative below.
 
 echo "Deploying /etc/ configs..."
 
 STAGE="$(mktemp -d)"
 trap 'rm -rf "$STAGE"' EXIT
 
-# --- prerequisites a fresh edge host has none of ---
+# Stage before installing: `sudo tee` would truncate the live config first.
+install_etc() {
+    # $1 = destination, $2 = mode
+    # -D: a fresh host has none of these directories yet.
+    sudo install -D -m "$2" -o root -g root "$STAGE/out" "$1"
+}
+
+{{ if has "edge" $roles -}}
+# --- edge prerequisites: not files, so not in the table ---
 
 # caddy.service runs as this account, and no package creates it.
 getent passwd caddy >/dev/null || \
@@ -35,8 +51,7 @@ fi
 # systemd-resolved's stub holds 127.0.0.53:53 and stops CoreDNS binding :53.
 # With it off, resolved writes the real upstreams into resolv.conf instead.
 # DNS=127.0.0.1 with Domains=~. sends every query to the CoreDNS above rather
-# than to whatever DHCP hands out — the edge host should not need the router's
-# cooperation to resolve the names it is itself authoritative for.
+# than to whatever DHCP hands out.
 sudo install -d -m 755 /etc/systemd/resolved.conf.d
 printf '[Resolve]\nDNSStubListener=no\nDNS=127.0.0.1\nDomains=~.\nFallbackDNS=1.1.1.1\n' \
     | sudo tee "$STAGE/resolved" >/dev/null
@@ -46,50 +61,30 @@ if ! cmp -s "$STAGE/resolved" /etc/systemd/resolved.conf.d/10-coredns.conf; then
     sudo systemctl restart systemd-resolved
 fi
 
-# Stage before installing: `sudo tee` would truncate the live config first.
-install_edge() {
-    # $1 = destination, $2 = mode
-    # -D: a fresh edge host has none of these directories yet.
-    sudo install -D -m "$2" -o root -g root "$STAGE/out" "$1"
-}
-
-cat > "$STAGE/out" <<'EDGE_EOF'
-{{ includeTemplate "etc/caddy/Caddyfile" . | trimSuffix "\n" }}
-EDGE_EOF
-install_edge /etc/caddy/Caddyfile 644
-
-cat > "$STAGE/out" <<'EDGE_EOF'
-{{ includeTemplate "etc/caddy/caddy.env" . | trimSuffix "\n" }}
-EDGE_EOF
-install_edge /etc/caddy/caddy.env 600
-
-cat > "$STAGE/out" <<'EDGE_EOF'
-{{ includeTemplate "etc/coredns/Corefile" . | trimSuffix "\n" }}
-EDGE_EOF
-install_edge /etc/coredns/Corefile 644
-
-cat > "$STAGE/out" <<'EDGE_EOF'
-{{ includeTemplate "etc/cloudflared/config.yml" . | trimSuffix "\n" }}
-EDGE_EOF
-install_edge /etc/cloudflared/config.yml 644
-
-cat > "$STAGE/out" <<'EDGE_EOF'
-{{ includeTemplate "etc/cloudflared/credentials.json" . | trimSuffix "\n" }}
-EDGE_EOF
-install_edge /etc/cloudflared/{{ .cloudflare.tunnel_id }}.json 600
-
-{{ range $unit := list "caddy.service" "coredns.service" "cloudflared.service" "cloudflared-update.service" "cloudflared-update.timer" -}}
-cat > "$STAGE/out" <<'EDGE_EOF'
-{{ includeTemplate (printf "etc/systemd/%s" $unit) $ | trimSuffix "\n" }}
-EDGE_EOF
-install_edge /etc/systemd/system/{{ $unit }} 644
+{{ end -}}
+{{ range $group := $groups -}}
+{{- $g := index $.etc $group -}}
+{{- $files := index $g "files" | default list -}}
+{{- $enable := index $g "enable" | default list -}}
+{{- $reload := index $g "reload" | default list -}}
+{{- $restart := index $g "restart" | default list -}}
+# --- {{ $group }} ---
+{{ range $f := $files -}}
+cat > "$STAGE/out" <<'ETC_EOF'
+{{ includeTemplate (printf "etc/%s" $f.src) $ | trimSuffix "\n" }}
+ETC_EOF
+install_etc {{ $f.dest | replace "{tunnel_id}" $.cloudflare.tunnel_id }} {{ $f.mode }}
 
 {{ end -}}
+{{ if $enable -}}
 sudo systemctl daemon-reload
-
-echo "Reloading services..."
-sudo systemctl enable --now caddy coredns cloudflared cloudflared-update.timer
-sudo systemctl reload caddy || sudo systemctl restart caddy
-sudo systemctl restart coredns
-sudo systemctl restart cloudflared
+sudo systemctl enable --now {{ join " " $enable }}
+{{ end -}}
+{{ range $u := $reload -}}
+sudo systemctl reload {{ $u }} || sudo systemctl restart {{ $u }}
+{{ end -}}
+{{ range $u := $restart -}}
+sudo systemctl restart {{ $u }}
+{{ end }}
+{{ end -}}
 {{ end }}
