@@ -5,6 +5,9 @@ tunnel: {{ $tunnel }}
 # Rendered from 1Password by run_onchange_after_70-deploy-etc, beside this file.
 # A home directory would tie a root-run unit to whichever user holds `edge`.
 credentials-file: /etc/cloudflared/{{ $tunnel }}.json
+# quic flaps on pluto's network ("timeout: no recent network activity" every
+# ~5min, tunnel connections drop and reconnect) — http2 is stable there.
+protocol: http2
 
 # Public ingress via Cloudflare Tunnel — no open ports. LAN/Tailscale clients
 # still resolve via CoreDNS, so these routes only affect outside traffic.
