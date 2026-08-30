@@ -190,11 +190,9 @@ Silent failures worth knowing:
   reload. Gate with `hosts allow`/`hosts deny` and ufw instead.
 - **Samba's password is not the Unix password.** It lives in `passdb.tdb`, set with `smbpasswd`,
   and no amount of managing `/etc` puts it there.
-- **Never interpolate a secret into a quoted shell literal in a template.** A value containing `'`
-  either silently loses the quotes — so `smbpasswd` succeeds with the WRONG password and nothing
-  reports it — or merges arguments and aborts the script under `set -euo pipefail`. Feed it through
-  a quoted heredoc (`<<'EOF'`), whose body is literal and never reaches argv. Rendering with
-  `tools/mock-op` cannot catch this: the mock value contains no quote.
+- **Never interpolate a secret into a quoted shell literal in a template.** A value containing
+  `'` silently changes or truncates it; feed it through a quoted heredoc (`<<'EOF'`) instead,
+  whose body is literal and never reaches argv.
 
 # The self-hosted stack
 
@@ -421,8 +419,8 @@ tools/simulate-host mars execute-template < dot_local/scripts/executable_gaming-
 ```
 
 The `/etc` bodies live in `.chezmoitemplates/etc/`, so they have no `.tmpl` to redirect into
-`simulate-host`; `tools/render-edge` feeds it the `includeTemplate` call instead. To see all four
-in the order they install, render the deploy script itself.
+`simulate-host`; `tools/render-edge` feeds it the `includeTemplate` call instead. To see them in
+the order they install, render the deploy script itself.
 
 Ordering is deterministic: Go ranges maps in sorted key order, so hosts come out alphabetically,
 endpoints in declaration order within a host.
