@@ -86,13 +86,14 @@ def fail(rule, msg):
 data = json.loads(render("_checker", text=(
     '{{ dict "hosts" .hosts "packages" .packages "syncthing" .syncthing '
     '"minecraft" .minecraft "dashboard" .dashboard "binaries" .binaries '
-    '| toJson }}')))
+    '"etc" .etc | toJson }}')))
 hosts = data["hosts"]
 packages = data.get("packages") or {}
 folders = (data.get("syncthing") or {}).get("folders") or []
 instances = (data.get("minecraft") or {}).get("instances") or []
 dashboard = data.get("dashboard") or {}
 binaries = data.get("binaries") or {}
+etc = data.get("etc") or {}
 
 
 def declared_for(host, table):
@@ -273,6 +274,18 @@ for family in sorted(binaries):
         if key != "common" and key not in all_roles:
             fail("C6", "binaries.%s.%s is not a role any host declares"
                        % (family, key))
+
+# C23 -- an /etc group keyed on a role nothing declares installs nothing, and a
+# `src` that no longer exists fails only during a real apply on the host.
+ETC_BODIES = os.path.join(ROOT, ".chezmoitemplates/etc")
+for group in sorted(etc):
+    if group not in all_roles:
+        fail("C23", "etc.%s is not a role any host declares" % group)
+    for entry in etc[group].get("files") or []:
+        src = entry.get("src")
+        if not os.path.isfile(os.path.join(ETC_BODIES, src)):
+            fail("C23", "etc.%s: src %r does not exist under "
+                        ".chezmoitemplates/etc/" % (group, src))
 
 # C16 -- an `except` naming no host excludes nothing, silently.
 # Membership, not the emulation role: a host is listed here before it gains
