@@ -62,6 +62,19 @@ if ! cmp -s "$STAGE/resolved" /etc/systemd/resolved.conf.d/10-coredns.conf; then
 fi
 
 {{ end -}}
+{{ if has "samba" $roles -}}
+{{- $op := onepasswordItemFields .secrets.items.samba .secrets.vault -}}
+# --- samba prerequisites: passdb is state, not a file ---
+
+# Samba keeps its own password database, so this is NOT the Unix password. Set
+# it only when absent: on steady state the secret is never piped anywhere.
+sudo install -d -m 755 /var/log/samba
+if ! sudo pdbedit -L -u {{ (index .hosts .hostname).user }} >/dev/null 2>&1; then
+    printf '%s\n%s\n' '{{ (index $op "SMB_PASSWORD").value }}' '{{ (index $op "SMB_PASSWORD").value }}' \
+        | sudo smbpasswd -s -a {{ (index .hosts .hostname).user }}
+fi
+
+{{ end -}}
 {{ range $group := $groups -}}
 {{- $g := index $.etc $group -}}
 {{- $files := index $g "files" | default list -}}
