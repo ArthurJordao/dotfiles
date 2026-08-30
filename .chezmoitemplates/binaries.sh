@@ -1,6 +1,8 @@
-{{- /* The BINARIES table and the one helper both consumers need. Split three
-       ways so neither consumer carries a function it never calls:
-       binaries-net.sh is the checker's, binaries-install.sh the installer's.
+{{- /* The BINARIES table and the one helper every consumer needs. Split
+       several ways so none carries a function it never calls -- shellcheck's
+       SC2329 is what says so: binaries-expand.sh is the two substitution
+       helpers, binaries-net.sh the checker's upstream lookup,
+       binaries-install.sh the fetch, binaries-build.sh the compile.
        Runs nothing and sets no shell options -- the caller owns those. */ -}}
 {{- $roles := (index .hosts .hostname).roles -}}
 {{- $family := (index (index .hosts .hostname) "distro" | default "") -}}
@@ -8,10 +10,10 @@
 {{- $groups := prepend $roles "common" -}}
 # Hand-installed binaries, pinned in .chezmoidata/binaries.yaml. Rendered here
 # rather than read at runtime, so a version bump changes this script's bytes.
-# Fields, pipe-separated because version_cmd contains spaces:
-#   name|repo|version|install|tag|asset|version_cmd|restart
+# Fields, pipe-separated because several contain spaces:
+#   name|repo|version|install|tag|asset|version_cmd|restart|toolchain|build
 BINARIES=$(cat <<'BINLIST'
-{{ range $groups }}{{ if hasKey $fam . }}{{ range index $fam . }}{{ .name }}|{{ .repo }}|{{ .version }}|{{ .install }}|{{ .tag }}|{{ index . "asset" | default "" }}|{{ index . "version_cmd" | default "" }}|{{ index . "restart" | default "" }}
+{{ range $groups }}{{ if hasKey $fam . }}{{ range index $fam . }}{{ .name }}|{{ .repo }}|{{ .version }}|{{ .install }}|{{ .tag }}|{{ index . "asset" | default "" }}|{{ index . "version_cmd" | default "" }}|{{ index . "restart" | default "" }}|{{ index . "toolchain" | default "" }}|{{ index . "build" | default "" }}
 {{ end }}{{ end }}{{ end -}}
 BINLIST
 )

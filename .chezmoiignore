@@ -78,6 +78,7 @@ minecraft/**
       .config/systemd gate is broader than this. */}}
 {{ if not (includeTemplate "has-binaries" .) }}
 .local/scripts/binaries-check
+.local/scripts/binaries-build
 .config/systemd/user/binaries-check.service
 .config/systemd/user/binaries-check.timer
 {{ end }}

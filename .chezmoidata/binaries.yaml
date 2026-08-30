@@ -12,23 +12,35 @@
 # (dpkg --print-architecture), so one declaration serves amd64 and arm64.
 #
 # install:
-#   deb      fetch the .deb, dpkg -i; installed version comes from dpkg-query
-#   tarball  fetch, extract `name`, install -m755 into /usr/bin
-#   manual   never installed -- pinned and reported only
+#   deb          fetch the .deb, dpkg -i; version comes from dpkg-query
+#   tarball      fetch, extract `name`, install -m755 into /usr/bin
+#   local-build  run `build` here, then install -m755 into /usr/bin. `toolchain`
+#                names the compiler package, which must be declared in
+#                packages.yaml (check-consistency C22). Never during an apply --
+#                it takes minutes; `just binaries-build` is what asks for it
+#   manual       never installed -- pinned and reported only
 
 binaries:
   debian:
     edge:
-      # Built with xcaddy, never fetched: the release binaries carry no
-      # Cloudflare DNS provider, and without it every certificate fails to
-      # issue. The pin is what makes the hand-built copy visible to
-      # binaries-check; the build itself is in docs/unmanaged.md.
+      # Built, never fetched: the release binaries carry no Cloudflare DNS
+      # provider, and without it Caddy cannot answer the DNS-01 challenge and
+      # every certificate fails to issue. ~7 minutes on pluto.
       - name: caddy
         repo: caddyserver/caddy
         version: "2.11.4"
-        install: manual
+        install: local-build
+        toolchain: golang-1.27-go
+        build: "xcaddy build v{version} --with github.com/caddy-dns/cloudflare"
         tag: "v{version}"
         version_cmd: "caddy version"
+        restart: "sudo systemctl restart caddy"
+      - name: xcaddy
+        repo: caddyserver/xcaddy
+        version: "0.4.7"
+        install: deb
+        tag: "v{version}"
+        asset: "xcaddy_{version}_linux_{arch}.deb"
       - name: coredns
         repo: coredns/coredns
         version: "1.14.7"

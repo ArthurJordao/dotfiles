@@ -31,7 +31,7 @@ drifted=""   # installed != pinned
 outdated=""  # pinned != latest
 rows=""
 
-while IFS='|' read -r bname brepo bversion bkind _ _ bvercmd _; do
+while IFS='|' read -r bname brepo bversion bkind _ _ bvercmd _ _ _; do
     [ -n "$bname" ] || continue
     have=$(bin_installed "$bname" "$bkind" "$bvercmd")
     latest="-"
@@ -52,7 +52,10 @@ while IFS='|' read -r bname brepo bversion bkind _ _ bvercmd _; do
         note="${note:+$note; }upstream $latest"
         outdated="$outdated $bname"
     fi
-    [ "$bkind" = "manual" ] && note="${note:+$note; }built by hand"
+    case "$bkind" in
+        local-build) note="${note:+$note; }built here" ;;
+        manual) note="${note:+$note; }built by hand" ;;
+    esac
 
     rows="$rows$(printf '%-10s %-12s %-12s %-12s %s' \
         "$bname" "$bversion" "${have:-absent}" "$latest" "$note")

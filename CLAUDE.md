@@ -481,17 +481,24 @@ above.
 **A binary with no package is declared in `.chezmoidata/binaries.yaml`**, keyed by distro then by
 group the same way `packages.arch` is. Each entry pins a `version` and names the GitHub `repo`,
 the release `tag` and the `asset` to fetch; `{version}` and `{arch}` are substituted on the host,
-so one declaration serves amd64 and arm64. `install` is `deb`, `tarball`, or `manual` — the last
-is pinned and *reported* but never fetched, which is caddy, whose release binaries carry no
-Cloudflare DNS provider and so must come from `xcaddy`. `restart` runs after a successful install,
-or the old process keeps running and nothing says so.
+so one declaration serves amd64 and arm64. `install` is `deb`, `tarball`, `local-build` or
+`manual`. `local-build` compiles it here from `build` using the compiler named in
+`toolchain` — that is caddy, whose release binaries carry no Cloudflare DNS provider, so
+DNS-01 fails and no certificate issues. `manual` is pinned and *reported* but never touched.
+`restart` runs after a successful install, or the old process keeps running and nothing says so.
 
 The names render into `run_onchange_after_10-install-packages.sh.tmpl` alongside the package
 names, so **a version bump in that file is the upgrade** — no separate mechanism, and no
-fingerprint to add. Three templates back it: `.chezmoitemplates/binaries.sh` (the table plus
-`bin_installed`), `binaries-net.sh` (the upstream lookup), `binaries-install.sh` (fetch and
-install). They are split so neither consumer carries a function it never calls — shellcheck's
-SC2329 is what says so.
+fingerprint to add. Five templates back it: `.chezmoitemplates/binaries.sh` (the table plus `bin_installed`),
+`binaries-expand.sh` (the `{version}`/`{arch}` substitution), `binaries-net.sh` (the upstream
+lookup), `binaries-install.sh` (fetch), `binaries-build.sh` (compile). They are split so no
+consumer carries a function it never calls — shellcheck's SC2329 is what says so.
+
+**A `local-build` binary is never built during an apply.** caddy takes about seven minutes on
+pluto, and an apply that stalls that long is worse than a stale binary, so `install-packages`
+reports it and `just binaries-build` acts on it. C22 requires the `toolchain` package to be
+declared for that host — Debian's `golang-<X.Y>-go` installs under `/usr/lib/go-<X.Y>/bin` and
+provides no `/usr/bin/go`, so the build puts it on `PATH` itself.
 
 `dot_local/scripts/executable_binaries-check.tmpl` answers both questions at once and they fail
 differently: **installed ≠ pinned** means the host is behind the repo (`chezmoi update`),

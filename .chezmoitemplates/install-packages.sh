@@ -42,28 +42,35 @@ MISSING="$(comm -13 <(printf '%s\n' "$INSTALLED" | sort -u) \
                     <(printf '%s\n' "$DECLARED"  | sort -u))"
 
 {{ template "binaries.sh" . }}
+{{ template "binaries-expand.sh" . }}
 {{ template "binaries-install.sh" . }}
 
-# Binaries split two ways: what this script can fetch, and what it can only
-# report. Both are silent when the pin matches what is installed.
+# Binaries split three ways: what this script can fetch, what takes minutes and
+# so belongs to `just binaries-build`, and what it can only report. All three
+# are silent when the pin matches what is installed.
 BIN_OUTDATED=""   # name|repo|version|install|tag|asset|restart
+BIN_BUILD=""      # one "name have -> want" line
 BIN_MANUAL=""     # one "name have -> want" line
-while IFS='|' read -r bname brepo bversion bkind btag basset bvercmd brestart; do
+while IFS='|' read -r bname brepo bversion bkind btag basset bvercmd brestart _ _; do
     [ -n "$bname" ] || continue
     bhave=$(bin_installed "$bname" "$bkind" "$bvercmd")
     [ "$bhave" = "$bversion" ] && continue
-    if [ "$bkind" = "manual" ]; then
-        BIN_MANUAL="${BIN_MANUAL}${bname} ${bhave:-absent} -> ${bversion}
-"
-    else
-        BIN_OUTDATED="${BIN_OUTDATED}${bname}|${brepo}|${bversion}|${bkind}|${btag}|${basset}|${brestart}
-"
-    fi
+    case "$bkind" in
+        manual)
+            BIN_MANUAL="${BIN_MANUAL}${bname} ${bhave:-absent} -> ${bversion}
+" ;;
+        local-build)
+            BIN_BUILD="${BIN_BUILD}${bname} ${bhave:-absent} -> ${bversion}
+" ;;
+        *)
+            BIN_OUTDATED="${BIN_OUTDATED}${bname}|${brepo}|${bversion}|${bkind}|${btag}|${basset}|${brestart}
+" ;;
+    esac
 done <<BINEOF
 $BINARIES
 BINEOF
 
-if [ -z "$MISSING" ] && [ -z "$BIN_OUTDATED" ] && [ -z "$BIN_MANUAL" ]; then
+if [ -z "$MISSING" ] && [ -z "$BIN_OUTDATED" ] && [ -z "$BIN_BUILD" ] && [ -z "$BIN_MANUAL" ]; then
     exit 0
 fi
 
@@ -77,12 +84,16 @@ if [ -n "$BIN_OUTDATED" ]; then
         [ -n "$bname" ] && echo "  $bname -> $bversion"
     done
 fi
+if [ -n "$BIN_BUILD" ]; then
+    echo "Binaries needing a rebuild -- run 'just binaries-build' (takes minutes):"
+    printf '%s' "$BIN_BUILD" | sed 's/^/  /'
+fi
 if [ -n "$BIN_MANUAL" ]; then
     echo "Pinned but built by hand -- rebuild these yourself (docs/unmanaged.md):"
     printf '%s' "$BIN_MANUAL" | sed 's/^/  /'
 fi
 
-# A manual binary on its own leaves nothing to do here.
+# A build or a manual binary on its own leaves nothing for this script to do.
 if [ -z "$MISSING" ] && [ -z "$BIN_OUTDATED" ]; then
     exit 0
 fi

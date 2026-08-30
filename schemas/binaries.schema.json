@@ -37,8 +37,8 @@
           "description": "Pinned version, without a leading v."
         },
         "install": {
-          "enum": ["deb", "tarball", "manual"],
-          "description": "How it is installed. 'manual' is never fetched -- pinned and reported only."
+          "enum": ["deb", "tarball", "local-build", "manual"],
+          "description": "How it is installed. 'local-build' compiles it here; 'manual' is never fetched -- pinned and reported only."
         },
         "tag": {
           "type": "string",
@@ -51,6 +51,15 @@
         "version_cmd": {
           "type": "string",
           "description": "Command printing the installed version. Unused for install: deb, which reads dpkg-query."
+        },
+        "toolchain": {
+          "type": "string",
+          "pattern": "^golang-[0-9]+\\.[0-9]+-go$",
+          "description": "Compiler package the build needs, e.g. golang-1.27-go. Required for install: local-build, and must itself be declared in packages.yaml."
+        },
+        "build": {
+          "type": "string",
+          "description": "Command run in an empty directory, producing a file named `name`. {version} and {arch} are substituted."
         },
         "restart": {
           "type": "string",
@@ -65,6 +74,10 @@
         {
           "if": {"properties": {"install": {"const": "manual"}}},
           "then": {"required": ["version_cmd"]}
+        },
+        {
+          "if": {"properties": {"install": {"const": "local-build"}}},
+          "then": {"required": ["toolchain", "build", "version_cmd"]}
         }
       ]
     }

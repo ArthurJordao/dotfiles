@@ -70,4 +70,8 @@ check-live:
 # Report pinned vs installed vs upstream for hand-installed binaries
 binaries-check:
     ~/.local/scripts/binaries-check --upstream
+
+# Compile the binaries that must be built from source (caddy: ~7 minutes)
+binaries-build *ARGS:
+    ~/.local/scripts/binaries-build {{ "{{ ARGS }}" }}
 {{ end }}

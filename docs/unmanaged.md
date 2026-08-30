@@ -318,30 +318,29 @@ a future reader does not mistake them for load-bearing.
 The Debian box carrying the `edge` role: Caddy, CoreDNS and cloudflared. Only what has
 been verified on the box is listed here.
 
-coredns and OliveTin are **not** on this list any more. Both are pinned in
+**The binaries are no longer on this list.** coredns, OliveTin and xcaddy are pinned in
 `.chezmoidata/binaries.yaml` and installed by
-`run_onchange_after_10-install-packages.sh.tmpl`, so a version bump in that file is the
-upgrade. `binaries-check` reports pinned vs installed vs upstream — daily via
-`binaries-check.timer`, on demand from the dashboard's Server fieldset, and as
+`run_onchange_after_10-install-packages.sh.tmpl`. Caddy is built here from the same pin
+against the `golang-1.27-go` toolchain declared in `packages.yaml`, which
+`check-consistency` C22 keeps in step. `binaries-check` reports pinned vs installed vs
+upstream — daily via `binaries-check.timer`, on the dashboard's Server fieldset, and as
 `just binaries-check`.
 
-### The caddy binary is hand-built
+### Caddy is built, not fetched, and not during an apply
 
-`/usr/bin/caddy` is owned by **no package**. The release binaries carry no Cloudflare DNS
-provider, and without it Caddy cannot answer the DNS-01 challenge — **every certificate
-fails to issue**.
+The release binaries carry no Cloudflare DNS provider. Without it Caddy cannot answer the
+DNS-01 challenge and **every certificate fails to issue**, so it is compiled with xcaddy.
+
+The build is about seven minutes on this box, so `chezmoi apply` only reports that caddy
+is behind its pin. Run it yourself after a version bump:
 
 ```sh
-xcaddy build --with github.com/caddy-dns/cloudflare
-sudo install -m755 ./caddy /usr/bin/caddy
+just binaries-build
+caddy list-modules | grep dns.providers.cloudflare
 ```
 
-Verify: `caddy list-modules | grep dns.providers.cloudflare` must print that line.
-
-pluto has neither `go` nor `xcaddy`, and neither is declared for debian, so the build
-happens off-host and the binary is copied over. The version is pinned in
-`.chezmoidata/binaries.yaml` with `install: manual`: that is what makes a stale copy show
-up in `binaries-check`, but the build itself is still not reproducible from a clone.
+That grep must print the module. Debian's versioned Go packages install under
+`/usr/lib/go-1.27/bin` and provide no `/usr/bin/go`; the build puts it on `PATH` itself.
 
 ---
 

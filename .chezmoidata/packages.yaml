@@ -197,6 +197,9 @@ packages:
       - tailscale
     edge:
       - cloudflared
+      # Pinned, and it provides no /usr/bin/go -- the caddy build puts
+      # /usr/lib/go-1.27/bin on PATH itself. From trixie-backports.
+      - golang-1.27-go
       - openssl
     emulation:
       - syncthing

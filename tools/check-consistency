@@ -215,6 +215,26 @@ for name in sorted(hosts):
                         % (name, endpoint["name"], server,
                            host.get("distro") or "?"))
 
+# C22 -- a local-build binary compiles with `toolchain`, and nothing else
+# installs it. Undeclared, the build fails at the point of use with a missing
+# compiler, which is exactly the failure this file exists to move forward.
+for name in sorted(hosts):
+    host = hosts[name]
+    if host.get("managed") is False:
+        continue
+    family = binaries.get(host.get("distro") or "") or {}
+    declared = declared_for(host, packages)
+    for group in ["common"] + (host.get("roles") or []):
+        for entry in family.get(group) or []:
+            if entry.get("install") != "local-build":
+                continue
+            toolchain = entry.get("toolchain")
+            if toolchain not in declared:
+                fail("C22", "%s: binary %r builds with %r, which is not a "
+                            "declared package for %s"
+                            % (name, entry["name"], toolchain,
+                               host.get("distro") or "?"))
+
 # C18 -- the Corefile points every proxied name at the edge host's IP, so exactly
 # one managed host must carry the role, and it must declare an address.
 edge_hosts = [n for n, h in hosts.items()

@@ -1,22 +1,5 @@
-{{- /* Fetching and installing, used only by install-packages.sh. */ -}}
-# Debian's name for the machine, which is what upstream assets are named after.
-bin_arch() {
-    if command -v dpkg >/dev/null 2>&1; then
-        dpkg --print-architecture
-        return
-    fi
-    case "$(uname -m)" in
-        x86_64) echo amd64 ;;
-        aarch64 | arm64) echo arm64 ;;
-        *) uname -m ;;
-    esac
-}
-
-# Substitute {version} and {arch} in a tag or asset pattern.
-bin_expand() { # pattern version
-    printf '%s' "$1" | sed -e "s/{version}/$2/g" -e "s/{arch}/$(bin_arch)/g"
-}
-
+{{- /* Fetching and installing a release artifact, used only by
+       install-packages.sh. Needs binaries-expand.sh. */ -}}
 # Fetch and install one binary at its pinned version.
 bin_install() { # name repo version install tag asset restart
     local name="$1" repo="$2" version="$3" kind="$4" tag="$5" asset="$6" restart="$7"
