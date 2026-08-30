@@ -57,8 +57,10 @@ done
 # Rendering is the slow half — one chezmoi per template per host — and every
 # render is independent, so they run concurrently. Dedup and linting stay
 # serial afterwards: `seen` is shared state, and shellcheck is fast.
-# Invoked through xargs, which shellcheck cannot see.
-# shellcheck disable=SC2329
+# Invoked through xargs, which shellcheck cannot see. Current versions call
+# this SC2329; the CI runner's older shellcheck (0.9.0) predates that code and
+# reports the same finding as SC2317 instead.
+# shellcheck disable=SC2317,SC2329
 render_one() { # $1 = host, $2 = template
     local h=$1 f=$2 out
     out="$RENDER/$(printf '%s' "${f%.tmpl}" | tr / _).$h"
