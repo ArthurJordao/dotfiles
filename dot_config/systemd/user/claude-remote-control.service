@@ -13,10 +13,12 @@ WorkingDirectory=%h/dev/personal/dotfiles
 # Its own socket, not the default one minecraft uses: on a shared socket the
 # session lands in a tmux server outside this unit's cgroup, so systemd loses
 # the main PID and Restart= never fires.
-# A pane inherits the tmux server's environment, not the unit's, so PATH goes
-# through -e. Tools run through a non-login shell.
+# tmux execs the command directly, with no shell, so the server's environment is
+# the command's: Environment= reaches it and `new-session -e` does not. Verified
+# 2026-08-30 -- with -e the process held systemd's PATH, not this one, which
+# after a headless reboot has no ~/.local/bin.
+Environment=PATH=%h/.local/bin:%h/.local/scripts:/usr/local/bin:/usr/bin:/bin
 ExecStart=/usr/bin/tmux -L claude new-session -d -s claude \
-    -e PATH=%h/.local/bin:%h/.local/scripts:/usr/local/bin:/usr/bin:/bin \
     /usr/bin/claude remote-control --spawn worktree --no-create-session-in-dir --permission-mode acceptEdits
 ExecStop=/usr/bin/tmux -L claude kill-server
 # Not on-failure: the server exits cleanly after ~10 minutes without network.

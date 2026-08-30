@@ -109,12 +109,20 @@ Read-only, no credentials. It reads `gaming-mode`'s state file, so a stopped sta
 intentional rather than as drift.
 
 Silent failures worth knowing:
-- **A tmux pane inherits the tmux *server's* environment, not the client's.** `Environment=` in a
-  unit whose `ExecStart` is `tmux new-session` never reaches the command — only names in tmux's
-  `update-environment` cross over. This is why `minecraft/atm10-tts/start` sets `ATM10_JAVA`
-  itself: a script running inside the pane is unaffected. `tmux new-session -e VAR=value` also
-  works if a value ever has to come from the unit, and is what `claude-remote-control` uses for
-  `PATH`.
+- **A tmux pane inherits the tmux *server's* environment**, and which mechanism reaches the command
+  depends on whether tmux execs it directly or through a shell. Verified on mars 2026-08-30:
+  - **`tmux new-session -e VAR=value` does NOT reach the initial pane's process.** The value
+    registers in the session environment (`show-environment` prints it) and the process still gets
+    the server's. So `-e` is the wrong tool for a unit that must guarantee a variable.
+  - **`Environment=` in the unit does reach it**, when tmux execs the command directly — the
+    server's environment *is* the process's. `ps -o ppid,comm` on the pane process shows the tmux
+    server as the parent, with no shell between.
+  - **A pane whose command runs through a shell is different.** `minecraft@`'s `./start` spawns
+    `fish -c` → `bash`, and fish's config rewrites `PATH` on top of whatever it inherited. That is
+    why `minecraft/atm10-tts/start` sets `ATM10_JAVA` itself rather than relying on the unit.
+
+  Check which shape you have before trusting either: `tr '\0' '\n' < /proc/<pane pid>/environ`
+  against `tmux -L <sock> show-environment`.
 - **A unit running tmux needs its own socket (`-L <name>`).** On the default socket the session
   joins a tmux server started outside this unit's cgroup, so systemd never sees the main PID and
   `Restart=` silently never fires. `ExecStop` can then `kill-server` safely, because the socket is
