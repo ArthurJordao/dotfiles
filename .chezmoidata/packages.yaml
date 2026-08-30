@@ -43,6 +43,11 @@ packages:
       - tmux
     moonlight:
       - moonlight-qt
+    samba:
+      - samba
+      # Windows browses via WSD, not mDNS -- without this mars never appears
+      # under Network in Explorer.
+      - wsdd
     server:
       - cockpit
       - cockpit-podman

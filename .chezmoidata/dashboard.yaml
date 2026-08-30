@@ -49,6 +49,7 @@ dashboard:
       # Written daily by binaries-check.timer; "n/a" until it first runs.
       - {field: binaries, label: Binaries, icon: "mdi:package-variant"}
       - {field: root, label: "/", icon: "mdi:harddisk"}
+      - {field: svc_files, label: x9pro share, icon: "mdi:folder-network"}
 
   # Keyed by the Controls fieldset the buttons sit in -- the group is the key,
   # so it cannot name a section that does not exist. Fieldsets render in sorted

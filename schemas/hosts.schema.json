@@ -21,6 +21,11 @@
       "description": "IANA zone, fleet-wide. Every quadlet that sets TZ reads it from here.",
       "pattern": "^[A-Za-z]+(/[A-Za-z0-9_+-]+)+$"
     },
+    "lan_cidr": {
+      "type": "string",
+      "description": "The household LAN in CIDR form. Fleet-wide: services that gate on \"is this the LAN\" read it rather than repeating the literal.",
+      "pattern": "^[0-9.]+/[0-9]{1,2}$"
+    },
     "hosts": {
       "type": "object",
       "description": "The only place hosts are named. A host absent here fails every template with `map has no entry for key \"<hostname>\"`.",
@@ -143,6 +148,10 @@
               {
                 "const": "edge",
                 "description": "Owns Caddy, CoreDNS, cloudflared and the /etc deploy. Move it to relocate the whole edge."
+              },
+              {
+                "const": "samba",
+                "description": "Serves an SMB share of a `storage` mount point to the LAN and the tailnet."
               }
             ]
           }

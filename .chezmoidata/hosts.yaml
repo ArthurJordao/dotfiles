@@ -14,6 +14,7 @@
 #   emulation  syncthing + the shared EmuDeck library (see `syncthing.folders`)
 #   arkos      ArkOS handheld: different frontend and ROM layout from EmuDeck
 #   edge       Caddy, CoreDNS, cloudflared, /etc deploy
+#   samba      serves an SMB share of a `storage` mount to the LAN and tailnet
 #
 # `os` and `distro` are what a template reads instead of .chezmoi.os — chezmoi's
 # own value cannot be overridden, so simulate-host could not render another
@@ -37,6 +38,9 @@ domain: arthurjordao.dev
 # Fleet-wide. Read by every quadlet that sets TZ.
 timezone: America/Sao_Paulo
 
+# Fleet-wide. Read by anything that gates on "is this the household LAN".
+lan_cidr: 192.168.15.0/24
+
 hosts:
   deimos:
     managed: false
@@ -53,13 +57,15 @@ hosts:
       tailscale: 100.84.63.99
 
   mars:
-    roles: [podman, gui, dev, agent, gaming, minecraft, sunshine, emulation]
+    roles: [podman, gui, dev, agent, gaming, minecraft, sunshine, emulation, samba]
     os: linux
     distro: arch
     user: turisa
     ip:
       lan: 192.168.15.23
       tailscale: 100.127.50.55
+    storage:
+      x9pro: /mnt/x9pro
     # Read off the host after its first syncthing start; empty omits it.
     syncthing_id: "34WVFBB-7BPUYSO-PIU3HJU-LQ7MA53-FIMPVUR-Q6YAKGI-DCTMY4D-VSTRKQB"
 
@@ -77,6 +83,9 @@ hosts:
       - {name: minecraft, ddns: true, probe_port: 25565}
       # Config UI only — moonlight talks straight to the host, not via Caddy.
       - {name: sunshine, port: 47990, scheme: https, tls_insecure: true, served_by: sunshine}
+      # No port: SMB is not HTTP, so there is no Caddy block. probe_port only
+      # earns the dashboard tile, reached at mars.arthurjordao.dev:445.
+      - {name: files, probe_port: 445}
 
   mercury:
     roles: [gui, dev, gaming, moonlight, emulation]
