@@ -3,29 +3,62 @@
 Personal dotfiles managed with [chezmoi](https://www.chezmoi.io/). The source dir is this
 repo (checked out at `~/dev/personal/dotfiles`); `chezmoi apply` renders and deploys it.
 
-Hosts share this repo, gated by roles in `.chezmoidata/hosts.yaml`:
+Hosts share this repo, gated by roles in `.chezmoidata/hosts.yaml`, which is the inventory — read
+it there rather than duplicating it here. **`pluto` carries `server` and `edge`**, so it runs the
+containers and the whole generated edge; the others are workstations, handhelds and e-readers.
 
-- **`mars`** — Arch/CachyOS homelab server. Runs the self-hosted stack (containers, Caddy,
-  CoreDNS, Minecraft). Also a desktop and gaming box. This is the interesting part and the
-  focus of this file.
-- **`neptune`** — macOS workstation, the NoRedInk work laptop (Brewfile, aerospace, etc.).
-  Renamed from `Arthurs-MacBook-Pro`. It's Kandji-MDM-enrolled, which can rewrite
-  `ComputerName`/`LocalHostName` on check-in — `HostName` is the one chezmoi reads.
-- **`mercury`** — Lenovo Legion Go handheld, CachyOS, user `arthur`. Same arch package family as
-  mars, so it reads the same `packages.arch` groups. Roles `[gui, gaming, moonlight, emulation]`:
-  shared dotfiles and GUI configs, no containers, no `/etc` deploy, no hosted services. `gaming`
-  has no key under `packages.arch` — CachyOS ships the gaming stack. `emulation` makes it the
-  second half of the shared EmuDeck library (see "Emulation library sync").
+## Where documentation goes
+
+**Read this before adding a line to any doc.** These files were cut down on 2026-08-30 from a
+state where every incident and host fact had accumulated into them; the rules below are what keep
+that from happening again.
+
+**The test: would this still be true if the whole fleet were rebuilt tomorrow, on different
+hardware, with different hostnames?**
+
+- **Yes → `CLAUDE.md`.** Template traps, the data model, script ordering, `exact_` rules, what
+  `just check` enforces. Facts about *editing this repo*.
+- **No → the notes store**, via the `memory` MCP:
+
+  | | |
+  |---|---|
+  | `dotfiles/hosts/<host>` | what a box is, its unmanaged state, its quirks, what has been ruled out |
+  | `dotfiles/services/<svc>` | facts about a service the repo cannot record |
+  | `dotfiles/decisions/` | why something is the way it is, rejected options included |
+  | `dotfiles/reference/` | cross-cutting things that are neither a host nor a service |
+  | `dotfiles/problems-passed.md` | closed problems, one line each |
+  | `dotfiles/specs/` | in-flight work; `specs/archive/` once executed |
+
+- **`docs/unmanaged.md` is not a general dumping ground.** It holds *only* the bootstrap floor for
+  the host that serves the notes store, because rebuilding that box is the one case the store
+  cannot answer. A new host's rebuild notes go to `dotfiles/hosts/<host>`, never here.
+
+Four rules that matter more than they look:
+
+1. **Never write a pointer in place of content.** "See the notes store for X" is worse than either
+   option — if it belongs here, write it here; if it does not, delete it and write it there. A
+   session that has to make an MCP call to learn that `exact_` does not recurse will violate that
+   trap.
+2. **Keep it terse.** State the constraint, not how it was discovered, what it looked like when
+   broken, or what an earlier version got wrong. One or two lines.
+3. **A fixed problem still leaves state.** When something is solved, the *problem* goes to
+   `problems-passed.md` as one line — but any config the fix left on a host goes to that host's
+   **Unmanaged state**, and anything it ruled out goes to **Ruled out**. Extract before deleting.
+4. **Do not delete a "ruled out" finding.** Negative knowledge is the most expensive thing here to
+   re-derive and the easiest to lose in a tidy-up.
 
 ## Host gating: three axes
 
 `.chezmoidata/` is the only place hosts are named — `hosts.yaml` holds the per-host inventory,
 `syncthing.yaml` the shared emulation folders, `minecraft.yaml` the server instances and their
-JDKs, `packages.yaml` the package declarations, `secrets.yaml` the 1Password vault and item names,
-`cloudflare.yaml` the tunnel ID, `dns.yaml` the filter's lists and upstream. chezmoi merges every
-file in that directory into one template data namespace, so templates just read `.hosts` /
-`.domain` / `.syncthing` / `.minecraft` / `.packages` / `.secrets` / `.cloudflare` / `.dns`. Gate
-on the axis that is the actual reason a file isn't universal:
+JDKs, `packages.yaml` the package declarations, `binaries.yaml` the pinned upstream-release
+binaries, `secrets.yaml` the 1Password vault and item names, `cloudflare.yaml` the tunnel ID,
+`dns.yaml` the filter's lists and upstream, `dashboard.yaml` OliveTin's presentation and buttons,
+and `theme.yaml`/`palettes.yaml` the colour scheme. chezmoi merges every file in that directory
+into one template data namespace, so templates read `.hosts` / `.domain` / `.syncthing` /
+`.minecraft` / `.packages` / `.binaries` / `.secrets` / `.cloudflare` / `.dns` / `.dashboard` /
+`.theme` / `.palettes` directly. Gate on the axis that is the actual reason a file isn't
+universal:
 
 | Axis | Mechanism | Use for |
 |---|---|---|
@@ -80,7 +113,12 @@ Silent failures worth knowing:
   unit whose `ExecStart` is `tmux new-session` never reaches the command — only names in tmux's
   `update-environment` cross over. This is why `minecraft/atm10-tts/start` sets `ATM10_JAVA`
   itself: a script running inside the pane is unaffected. `tmux new-session -e VAR=value` also
-  works if a value ever has to come from the unit.
+  works if a value ever has to come from the unit, and is what `claude-remote-control` uses for
+  `PATH`.
+- **A unit running tmux needs its own socket (`-L <name>`).** On the default socket the session
+  joins a tmux server started outside this unit's cgroup, so systemd never sees the main PID and
+  `Restart=` silently never fires. `ExecStop` can then `kill-server` safely, because the socket is
+  the unit's alone.
 - `dir/**` then `!dir/keep` in `.chezmoiignore` ignores everything. Negation needs single-star
   `dir/*` — though no block relies on negation any more.
 - **A quadlet file no host claims deploys to *every* podman host.** The ignore names other hosts'
@@ -120,27 +158,12 @@ Silent failures worth knowing:
 - **chezmoi ignores dot-prefixed files in source state**, so a `.neoconf.json` inside a managed
   directory never deploys — it must be `dot_neoconf.json`. Same rule that lets `.nvim-state/` hold
   files chezmoi must not manage, and that makes `.install-password-manager.sh` a hook, not a target.
-- **Port 5353 is mDNS, and that breaks fast failover.** `avahi-daemon` holds a wildcard
-  `0.0.0.0:5353`, so when a container publishing `127.0.0.1:5353` stops, that socket absorbs the
-  packet instead of the kernel refusing it — `dig` reports `timed out`, not `connection refused`.
-  CoreDNS's `forward` then waits out a full 2s per query until its health check marks the upstream
-  down. blocky's filter port is `5533` for this reason; any replacement needs **no** other
-  listener, and `15353` is reserved by convention for throwaway CoreDNS tests.
-- **systemd-resolved sends private reverse lookups to mDNS and waits out the timeout** — a PTR for
-  a LAN address cost mars a flat 7.7s. Fixed with `nmcli connection modify ap-not-found
-  connection.llmnr 0 connection.mdns 0`. mDNS was the culprit, not LLMNR. Safe because
-  `avahi-daemon` provides `.local` service discovery independently.
-
-  **It has a second half.** Turning off resolved's mDNS removed glibc's only route to `.local`, so
-  `ssh mercury.local` stopped resolving. The fix is `mdns_minimal [NOTFOUND=return]` in
-  `/etc/nsswitch.conf`'s `hosts:` line, right after `mymachines`:
-
-  ```
-  hosts: mymachines mdns_minimal [NOTFOUND=return] resolve [!UNAVAIL=return] files myhostname dns
-  ```
-
-  Both halves are **host config, not chezmoi-managed**, and will not survive a mars rebuild.
-  Backup of the original at `/etc/nsswitch.conf.pre-mdns`.
+- **Never give a loopback-published container port 5353.** `avahi-daemon` holds a wildcard
+  `0.0.0.0:5353`, so when the container stops that socket absorbs the packet instead of the kernel
+  refusing it — `dig` reports `timed out`, not `connection refused`, and CoreDNS's `forward` waits
+  out a full 2s per query until its health check marks the upstream down. blocky's filter port is
+  `5533` for this reason; any replacement needs **no** other listener. `15353` is reserved by
+  convention for throwaway CoreDNS tests.
 - **Every** file in `.chezmoidata/` is loaded as template data, JSON included — so the JSON Schemas
   live in `schemas/`, not next to the YAML they describe. Putting `hosts.schema.json` in there
   merges its `title`, `type`, `$schema` and `properties` keys into the top-level namespace, where
@@ -155,22 +178,22 @@ Silent failures worth knowing:
   just `apply`. Recovery: edit or delete the `[hooks.read-source-state.pre]` stanza by hand, or
   re-run `chezmoi init`.
 
-# The mars self-hosted stack
+# The self-hosted stack
 
-Everything runs **rootless podman** as user `turisa`. Container-root inside a rootless
-container maps to `turisa` on the host, so services that must write host-owned dirs run as
-uid/gid 0 (see the music stack).
+Runs on whichever host carries the `server` and `podman` roles — currently `pluto`.
 
-**Not everything mars needs is in this repo.** `docs/unmanaged.md` is the rebuild checklist for
-the rest: the hand-built `caddy` binary and its user, linger, the four `/etc/systemd/system`
-units, the limine cmdline, the fstab line, and the name-resolution fix. Add to it whenever
-something load-bearing is set up by hand.
+Everything runs **rootless podman**. Container-root inside a rootless container maps to the host
+user, so services that must write host-owned dirs run as uid/gid 0 (see the music stack).
+
+**Not everything a host needs is in this repo.** Per-host unmanaged state — what `chezmoi apply`
+does not create — lives in the notes store under `dotfiles/hosts/<host>`, one section per host,
+with a "worth managing" list of what could be automated and has not been.
+`docs/unmanaged.md` holds only the bootstrap floor for the host that serves the store, because
+rebuilding *that* box is the one case the store cannot answer.
 
 Fixed facts:
 
-- Host user: `turisa` · LAN IP `192.168.15.23` · Tailscale IP `100.127.50.55`
 - Base domain: `arthurjordao.dev`; every service is exposed as `<service>.arthurjordao.dev`
-- External media/storage SSD mounted at `/mnt/x9pro`, declared as `hosts.mars.storage.external`
 - Secrets: one 1Password item per service, titles declared in `.chezmoidata/secrets.yaml`.
   The item is fetched **once per file** and indexed, so no title appears in a template:
 
@@ -194,8 +217,8 @@ Fixed facts:
 - Layout: root level for standalone services (`calibre-web-automated.container`,
   `cloudflare-ddns.container`, `shelfmark.container`, `teamspeak3.container`); subdirs for service
   groups that share a network/pod
-  (`exact_music/` = slskd + navidrome + soulsync on `music.network`; `exact_immich/` = a pod of
-  server/db/valkey/ml plus the top-level `immich.pod`).
+  (`exact_music/` = slskd + navidrome + soulsync on `music.network`). A pod gets its own subdir
+  plus a top-level `.pod` file.
 - **Mount points and the timezone are data, not per-service facts.** `{{ .timezone }}` is
   fleet-wide, read directly. Mount points are per-host under `storage` and read through a
   template — the lookup is fleet-wide like `endpoint-port`, so the quadlet renders identically
@@ -205,7 +228,7 @@ Fixed facts:
   {{- $external := includeTemplate "storage-path" (dict "hosts" .hosts "name" "external") -}}
   Volume={{ $external }}/music:/music:ro
   ```
-- **Home paths use systemd's `%h`, never `/home/turisa`** — both quadlets and hand-written user
+- **Home paths use systemd's `%h`, never a literal `/home/<user>`** — both quadlets and hand-written user
   units. One less host fact baked into a file.
 - **A quadlet with a proxied port is a `.tmpl`, and its `PublishPort` host side is generated.**
   `{{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "books") }}:8083` reads the port
@@ -216,7 +239,8 @@ Fixed facts:
   literal too: slskd's Soulseek peer port, all three of teamspeak3's.
 - Secrets go in a sibling `<service>.env.tmpl` referenced via `EnvironmentFile=`. **Do not
   use `| quote`** in these — podman's `--env-file` keeps literal quotes. `%h` expands to the
-  home dir inside unit files.
+  home dir inside unit files. Two more caveats for unquoted env-file values: a value starting
+  with `#` is read as a **comment**, and leading or trailing spaces survive into the value.
 - **The two env mechanisms quote oppositely.** An `Environment=` line is systemd syntax and
   splits on whitespace, so a value containing a space must be quoted and the quotes are
   stripped: `Environment="UPDATE_CRON=@every 15m"`. Unquoted, the container silently receives
@@ -255,7 +279,7 @@ from the public internet, add it to the **Cloudflare Tunnel** instead of opening
 - `cloudflared` runs as a **system** unit (`/etc/systemd/system/cloudflared.service`) using a
   named tunnel; its config is generated from `.chezmoitemplates/etc/cloudflared/config.yml` and
   deployed to `/etc/cloudflared/config.yml` by `run_onchange_after_70-deploy-etc.sh.tmpl`. The
-  credentials `.json` lives only on mars (never in the repo).
+  credentials `.json` lives only on the edge host (never in the repo).
 - To expose a service: set `public: true` on its endpoint in `.chezmoidata/hosts.yaml` — that emits the
   `ingress:` rule above the `http_status:404` catch-all. Then create the public proxied CNAME once
   with `cloudflared tunnel route dns <tunnel-id> <hostname>`. `chezmoi apply` redeploys the config
@@ -287,14 +311,13 @@ service is not one entry, it's a line in each list that concerns it:
 | `endpoints` | Caddy, CoreDNS, cloudflared, `~/.ssh/config`, quadlet `PublishPort` | hostnames to serve and resolve |
 
 ```yaml
-mars:
+pluto:
   os: linux
-  distro: arch                    # linux only; picks the package family
-  ip: {lan: 192.168.15.23, tailscale: 100.127.50.55}
-  quadlets: [calibre-web-automated, cloudflare-ddns, immich, music, shelfmark, teamspeak3]
-  units: [immich-pod, immich-db, immich-valkey, immich-ml, immich-server,
-          navidrome, slskd, soulsync, calibre-web-automated, cloudflare-ddns,
-          shelfmark, teamspeak3, syncthing]
+  distro: debian                  # linux only; picks the package family
+  ip: {lan: 192.168.15.32, tailscale: 100.122.236.32}
+  quadlets: [calibre-web-automated, cloudflare-ddns, music, shelfmark, wallabag]
+  units: [navidrome, slskd, soulsync, calibre-web-automated, cloudflare-ddns,
+          shelfmark, wallabag, {name: blocky, stop_for_gaming: false}]
   endpoints:
     - {name: books, port: 8083, public: true}
     - {name: dns, port: 8053, scheme: https, tls_insecure: true, log: false, served_by: coredns}
@@ -316,13 +339,13 @@ because an alias reports `is-enabled=alias`: `sunshine` is one, for
 `app-dev.lizardbyte.app.Sunshine`, and C3 accepts the short name only because
 the package is called `sunshine` too.
 
-They don't line up 1:1: `immich` is one quadlet, five units, one endpoint; `music` is one quadlet,
-three units, three endpoints; `teamspeak3` has no endpoint; `dns` is an endpoint with neither;
-`minecraft` is an endpoint whose units come from `.chezmoidata/minecraft.yaml` instead.
+They don't line up 1:1: `music` is one quadlet, three units, three endpoints; `teamspeak3` has no
+endpoint; `dns` is an endpoint with neither; `minecraft` is an endpoint whose units come from
+`.chezmoidata/minecraft.yaml` instead.
 
 `units` must name **every** unit to restore, not just a pod. `Requires=` propagates stop to
-dependents but start only to dependencies — stopping `immich-pod` takes the containers down, but
-starting it alone brings up an empty pod.
+dependents but start only to dependencies — stopping a pod takes its containers down, but starting
+it alone brings up an empty pod.
 
 Endpoint fields: `name` (required), `port` (omit ⇒ DNS-only, no Caddy block, no tunnel),
 `public`, `ddns`, `scheme`, `tls_insecure`, `log`, `served_by`, `web`, `probe_port`, `auth`.
@@ -345,7 +368,8 @@ C19 rejects a tile on such an endpoint, which would render nowhere.
 `probe_port` gives a status field to something that is not HTTP behind Caddy. Unlike `port` it
 emits no Caddy block and no tunnel rule — it only adds `svc_<name>` to `dashboard-status`, reached
 by hostname over the network rather than on loopback, which is also how a service on *another*
-host earns a field. `minecraft` is the one so far: its endpoint is a bare DNS record on mars, and
+host earns a field. `minecraft` is the one so far: its endpoint is a bare DNS record on its own
+host, and
 the dashboard still shows whether the server is up.
 
 `auth: bearer` makes the Caddy block require `Authorization: Bearer <token>`, matched against
@@ -542,125 +566,85 @@ just upgrade         # full system upgrade, then install declared (macOS: instal
 `run_onchange_after_70-deploy-etc.sh.tmpl` is gated on the **`edge`** role, so moving `edge` between
 hosts in `.chezmoidata/hosts.yaml` relocates the whole Caddy/CoreDNS/cloudflared edge.
 
-## Other mars pieces
+## Other managed pieces
+
+Per-service and per-host detail lives in the notes store (`dotfiles/services/`, `dotfiles/hosts/`).
+What follows is only what the repo itself does.
 
 - `dot_config/systemd/user/` — hand-written units: `minecraft@.service.tmpl` (unit template;
-  instances are mutually exclusive), `minecraft-backup` (service+timer; daily world backup) and
+  instances are mutually exclusive), `minecraft-backup` (service+timer) and
   `claude-remote-control` (the `agent` role).
-- **The `agent` role runs `claude remote-control` against `~/dev/personal/dotfiles`**, reachable
-  from claude.ai and the phone. Server mode dials out, so there is no endpoint, no Caddy block and
-  no tunnel — nothing listens locally.
-  - **`--spawn worktree` is load-bearing.** That checkout *is* the chezmoi source dir, so a
-    session editing it in place would be live state the next apply deploys. Worktrees land in
-    `.claude/worktrees/` (gitignored, and dot-prefixed so chezmoi ignores it too), branched from
-    `origin/master`. `--no-create-session-in-dir` is what keeps the server from opening one in the
-    source dir itself.
-  - **Two first-run prompts need a TTY once** — Remote Control consent and spawn mode. Started
-    headless before they are answered, the unit reports `active` while connected to nothing:
-    stdin is `/dev/null`, so it parks on the prompt. Answer them by running
-    `claude remote-control` by hand in the checkout; the answers persist per project.
-  - `/usr/bin/claude` is the package's wrapper, which sets `DISABLE_UPDATES=1` so paru owns
-    updates. Point the unit at it, never at `/opt/claude-code/bin/claude`.
 - **Minecraft instances are declared in exactly one place**: `.chezmoidata/minecraft.yaml`. A host
   runs them by having the `minecraft` role — `units` carries no minecraft entries. Both
   `minecraft@.service`'s `Conflicts=` and `gaming-mode`'s `CANDIDATES` derive from that list, so
   renaming an instance is a one-line edit.
 - **Every instance has a managed launcher at `~/minecraft/<instance>/start`**, and the unit runs
   `./start` for all of them — a uniform name is what keeps the shared unit template free of any
-  per-instance branching. A plain Paper instance (`vanilla`, `matcha`) is one
-  `includeTemplate "minecraft-paper-start"` line; `atm10-tts`'s injects the JVM and execs the
-  modpack's own `startserver.sh`, which stays unmanaged because it installs NeoForge and
-  writes a first-run `server.properties`. **Nothing under `minecraft/` may be `exact_`** — it
-  holds worlds, mods and backups.
-- `dot_local/scripts/executable_minecraft` — helper to keep the boot server in sync with the
-  running one.
+  per-instance branching. A plain Paper instance is one `includeTemplate "minecraft-paper-start"`
+  line. **Nothing under `minecraft/` may be `exact_`** — it holds worlds, mods and backups.
 - **JDKs are pinned per instance** by `jdk:` in `.chezmoidata/minecraft.yaml`, which derives both
   Arch names: package `jdk21-openjdk` and path `/usr/lib/jvm/java-21-openjdk`. `check-consistency`
   C7 requires each instance's package to be declared under `packages.arch.minecraft`. Never use
   `jdk-openjdk` (rolling): its directory is renamed on each bump and silently breaks the path.
   Only LTS is pinnable.
-- `dot_local/scripts/executable_minecraft-backup` — daily tarball of every instance's world tree
-  to `/mnt/x9pro/minecraft-backups`, keeping the newest 3 per instance. Pauses+flushes saves via
-  the server's tmux console when it's running so the snapshot is consistent. An instance with no
-  `world*` dirs yet is skipped, not an error, and one instance's failure doesn't stop the rest.
-  Run by `minecraft-backup.timer`.
-- `dot_local/scripts/executable_gaming-mode` — `gaming-mode {on|off|status}` stops the whole
-  self-hosted stack to free CPU/GPU/RAM for gaming, then restores exactly what was running.
-  **Its `CANDIDATES` list must include every resource-heavy service** — add new services here.
+- `dot_local/scripts/executable_gaming-mode` — `gaming-mode {on|off|status}` stops the stack to
+  free CPU/GPU/RAM for gaming, then restores exactly what was running. **Its `CANDIDATES` list
+  must include every resource-heavy service** — add new services here.
 - `dot_local/scripts/executable_check-live` — `just check-live`: what the repo declares vs what is
   running. Boot-readiness for a quadlet unit is a symlink in
   `$XDG_RUNTIME_DIR/systemd/generator/default.target.wants/`, **not** `is-enabled`, which reports
   `generated` for every generated unit. A container is matched to its quadlet through podman's
-  `PODMAN_SYSTEMD_UNIT` label, since `navidrome` and `slskd` set `ContainerName=` while the rest
-  carry a `systemd-` prefix. `cloudflare-ddns`, `immich-ml` and
-  `immich-server` set `SuccessExitStatus=143`: their images do not trap SIGTERM, so podman
-  reports 143 and systemd would otherwise mark them failed every time gaming mode stops
-  them. Every section still consults gaming-mode's state file, which is what separates
-  "intentionally stopped" from drift.
-- **Both sunshine configs are `modify_` scripts** — the web UI rewrites `sunshine.conf` and
-  `apps.json` whole on every Save, so a plain template would revert it and stay permanently dirty.
-  `modify_sunshine.conf.tmpl` owns one line; `modify_apps.json.tmpl` owns the apps named in
-  `OWNED`, deletes those in `RETIRED`, and passes through anything added in the UI. It matches
-  sunshine's own writer (nlohmann `dump(4)`: 4 spaces, sorted keys, no trailing newline) so a UI
-  save leaves `chezmoi diff` quiet, and it preserves each app's `uuid` — that is how a client
-  remembers an app.
-- **Sunshine captures the physical connector** (`Screencasting with KMS`), so the stream's
-  resolution *is* the display's. `dot_local/scripts/executable_sunshine-client-mode` is the
-  prep-cmd behind the "Desktop (client resolution)" app: it reads `SUNSHINE_CLIENT_WIDTH`/
-  `_HEIGHT`/`_FPS` and switches the output to a matching mode, then restores it. Only a mode the
-  display already advertises is used, and it always exits 0 — a non-zero prep-cmd aborts the
-  stream. Sunshine's own `dd_*` auto-resolution options are Windows/macOS only.
-- A prep-cmd runs **without a shell**, so `apps.json` needs absolute paths — no `~`, no `$HOME`,
-  and no systemd `%h`. The path is rendered from the host's `user`.
-- **DNS filtering is blocky**, a quadlet publishing only on loopback. CoreDNS
-  forwards `.` to it with `policy sequential`, keeping Cloudflare as a second
-  upstream, so a dead filter is unfiltered resolution rather than none.
-  `policy sequential` is load-bearing: forward's default is `random`, which
-  would route half of all queries around the filter. The Corefile emits the hop
-  only where the `blocky` quadlet is claimed, so claiming it is the single fact
-  that turns filtering on. Lists refresh themselves every 24h; the `blocky`
-  script drives the API and the dashboard buttons call it. `hosts` blocks keep
-  their `fallthrough` and run first, so no internal name reaches the filter.
+  `PODMAN_SYSTEMD_UNIT` label, since some quadlets set `ContainerName=` while the rest carry a
+  `systemd-` prefix. An image that does not trap SIGTERM needs `SuccessExitStatus=143`, or podman
+  reports 143 and systemd marks the unit failed every time gaming mode stops it
+  (`cloudflare-ddns` is one). Every section consults gaming-mode's state file, which is what
+  separates "intentionally stopped" from drift.
+- **A config the owning app rewrites must be a `modify_` script, not a template.** Both sunshine
+  configs are: the web UI rewrites `sunshine.conf` and `apps.json` whole on every Save, so a plain
+  template would revert it and stay permanently dirty. `modify_apps.json.tmpl` owns the apps named
+  in `OWNED`, deletes those in `RETIRED`, and passes through anything added in the UI. **Match the
+  app's own writer byte for byte** or `chezmoi diff` is never quiet — sunshine's is nlohmann
+  `dump(4)`: 4 spaces, sorted keys, no trailing newline. Preserve identifiers the app assigns;
+  each app's `uuid` is how a client remembers it.
+- A sunshine prep-cmd runs **without a shell**, so `apps.json` needs absolute paths — no `~`, no
+  `$HOME`, and no systemd `%h`. The path is rendered from the host's `user`.
+- **DNS filtering is blocky**, a quadlet publishing only on loopback. CoreDNS forwards `.` to it
+  with `policy sequential`, keeping Cloudflare as a second upstream, so a dead filter is
+  unfiltered resolution rather than none. `policy sequential` is load-bearing: forward's default
+  is `random`, which would route half of all queries around the filter. The Corefile emits the hop
+  only where the `blocky` quadlet is claimed, so claiming it is the single fact that turns
+  filtering on. `hosts` blocks keep their `fallthrough` and run first, so no internal name reaches
+  the filter.
 - **Neither OliveTin nor blocky reloads a changed config**, so each has a `run_onchange` restart
   script (90, 95). OliveTin is the worse of the two: its watcher *appends* the changed file as an
   extra config source instead of replacing it, so after chezmoi's atomic rename every action and
   dashboard exists twice — duplicate titles leave one copy unreachable, fieldsets interleave under
-  the wrong headings, and the built-in Actions view returns. blocky simply reads its config once at
-  start, so a new blocklist URL needs the restart; `/lists/refresh` only re-downloads lists it
+  the wrong headings, and the built-in Actions view returns. blocky simply reads its config once
+  at start, so a new blocklist URL needs the restart; `/lists/refresh` only re-downloads lists it
   already knows.
-- **The dashboard is OliveTin**, a systemd *user* unit rather than a container —
-  `gaming-mode` drives `systemctl --user` and the container buttons call
-  `podman` directly. Its whole config is generated: tiles come from `endpoints`,
-  and presentation, logins and buttons from `.chezmoidata/dashboard.yaml`.
-  Adding a button is a data edit. **OliveTin's own `{{ }}` placeholders must be
-  written as `{{ "{{ x }}" }}` in the template**, or chezmoi evaluates them.
-  Deliberately absent from `units`: gaming mode stops that list, and this is
-  what turns it back off. Also absent from `check-live`'s declared/failed-units
-  sweep, so only the `dash` endpoint probe covers it. Keep `olivetin-bin`
-  current: CVE-2026-28790 covers unauthenticated action termination in exactly
-  this guests-must-log-in configuration.
-- **The notes store is one directory, two containers.** Both point at
-  `%h/memory/personal/` — on the internal btrfs, not the external SSD: exFAT
-  rejects `:` in a filename, and SilverBullet names a sync conflict copy
-  `<page>.conflicted:<ms>.md`, so the write failed with `EINVAL` and its client
-  retried forever. SilverBullet's space *is* the `basic-memory`
-  project, so the `Journal` and `Inbox` pages it creates on its own are indexed
-  rather than sitting beside them. The MCP server runs `--project personal` and
-  publishes on loopback only, so Caddy — where the bearer token is checked — is
-  the sole route in, and `BASIC_MEMORY_SYNC_CHANGES=true` is what carries a
-  SilverBullet edit into the index. A `work/` sibling would need its own pair.
-  Nothing under that tree is chezmoi-managed: it is user content, and an
-  `index.md` the templates owned would revert every edit made in the web UI.
-  Claude Code's own memory under `~/.claude/` keeps repo-mechanics facts: it
-  needs no MCP and works with mars powered off.
+- **The dashboard is OliveTin**, a systemd *user* unit rather than a container — `gaming-mode`
+  drives `systemctl --user` and the container buttons call `podman` directly. Its whole config is
+  generated: tiles come from `endpoints`, and presentation, logins and buttons from
+  `.chezmoidata/dashboard.yaml`. Adding a button is a data edit. **OliveTin's own `{{ }}`
+  placeholders must be written as `{{ "{{ x }}" }}` in the template**, or chezmoi evaluates them.
+  Deliberately absent from `units`: gaming mode stops that list, and this is what turns it back
+  off. Also absent from `check-live`'s declared/failed-units sweep, so only the `dash` endpoint
+  probe covers it. Keep `olivetin` current in `.chezmoidata/binaries.yaml`: CVE-2026-28790 covers
+  unauthenticated action termination in exactly this guests-must-log-in configuration.
+- **The notes store is one directory, two containers** (basic-memory + SilverBullet) sharing
+  `%h/memory/personal/`. Nothing under that tree is chezmoi-managed: it is user content, and an
+  `index.md` the templates owned would revert every edit made in the web UI. Claude Code's own
+  memory under `~/.claude/` keeps only feedback, because it must load with no MCP and with the
+  store's host powered off.
 
-# Emulation library sync (mars ↔ mercury)
+# Emulation library sync
 
-Both hosts run **EmuDeck** with ES-DE. Syncthing shares one library between them, declared in
+Syncthing shares one library across the hosts carrying the **`emulation`** role, declared in
 `.chezmoidata/syncthing.yaml` and rendered the way the edge is — there is no hand-written
-`config.xml`.
+`config.xml`. Content flows one way from the `source` host; saves go both ways.
 
-Gated on the **`emulation`** role. Content flows one way from mars; saves go both ways.
+Most hosts run **EmuDeck** with ES-DE; an `arkos` host has a different frontend and ROM layout,
+which is what that role selects.
 
 ## Data model
 
@@ -675,8 +659,8 @@ same drift property: nothing errors when it disagrees with reality.
 `mode: oneway` renders **Send Only** on `source` and **Receive Only** everywhere else, so a
 non-source host structurally cannot push content back. `mode: twoway` renders Send & Receive with
 simple file versioning (keep 5). Paths are home-relative and rendered as `~/<path>` — Syncthing
-expands the tilde. Deliberately not `.chezmoi.homeDir`: the hosts have different usernames
-(`turisa`/`arthur`), and `simulate-host` would render the previewing machine's home.
+expands the tilde. Deliberately not `.chezmoi.homeDir`: the hosts have different usernames, and
+`simulate-host` would render the previewing machine's home.
 
 Each host also carries `syncthing_id`, its device ID.
 
@@ -739,6 +723,23 @@ themselves never leave the host.
   session. Low stakes, and it is also what carries favourites and the per-game emulator choice.
 - ES-DE gamelists are **not valid XML** — two root elements (`<alternativeEmulator>` then
   `<gameList>`), which strict parsers reject outright. Extract the `<gameList>` fragment.
+- **Syncthing's config version is a floor, not a ceiling.** Debian trixie ships 1.29.5, which caps
+  at config v37 and refuses anything newer; Arch's is on 52. The `SEED` in `modify_config.xml.tmpl`
+  must use the **oldest** version in the fleet — newer syncthing migrates forward, older cannot go
+  back.
+- **A `<folder>` in a syncthing config is a folder that device HOLDS.** Its `<device>` children are
+  only who it shares with, so excluding a host's own id from that list does not stop it syncing —
+  the folder must be omitted from that host's config entirely.
+- **chezmoi replaces a symlinked directory with an empty real one.** It renders as
+  `deleted file mode 120777` then `old mode 120777 / new mode 40775`. Use a **bind mount** for any
+  managed directory whose content lives elsewhere — that is why `Emulation/roms` on an arkos host
+  is one.
+- **`chezmoi` consumes stdin**, so `ssh host bash <<'EOF' … chezmoi … EOF` eats the rest of the
+  heredoc and the script silently ends. Always `chezmoi … < /dev/null`.
+- **vfat cannot hold the modes chezmoi wants, so chezmoi must not manage anything inside one.** It
+  re-prompts `has changed since chezmoi last wrote it` on every apply and `chmod` is a no-op on
+  FAT. Matching the mount masks is not a fix: `fmask=0113` strips +x from `*.sh` and breaks
+  PortMaster. `.chezmoiignore` drops `Emulation/roms` on `arkos`.
 
 ## Changing the folder list
 
@@ -784,7 +785,7 @@ tools/simulate-host mercury execute-template < dot_local/state/private_syncthing
 3. Verify before applying: `just check` catches a missed list (step 2 is exactly what
    `check-consistency` cross-references). Then `./tools/simulate-host <host> managed | grep <svc>`
    for the quadlet and the three `execute-template` commands above to read the edge output.
-4. **(Optional — public internet access)** `public: true` on the endpoint, then on mars run
+4. **(Optional — public internet access)** `public: true` on the endpoint, then on the edge host run
    `cloudflared tunnel route dns <tunnel-id> <svc>.arthurjordao.dev` once to create the CNAME.
    Do NOT use the dashboard (see the exposure section above).
 5. On mars: `chezmoi apply` (renders and deploys /etc, reloads caddy/coredns, restarts
@@ -793,7 +794,10 @@ tools/simulate-host mercury execute-template < dot_local/state/private_syncthing
 # Working in this repo
 
 - The user runs `chezmoi apply` themselves — don't run it for them.
-- **Specs and plans go to the notes store on pluto**, `dotfiles/specs/` and `dotfiles/plans/`,
+- **Before answering about a host, a service or a past incident, query the `memory` MCP** — this
+  file does not know any of it. See "Where documentation goes" above for what lives where, and
+  write new knowledge to the right one.
+- **Specs and plans go to the notes store**, `dotfiles/specs/` and `dotfiles/plans/`,
   not `docs/superpowers/`. That path is in the global gitignore, so anything left there exists on
   exactly one laptop — and a runbook is needed *away* from the checkout, in front of the
   hardware. Draft locally while brainstorming, publish once approved. Delete a plan once
