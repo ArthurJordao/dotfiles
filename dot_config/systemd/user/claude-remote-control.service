@@ -6,13 +6,19 @@ After=network-online.target
 [Service]
 # Server mode: it waits for the phone or claude.ai to open a session against
 # this checkout. Nothing listens locally -- the process dials out.
+Type=forking
 WorkingDirectory=%h/dev/personal/dotfiles
-# Tools run through a non-login shell, which inherits the user manager's PATH.
-Environment=PATH=%h/.local/bin:%h/.local/scripts:/usr/local/bin:/usr/bin:/bin
-# Every session gets its own git worktree under .claude/worktrees/, branched
-# from origin/HEAD: this directory is the chezmoi source dir, so a session
-# editing it in place would be live state the next apply deploys.
-ExecStart=/usr/bin/claude remote-control --spawn worktree --no-create-session-in-dir --permission-mode acceptEdits
+# Runs inside tmux so it can be attached to answer permission prompts:
+#   tmux -L claude attach -t claude
+# Its own socket, not the default one minecraft uses: on a shared socket the
+# session lands in a tmux server outside this unit's cgroup, so systemd loses
+# the main PID and Restart= never fires.
+# A pane inherits the tmux server's environment, not the unit's, so PATH goes
+# through -e. Tools run through a non-login shell.
+ExecStart=/usr/bin/tmux -L claude new-session -d -s claude \
+    -e PATH=%h/.local/bin:%h/.local/scripts:/usr/local/bin:/usr/bin:/bin \
+    /usr/bin/claude remote-control --spawn worktree --no-create-session-in-dir --permission-mode acceptEdits
+ExecStop=/usr/bin/tmux -L claude kill-server
 # Not on-failure: the server exits cleanly after ~10 minutes without network.
 Restart=always
 RestartSec=30
