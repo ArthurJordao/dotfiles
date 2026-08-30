@@ -135,6 +135,7 @@ of which file each came from.
 | File | Holds |
 |---|---|
 | `hosts.yaml` | `domain`, `timezone`, and the per-host inventory: managed, roles, os, distro, user, ip, storage, quadlets, units, endpoints |
+| `etc.yaml` | `etc` — what deploys under `/etc`, keyed by the role that owns each group |
 | `syncthing.yaml` | `syncthing.folders` — the shared emulation library, not owned by any one host |
 | `minecraft.yaml` | `minecraft.instances` — every server instance and its JDK, heap and launcher env var |
 | `cloudflare.yaml` | `cloudflare.tunnel_id` — the named tunnel, which also names its credentials file |
@@ -158,6 +159,7 @@ What the box is *for*. Unknown names are silently inert, never an error.
 | `gaming` | used for games; with `server`, also installs `gaming-mode` |
 | `minecraft` | the instances in `minecraft.yaml`, their launchers, backup timer, helper scripts |
 | `edge` | owns Caddy, CoreDNS, cloudflared and the `/etc` deploy |
+| `samba` | owns the Samba share and its `/etc` deploy |
 
 Roles compose, and moving one between hosts relocates what it carries — put `edge`
 on a different host and the whole reverse-proxy/DNS layer moves with it.
@@ -320,7 +322,7 @@ tools/simulate-host mars execute-template < dot_local/scripts/executable_gaming-
 
 `render-edge` exists because a `.chezmoitemplates` entry has no `.tmpl` to redirect
 into `simulate-host`; it feeds it the `includeTemplate` call instead. Rendering
-`run_onchange_after_70-deploy-etc.sh.tmpl` shows all four at once, in install order.
+`run_onchange_after_70-deploy-etc.sh.tmpl` shows every body a host's roles claim, in install order.
 
 Platform comes from the inventory too: each host declares `os` (and `distro` on Linux),
 and templates read those rather than chezmoi's own `.chezmoi.os`, which always describes

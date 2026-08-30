@@ -27,6 +27,7 @@ etc:
     enable:  [caddy, coredns, cloudflared, cloudflared-update.timer]
     reload:  [caddy]
     restart: [coredns, cloudflared]
+  # Unit names below (smb, wsdd) are Arch's; another distro's may differ.
   samba:
     files:
       - {src: samba/smb.conf, dest: /etc/samba/smb.conf, mode: "644"}

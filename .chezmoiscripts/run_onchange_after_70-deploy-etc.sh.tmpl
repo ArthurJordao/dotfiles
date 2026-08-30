@@ -1,6 +1,6 @@
 {{- $roles := (index .hosts .hostname).roles -}}
 {{- $groups := list -}}
-{{- range $name, $g := .etc -}}
+{{- range $name, $_ := .etc -}}
 {{- if has $name $roles -}}{{ $groups = append $groups $name }}{{ end -}}
 {{- end -}}
 {{ if $groups -}}
@@ -62,21 +62,6 @@ if ! cmp -s "$STAGE/resolved" /etc/systemd/resolved.conf.d/10-coredns.conf; then
 fi
 
 {{ end -}}
-{{ if has "samba" $roles -}}
-{{- $op := onepasswordItemFields .secrets.items.samba .secrets.vault -}}
-# --- samba prerequisites: passdb is state, not a file ---
-
-# Samba keeps its own password database, so this is NOT the Unix password. Set
-# it only when absent: on steady state the secret is never piped anywhere.
-[ -d /var/log/samba ] || sudo install -d -m 755 /var/log/samba
-if ! sudo pdbedit -L -u {{ (index .hosts .hostname).user }} >/dev/null 2>&1; then
-    sudo smbpasswd -s -a {{ (index .hosts .hostname).user }} <<'SMBPW_EOF'
-{{ (index $op "SMB_PASSWORD").value }}
-{{ (index $op "SMB_PASSWORD").value }}
-SMBPW_EOF
-fi
-
-{{ end -}}
 {{ range $group := $groups -}}
 {{- $g := index $.etc $group -}}
 {{- $files := index $g "files" | default list -}}
@@ -101,5 +86,20 @@ sudo systemctl reload {{ $u }} || sudo systemctl restart {{ $u }}
 {{ range $u := $restart -}}
 sudo systemctl restart {{ $u }}
 {{ end }}
+{{ end -}}
+{{ if has "samba" $roles -}}
+{{- $op := onepasswordItemFields .secrets.items.samba .secrets.vault -}}
+# --- samba passdb: state, not a file, and smbpasswd needs smb.conf to exist ---
+
+# Samba keeps its own password database, so this is NOT the Unix password. Set
+# it only when absent: on steady state the secret is never piped anywhere.
+[ -d /var/log/samba ] || sudo install -d -m 755 /var/log/samba
+if ! sudo pdbedit -L -u {{ (index .hosts .hostname).user }} >/dev/null 2>&1; then
+    sudo smbpasswd -s -a {{ (index .hosts .hostname).user }} <<'SMBPW_EOF'
+{{ (index $op "SMB_PASSWORD").value }}
+{{ (index $op "SMB_PASSWORD").value }}
+SMBPW_EOF
+fi
+
 {{ end -}}
 {{ end }}

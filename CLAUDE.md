@@ -429,8 +429,8 @@ endpoints in declaration order within a host.
 
 **`run_onchange_after_70-deploy-etc.sh.tmpl`** is data-driven from `.chezmoidata/etc.yaml`, keyed by
 the role that owns each group — a host renders every group whose key is one of its roles. Each
-file is inlined **and installed** as a quoted heredoc via `includeTemplate`, one per entry, then
-installed into `/etc` with `sudo`, enabled/reloaded/restarted per the group's `enable`/`reload`/
+file is inlined as a quoted heredoc via `includeTemplate`, one per entry, then installed into
+`/etc` with `sudo`, enabled/reloaded/restarted per the group's `enable`/`reload`/
 `restart` lists. Each body is written to a staging file before `install`, because `sudo tee`
 truncates the live config first. The quadlet files under `dot_config/` deploy normally to
 `~/.config/...`.
