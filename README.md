@@ -357,12 +357,14 @@ named a unit that would never exist; an endpoint with no quadlet was a 502.
 ## Secrets
 
 Secrets live in 1Password, read with `op` at apply-time. One item per service, titled for
-the service; `.chezmoidata/secrets.yaml` names the vault and every title. Field names
-aren't declared anywhere, so adding a secret is a 1Password edit plus an apply.
+the service; `.chezmoidata/secrets.yaml` names a default vault and, per item, `{item_name,
+vault}` — `vault` is optional and falls back to the default. Field names aren't declared
+anywhere, so adding a secret is a 1Password edit plus an apply.
 
 Put every field **inside a section**. `onepasswordItemFields` silently drops fields that
 aren't in one, leaving an empty map and a `no entry for key "value"` failure that names
-neither the item nor the field. To see what chezmoi can actually read from an item:
+neither the item nor the field. To see what chezmoi can actually read from an item (swap
+the vault literal for the item's own `vault` if it overrides the default):
 
 ```bash
 echo '{{ range $k, $_ := onepasswordItemFields "slskd" .secrets.vault }}{{ $k }}

@@ -19,7 +19,8 @@
 {{- end -}}
 {{- end -}}
 {{- $statusRefresh := printf "mkdir -p /home/%s/.local/state/olivetin && GOOD='%s' BAD='%s' WARN='%s' dashboard-status%s > /home/%s/.local/state/olivetin/status.json" $user $pal.base0B $pal.base08 $pal.base0A $specs $user -}}
-{{- $op := onepasswordItemFields .secrets.items.olivetin .secrets.vault -}}
+{{- $s := .secrets.items.olivetin -}}
+{{- $op := onepasswordItemFields $s.item_name (index $s "vault" | default .secrets.vault) -}}
 # GENERATED from .chezmoidata/ — edit hosts.yaml and dashboard.yaml, not this.
 #
 # OliveTin's own {{ "{{ }}" }} placeholders must be emitted as literals here:

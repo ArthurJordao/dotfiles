@@ -137,6 +137,8 @@ Silent failures worth knowing:
   so `.chezmoitemplates/install-packages.sh` reads `index (index .hosts .hostname) "distro"`.
 - **`onepasswordItemFields` drops any field with no `section`.** It returns an empty map and every
   lookup fails with `no entry for key "value"` — the trap to know when touching `tools/mock-op`.
+  A login item's username/password are section-less for this purpose, so it needs
+  `onepasswordDetailsFields`, which keys on the field's `purpose` instead.
 - A comment opening `# shellcheck ` is parsed as a **directive**, not prose, and an unparseable
   one is an error. Relevant to any script whose subject is shellcheck itself.
 - A Go template comment can't be indented inside its own action: `{{- /* x */ -}}` parses,
@@ -214,7 +216,8 @@ Fixed facts:
   The item is fetched **once per file** and indexed, so no title appears in a template:
 
   ```
-  {{- $op := onepasswordItemFields .secrets.items.slskd .secrets.vault -}}
+  {{- $s := .secrets.items.slskd -}}
+  {{- $op := onepasswordItemFields $s.item_name (index $s "vault" | default .secrets.vault) -}}
   SLSKD_USERNAME={{ (index $op "SLSKD_WEB_USERNAME").value }}
   ```
 
