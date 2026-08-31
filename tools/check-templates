@@ -14,6 +14,9 @@
 # concurrent writers to stdout interleave.
 #
 # 1Password calls go to tools/mock-op, so no template has to be skipped.
+#
+# Also fails a render that emits `map[...]`, which is what a template printing a
+# whole data object instead of one of its fields looks like.
 set -uo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
@@ -24,16 +27,34 @@ FAILDIR=$(mktemp -d)
 trap 'rm -rf "$FAILDIR"' EXIT
 export FAILDIR
 
+# A Go map printed into text renders as `map[k:v]`. That means a template
+# interpolated a whole data object where a field was meant -- it renders
+# cleanly and is wrong, which no other check here can see.
+check_map() {
+    case "$1" in
+        *"map["*) out="renders a Go map into text (map[...]): a template is interpolating a whole data object where a field was meant" ; return 0 ;;
+        *) return 1 ;;
+    esac
+}
+export -f check_map
+
 render_one() { # $1 = kind, $2 = host, $3 = path
     local kind=$1 h=$2 path=$3 out label
+    local body
     case "$kind" in
         tmpl)
             label=$path
-            out=$(./tools/simulate-host "$h" execute-template < "$path" 2>&1 >/dev/null) && return 0
+            body=$(./tools/simulate-host "$h" execute-template < "$path" 2>"$FAILDIR/.e$$") || {
+                out=$(head -2 "$FAILDIR/.e$$"); rm -f "$FAILDIR/.e$$"
+                }
+            [ -f "$FAILDIR/.e$$" ] && { rm -f "$FAILDIR/.e$$"; check_map "$body" || return 0; }
             ;;
         edge)
             label=".chezmoitemplates/etc/$path"
-            out=$(./tools/render-edge "$h" "$path" 2>&1 >/dev/null) && return 0
+            body=$(./tools/render-edge "$h" "$path" 2>"$FAILDIR/.e$$") || {
+                out=$(head -2 "$FAILDIR/.e$$"); rm -f "$FAILDIR/.e$$"
+                }
+            [ -f "$FAILDIR/.e$$" ] && { rm -f "$FAILDIR/.e$$"; check_map "$body" || return 0; }
             ;;
         *) return 0 ;;
     esac
