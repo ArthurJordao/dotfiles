@@ -2,6 +2,7 @@
 Description=TeamSpeak 3 Server
 Wants=network-online.target
 After=network-online.target
+StartLimitIntervalSec=0
 
 [Container]
 Image=docker.io/teamspeak:latest
@@ -14,6 +15,7 @@ AutoUpdate=registry
 
 [Service]
 Restart=always
+RestartSec=10
 TimeoutStopSec=70
 
 [Install]

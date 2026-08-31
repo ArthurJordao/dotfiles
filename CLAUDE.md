@@ -258,6 +258,11 @@ Fixed facts:
   fleet-wide (endpoint names are DNS names in one zone), so the file renders identically on hosts
   that don't deploy it; an unknown endpoint name fails the apply. Ports with no endpoint stay
   literal too: slskd's Soulseek peer port, all three of teamspeak3's.
+  Proxied ports publish on `127.0.0.1:` — Caddy and the tunnel both connect there. The music
+  stack still publishes wildcard; it is on its own network.
+- **Every quadlet carries `StartLimitIntervalSec=0` (`[Unit]`) and `RestartSec=10` (`[Service]`).**
+  With `Restart=always` alone, systemd's default start limit retires a unit after a transient
+  failure and nothing retries it. Keep both — the interval without the delay spins hot.
 - Secrets go in a sibling `<service>.env.tmpl` referenced via `EnvironmentFile=`. **Do not
   use `| quote`** in these — podman's `--env-file` keeps literal quotes. `%h` expands to the
   home dir inside unit files. Two more caveats for unquoted env-file values: a value starting

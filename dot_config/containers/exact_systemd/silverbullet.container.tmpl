@@ -2,11 +2,12 @@
 Description=SilverBullet notes
 Wants=network-online.target
 After=network-online.target
+StartLimitIntervalSec=0
 
 [Container]
 Image=ghcr.io/silverbulletmd/silverbullet:latest
 AutoUpdate=registry
-PublishPort={{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "notes") }}:3000
+PublishPort=127.0.0.1:{{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "notes") }}:3000
 
 Environment=TZ={{ .timezone }}
 EnvironmentFile=%h/.config/containers/systemd/silverbullet.env
@@ -20,6 +21,7 @@ Volume=%h/memory/personal:/space
 
 [Service]
 Restart=always
+RestartSec=10
 
 [Install]
 WantedBy=default.target

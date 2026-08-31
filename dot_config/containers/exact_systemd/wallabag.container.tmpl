@@ -2,11 +2,12 @@
 Description=wallabag read-later
 Wants=network-online.target
 After=network-online.target
+StartLimitIntervalSec=0
 
 [Container]
 Image=docker.io/wallabag/wallabag:latest
 AutoUpdate=registry
-PublishPort={{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "wallabag") }}:80
+PublishPort=127.0.0.1:{{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "wallabag") }}:80
 
 # SQLite. The path is hardcoded to data/db/wallabag.sqlite in the entrypoint and
 # only installed when absent, so the data volume is the whole persistence story.
@@ -22,6 +23,7 @@ Volume=wallabag-images:/var/www/wallabag/web/assets/images
 
 [Service]
 Restart=always
+RestartSec=10
 # The entrypoint runs composer install on every start.
 TimeoutStartSec=300
 

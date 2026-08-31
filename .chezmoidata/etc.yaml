@@ -27,6 +27,15 @@ etc:
     enable:  [caddy, coredns, cloudflared, cloudflared-update.timer]
     reload:  [caddy]
     restart: [coredns, cloudflared]
+  # Unit name is Debian/networkd's. Keyed on `server`, not `podman`: a `podman`
+  # group would start deploying /etc on mars too.
+  server:
+    files:
+      - {src: systemd/networkd-wait-online-ipv4.conf,
+         dest: /etc/systemd/system/systemd-networkd-wait-online.service.d/zz-wait-for-ipv4.conf,
+         mode: "644"}
+    # Present for the daemon-reload; also clears the failed unit.
+    enable: [systemd-networkd-wait-online]
   # Unit names below (smb, wsdd) are Arch's; another distro's may differ.
   samba:
     files:

@@ -3,6 +3,7 @@
 Description=Cloudflare DDNS — keeps the public A record current
 Wants=network-online.target
 After=network-online.target
+StartLimitIntervalSec=0
 
 [Container]
 Image=docker.io/timothyjmiller/cloudflare-ddns:latest
@@ -25,6 +26,7 @@ Environment="UPDATE_CRON=@every 15m"
 # failure, leaving the unit failed every time gaming mode stops it.
 SuccessExitStatus=143
 Restart=always
+RestartSec=10
 
 [Install]
 WantedBy=default.target

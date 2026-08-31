@@ -3,6 +3,7 @@
 Description=Navidrome Music Server
 Wants=network-online.target
 After=network-online.target
+StartLimitIntervalSec=0
 
 [Container]
 Image=docker.io/deluan/navidrome:latest
@@ -23,6 +24,7 @@ Volume=navidrome-data:/data
 
 [Service]
 Restart=always
+RestartSec=10
 TimeoutStartSec=300
 
 [Install]

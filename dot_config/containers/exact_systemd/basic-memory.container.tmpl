@@ -2,6 +2,7 @@
 Description=basic-memory MCP server
 Wants=network-online.target
 After=network-online.target
+StartLimitIntervalSec=0
 
 [Container]
 Image=ghcr.io/basicmachines-co/basic-memory:latest
@@ -32,6 +33,7 @@ Volume=basic-memory-config:/root/.basic-memory
 
 [Service]
 Restart=always
+RestartSec=10
 
 [Install]
 WantedBy=default.target

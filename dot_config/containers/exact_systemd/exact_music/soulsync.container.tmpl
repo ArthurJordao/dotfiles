@@ -3,6 +3,7 @@
 Description=SoulSync Music Discovery
 Wants=network-online.target
 After=network-online.target slskd.service
+StartLimitIntervalSec=0
 
 [Container]
 Image=docker.io/boulderbadgedad/soulsync:latest
@@ -27,6 +28,7 @@ Volume={{ $media }}/music:/app/Transfer
 
 [Service]
 Restart=always
+RestartSec=10
 TimeoutStartSec=300
 
 [Install]

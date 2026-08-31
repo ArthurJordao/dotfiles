@@ -3,11 +3,12 @@
 Description=Shelfmark book search/downloader (feeds the CWA ingest folder)
 Wants=network-online.target
 After=network-online.target
+StartLimitIntervalSec=0
 
 [Container]
 Image=ghcr.io/calibrain/shelfmark:latest
 AutoUpdate=registry
-PublishPort={{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "shelfmark") }}:8084
+PublishPort=127.0.0.1:{{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "shelfmark") }}:8084
 
 # Run as uid/gid 0, which maps to the host user (turisa) under rootless podman,
 # so downloads land in the shared ingest dir owned by turisa (same as CWA, which
@@ -24,6 +25,7 @@ Volume={{ $media }}/book-ingest:/books
 
 [Service]
 Restart=always
+RestartSec=10
 TimeoutStartSec=300
 
 [Install]

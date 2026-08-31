@@ -3,12 +3,13 @@
 Description=Calibre-Web-Automated ebook library
 Wants=network-online.target
 After=network-online.target
+StartLimitIntervalSec=0
 
 [Container]
 Image=ghcr.io/crocodilestick/calibre-web-automated:latest
 AutoUpdate=registry
 # CWA is served as `books`, not under its own name.
-PublishPort={{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "books") }}:8083
+PublishPort=127.0.0.1:{{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "books") }}:8083
 
 # Run as uid/gid 0, which maps to the host user (turisa) under rootless podman,
 # so CWA can write the Calibre library and ingest dirs.
@@ -23,6 +24,7 @@ Volume={{ $media }}/book-ingest:/cwa-book-ingest
 
 [Service]
 Restart=always
+RestartSec=10
 TimeoutStartSec=300
 
 [Install]

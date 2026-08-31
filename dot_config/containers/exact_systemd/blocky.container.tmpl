@@ -2,6 +2,7 @@
 Description=blocky DNS filter (CoreDNS forwards here; Cloudflare is the fallback)
 Wants=network-online.target
 After=network-online.target
+StartLimitIntervalSec=0
 
 [Container]
 Image=ghcr.io/0xerr0r/blocky:latest
@@ -21,6 +22,7 @@ Volume=blocky-data:/app/data
 
 [Service]
 Restart=always
+RestartSec=10
 
 [Install]
 WantedBy=default.target
