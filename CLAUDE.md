@@ -212,12 +212,14 @@ rebuilding *that* box is the one case the store cannot answer.
 Fixed facts:
 
 - Base domain: `arthurjordao.dev`; every service is exposed as `<service>.arthurjordao.dev`
-- Secrets: one 1Password item per service, titles declared in `.chezmoidata/secrets.yaml`.
-  The item is fetched **once per file** and indexed, so no title appears in a template:
+- Secrets: one 1Password item per service, declared in `.chezmoidata/secrets.yaml` as
+  `{item_name, vault?}`. `.chezmoitemplates/secret-coords` resolves a key to both halves,
+  applying the default-vault fallback in one place; the item is then fetched **once per
+  file** and indexed, so no title or vault appears in a template:
 
   ```
-  {{- $s := .secrets.items.slskd -}}
-  {{- $op := onepasswordItemFields $s.item_name (index $s "vault" | default .secrets.vault) -}}
+  {{- $s := includeTemplate "secret-coords" (dict "secrets" .secrets "key" "slskd") | fromJson -}}
+  {{- $op := onepasswordItemFields $s.item $s.vault -}}
   SLSKD_USERNAME={{ (index $op "SLSKD_WEB_USERNAME").value }}
   ```
 
