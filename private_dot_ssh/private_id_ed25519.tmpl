@@ -1,2 +1,2 @@
-{{- $s := includeTemplate "secret-coords" (dict "secrets" .secrets "key" "ssh-ed25519") | fromJson -}}
-{{ onepasswordRead (printf "op://%s/%s/private" $s.vault $s.item) }}
+{{- $s := index .secrets.items "ssh-ed25519" -}}
+{{ onepasswordRead (printf "op://%s/%s/private" $s.vault $s.item_name) }}

@@ -367,7 +367,7 @@ neither the item nor the field. To see what chezmoi can actually read from an it
 the vault literal for the item's own `vault` if it overrides the default):
 
 ```bash
-echo '{{ range $k, $_ := onepasswordItemFields "slskd" .secrets.vault }}{{ $k }}
+echo '{{ $s := index .secrets.items "slskd" }}{{ range $k, $_ := onepasswordItemFields $s.item_name $s.vault }}{{ $k }}
 {{ end }}' | ./tools/simulate-host --real-op mars execute-template
 ```
 

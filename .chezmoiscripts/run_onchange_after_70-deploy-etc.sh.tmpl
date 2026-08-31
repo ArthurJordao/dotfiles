@@ -88,10 +88,10 @@ sudo systemctl restart {{ $u }}
 {{ end }}
 {{ end -}}
 {{ if has "samba" $roles -}}
-{{- $s := includeTemplate "secret-coords" (dict "secrets" .secrets "key" "samba") | fromJson -}}
+{{- $s := index .secrets.items "samba" -}}
 {{- /* A login item's username and password carry no section, so
        onepasswordItemFields drops them. This one keeps exactly those. */ -}}
-{{- $op := onepasswordDetailsFields $s.item $s.vault -}}
+{{- $op := onepasswordDetailsFields $s.item_name $s.vault -}}
 # --- samba passdb: state, not a file, and smbpasswd needs smb.conf to exist ---
 
 # Samba keeps its own password database, so this is NOT the Unix password. Set

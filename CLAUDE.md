@@ -213,13 +213,13 @@ Fixed facts:
 
 - Base domain: `arthurjordao.dev`; every service is exposed as `<service>.arthurjordao.dev`
 - Secrets: one 1Password item per service, declared in `.chezmoidata/secrets.yaml` as
-  `{item_name, vault?}`. `.chezmoitemplates/secret-coords` resolves a key to both halves,
-  applying the default-vault fallback in one place; the item is then fetched **once per
-  file** and indexed, so no title or vault appears in a template:
+  `{item_name, vault}`. Both are named on every entry — there is no fleet default to
+  inherit, so nothing has to apply a fallback. The item is fetched **once per file** and
+  indexed, so no title or vault appears in a template:
 
   ```
-  {{- $s := includeTemplate "secret-coords" (dict "secrets" .secrets "key" "slskd") | fromJson -}}
-  {{- $op := onepasswordItemFields $s.item $s.vault -}}
+  {{- $s := index .secrets.items "slskd" -}}
+  {{- $op := onepasswordItemFields $s.item_name $s.vault -}}
   SLSKD_USERNAME={{ (index $op "SLSKD_WEB_USERNAME").value }}
   ```
 
