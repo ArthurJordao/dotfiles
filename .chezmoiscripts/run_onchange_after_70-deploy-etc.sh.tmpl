@@ -1,7 +1,15 @@
 {{- $roles := (index .hosts .hostname).roles -}}
+{{- /* Role groups first, in sorted key order; this host's own group last, so a
+       per-host file lands after anything a role put down. */ -}}
 {{- $groups := list -}}
-{{- range $name, $_ := .etc -}}
-{{- if has $name $roles -}}{{ $groups = append $groups $name }}{{ end -}}
+{{- range $name, $g := (index .etc "roles" | default dict) -}}
+{{- if has $name $roles -}}
+{{- $groups = append $groups (dict "name" $name "def" $g) -}}
+{{- end -}}
+{{- end -}}
+{{- $byHost := index .etc "hosts" | default dict -}}
+{{- if hasKey $byHost .hostname -}}
+{{- $groups = append $groups (dict "name" .hostname "def" (index $byHost .hostname)) -}}
 {{- end -}}
 {{ if $groups -}}
 #!/bin/bash
@@ -61,14 +69,30 @@ if ! cmp -s "$STAGE/resolved" /etc/systemd/resolved.conf.d/10-coredns.conf; then
     sudo systemctl restart systemd-resolved
 fi
 
+# Debian does not symlink /etc/resolv.conf to resolved the way Arch does, so
+# Tailscale takes the file over and its 100.100.100.100 stub SERVFAILs
+# everything non-tailnet -- this host's own outbound resolution, not the LAN's.
+# Neither setting self-heals, so assert both. Still needed by hand at bootstrap:
+# `tailscale up` precedes the first apply.
+if command -v tailscale >/dev/null 2>&1; then
+    sudo tailscale set --accept-dns=false ||
+        echo "  warning: could not set --accept-dns=false; check tailscaled"
+fi
+# With DNSStubListener=no, stub-resolv.conf is itself a symlink to the real
+# upstreams, so any target under this directory is correct.
+case "$(readlink -f /etc/resolv.conf)" in
+    /run/systemd/resolve/*) ;;
+    *) sudo ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf ;;
+esac
+
 {{ end -}}
 {{ range $group := $groups -}}
-{{- $g := index $.etc $group -}}
+{{- $g := $group.def -}}
 {{- $files := index $g "files" | default list -}}
 {{- $enable := index $g "enable" | default list -}}
 {{- $reload := index $g "reload" | default list -}}
 {{- $restart := index $g "restart" | default list -}}
-# --- {{ $group }} ---
+# --- {{ $group.name }} ---
 {{ range $f := $files -}}
 cat > "$STAGE/out" <<'ETC_EOF'
 {{ includeTemplate (printf "etc/%s" $f.src) $ | trimSuffix "\n" }}

@@ -54,7 +54,7 @@ Four rules that matter more than they look:
 JDKs, `packages.yaml` the package declarations, `binaries.yaml` the pinned upstream-release
 binaries, `secrets.yaml` the 1Password vault and item names, `cloudflare.yaml` the tunnel ID,
 `dns.yaml` the filter's lists and upstream, `dashboard.yaml` OliveTin's presentation and buttons,
-`etc.yaml` the `/etc` deploy table keyed by role, and `theme.yaml`/`palettes.yaml` the colour
+`etc.yaml` the `/etc` deploy table keyed by role and by host, and `theme.yaml`/`palettes.yaml` the colour
 scheme. chezmoi merges every file in that directory into one template data namespace, so templates
 read `.hosts` / `.domain` / `.syncthing` / `.minecraft` / `.packages` / `.binaries` / `.secrets` /
 `.cloudflare` / `.dns` / `.dashboard` / `.etc` / `.theme` / `.palettes` directly. Gate on the axis
@@ -437,8 +437,12 @@ endpoints in declaration order within a host.
 
 ## Deploy flow
 
-**`run_onchange_after_70-deploy-etc.sh.tmpl`** is data-driven from `.chezmoidata/etc.yaml`, keyed by
-the role that owns each group — a host renders every group whose key is one of its roles. Each
+**`run_onchange_after_70-deploy-etc.sh.tmpl`** is data-driven from `.chezmoidata/etc.yaml`, which
+has **two namespaces**: `roles`, keyed by the role that owns each group, and `hosts`, keyed by
+hostname. A host renders every `roles` group matching one of its roles, in sorted key order, then
+its own `hosts` group last. Prefer `roles` — a purpose follows the role when it moves between
+hosts; `hosts` is for a file that is about one box and nothing else (hardware, a distro quirk), and
+putting a purpose there lets the role gating decay into a per-host dumping ground. Each
 file is inlined as a quoted heredoc via `includeTemplate`, one per entry, then installed into
 `/etc` with `sudo`, enabled/reloaded/restarted per the group's `enable`/`reload`/
 `restart` lists. Each body is written to a staging file before `install`, because `sudo tee`
@@ -457,8 +461,10 @@ A `dest` may carry `{tunnel_id}`, substituted at render time because chezmoi doe
 data value — the same placeholder trick `binaries.yaml` uses for `{version}`/`{arch}`. Setup that
 is not a file — the `caddy` system user, the CoreDNS self-signed cert, the `resolved` drop-in,
 Samba's `passdb` entry — stays imperative in the script, gated on its own role. `check-consistency`
-C23 enforces that each group key is a real role and each `src` exists under
-`.chezmoitemplates/etc/`.
+C23 enforces that a `roles` key is a real role, a `hosts` key is a managed host, and each `src`
+exists under `.chezmoitemplates/etc/`. **A `roles` key must be a role no darwin host carries** —
+the script would otherwise run `sudo install` on linux `/etc` paths on a Mac; C23 rejects that too,
+and a `hosts` key cannot express it.
 
 All fourteen scripts live in **`.chezmoiscripts/`** and every one carries the **`after_`** attribute, so
 they run once every file has been deployed and the numeric prefix orders only the scripts among
@@ -476,7 +482,7 @@ Anything needing a package goes after 10; gaps of 10 leave room to insert. Keep 
 | 50 | `enable-systemd-units` | units deployed |
 | 55 | `prune-unclaimed` | — |
 | 60 | `set-wallpaper` | `Pictures/` deployed |
-| 70 | `deploy-etc` | a role declared in `.chezmoidata/etc.yaml` |
+| 70 | `deploy-etc` | a role or hostname declared in `.chezmoidata/etc.yaml` |
 | 75 | `deploy-resolver` | darwin only |
 | 80 | `restart-syncthing` | `syncthing` (emulation role) |
 | 90 | `restart-olivetin` | OliveTin config deployed (server role) |
@@ -598,8 +604,8 @@ just packages-prune  # macOS only: remove installed-but-undeclared
 just upgrade         # full system upgrade, then install declared (macOS: installs declared first, then upgrades)
 ```
 
-`run_onchange_after_70-deploy-etc.sh.tmpl` renders whichever `.chezmoidata/etc.yaml` groups match a
-host's roles, so moving `edge` between hosts in `.chezmoidata/hosts.yaml` relocates the whole
+`run_onchange_after_70-deploy-etc.sh.tmpl` renders whichever `.chezmoidata/etc.yaml` `roles` groups
+match a host's roles, so moving `edge` between hosts in `.chezmoidata/hosts.yaml` relocates the whole
 Caddy/CoreDNS/cloudflared edge.
 
 ## Other managed pieces

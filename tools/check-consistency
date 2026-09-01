@@ -275,24 +275,38 @@ for family in sorted(binaries):
             fail("C6", "binaries.%s.%s is not a role any host declares"
                        % (family, key))
 
-# C23 -- an /etc group keyed on a role nothing declares installs nothing, and a
-# `src` that no longer exists fails only during a real apply on the host.
+# C23 -- an /etc group keyed on a role nothing declares, or on a host that is
+# not in the inventory, installs nothing; and a `src` that no longer exists
+# fails only during a real apply on the host.
 ETC_BODIES = os.path.join(ROOT, ".chezmoitemplates/etc")
-for group in sorted(etc):
-    if group not in all_roles:
-        fail("C23", "etc.%s is not a role any host declares" % group)
-    entries = etc[group].get("files") if isinstance(etc[group], dict) else None
-    if not isinstance(entries, list):
-        fail("C23", "etc.%s declares no `files` list" % group)
-        continue
-    for entry in entries:
-        src = entry.get("src") if isinstance(entry, dict) else None
-        if not src:
-            fail("C23", "etc.%s has a file entry with no `src`" % group)
+# A darwin host reaching a `roles` group would run `sudo install` on linux /etc
+# paths. `hosts` keys name one box, so they cannot.
+darwin_roles = set(r for h in hosts.values()
+                   if h.get("os") == "darwin" for r in (h.get("roles") or []))
+managed_hosts = set(n for n, h in hosts.items() if h.get("managed") is not False)
+for namespace, known in (("roles", all_roles), ("hosts", managed_hosts)):
+    for group in sorted(etc.get(namespace) or {}):
+        label = "etc.%s.%s" % (namespace, group)
+        if group not in known:
+            fail("C23", "%s is not a %s" % (
+                label, "role any host declares" if namespace == "roles"
+                else "host in the inventory"))
+        if namespace == "roles" and group in darwin_roles:
+            fail("C23", "%s is a role a darwin host carries, so the deploy "
+                        "would run on macOS" % label)
+        entries = etc[namespace][group].get("files") \
+            if isinstance(etc[namespace][group], dict) else None
+        if not isinstance(entries, list):
+            fail("C23", "%s declares no `files` list" % label)
             continue
-        if not os.path.isfile(os.path.join(ETC_BODIES, src)):
-            fail("C23", "etc.%s: src %r does not exist under "
-                        ".chezmoitemplates/etc/" % (group, src))
+        for entry in entries:
+            src = entry.get("src") if isinstance(entry, dict) else None
+            if not src:
+                fail("C23", "%s has a file entry with no `src`" % label)
+                continue
+            if not os.path.isfile(os.path.join(ETC_BODIES, src)):
+                fail("C23", "%s: src %r does not exist under "
+                            ".chezmoitemplates/etc/" % (label, src))
 
 # C16 -- an `except` naming no host excludes nothing, silently.
 # Membership, not the emulation role: a host is listed here before it gains

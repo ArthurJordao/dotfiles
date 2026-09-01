@@ -1,8 +1,19 @@
 # yaml-language-server: $schema=../schemas/etc.schema.json
 #
-# What this repo installs under /etc, keyed by the role that owns it.
-# run_onchange_after_70-deploy-etc.sh.tmpl renders every group whose key is one
-# of the host's roles, inlining each body from .chezmoitemplates/etc/.
+# What this repo installs under /etc, in two namespaces.
+#
+#   roles:  keyed by the role that owns the group -- a purpose, so the files
+#           follow the role when it moves between hosts. Prefer this.
+#   hosts:  keyed by hostname, for a file that is about *this box* and nothing
+#           else: hardware, a distro quirk. Never put a purpose here, or the
+#           role gating withers into a per-host dumping ground.
+#
+# run_onchange_after_70-deploy-etc.sh.tmpl renders every `roles` group matching
+# one of the host's roles, then this host's `hosts` group last, inlining each
+# body from .chezmoitemplates/etc/.
+#
+# A `roles` key must name a role no darwin host carries, or the script runs
+# `sudo install` on linux /etc paths on a Mac. `hosts` keys cannot do that.
 #
 # `dest` may carry {tunnel_id}: chezmoi does not re-template a data value, so it
 # is substituted at render time. Same placeholder trick as binaries.yaml.
@@ -12,34 +23,46 @@
 # covers files and units only.
 
 etc:
-  edge:
-    files:
-      - {src: caddy/Caddyfile, dest: /etc/caddy/Caddyfile, mode: "644"}
-      - {src: caddy/caddy.env, dest: /etc/caddy/caddy.env, mode: "600"}
-      - {src: coredns/Corefile, dest: /etc/coredns/Corefile, mode: "644"}
-      - {src: cloudflared/config.yml, dest: /etc/cloudflared/config.yml, mode: "644"}
-      - {src: cloudflared/credentials.json, dest: "/etc/cloudflared/{tunnel_id}.json", mode: "600"}
-      - {src: systemd/caddy.service, dest: /etc/systemd/system/caddy.service, mode: "644"}
-      - {src: systemd/coredns.service, dest: /etc/systemd/system/coredns.service, mode: "644"}
-      - {src: systemd/cloudflared.service, dest: /etc/systemd/system/cloudflared.service, mode: "644"}
-      - {src: systemd/cloudflared-update.service, dest: /etc/systemd/system/cloudflared-update.service, mode: "644"}
-      - {src: systemd/cloudflared-update.timer, dest: /etc/systemd/system/cloudflared-update.timer, mode: "644"}
-    enable:  [caddy, coredns, cloudflared, cloudflared-update.timer]
-    reload:  [caddy]
-    restart: [coredns, cloudflared]
-  # Unit name is Debian/networkd's. Keyed on `server`, not `podman`: a `podman`
-  # group would start deploying /etc on mars too.
-  server:
-    files:
-      - {src: systemd/networkd-wait-online-ipv4.conf,
-         dest: /etc/systemd/system/systemd-networkd-wait-online.service.d/zz-wait-for-ipv4.conf,
-         mode: "644"}
-    # Present for the daemon-reload; also clears the failed unit.
-    enable: [systemd-networkd-wait-online]
-  # Unit names below (smb, wsdd) are Arch's; another distro's may differ.
-  samba:
-    files:
-      - {src: samba/smb.conf, dest: /etc/samba/smb.conf, mode: "644"}
-      - {src: avahi/smb.service, dest: /etc/avahi/services/smb.service, mode: "644"}
-    enable:  [avahi-daemon, smb, wsdd]
-    restart: [smb, wsdd]
+  roles:
+    edge:
+      files:
+        - {src: caddy/Caddyfile, dest: /etc/caddy/Caddyfile, mode: "644"}
+        - {src: caddy/caddy.env, dest: /etc/caddy/caddy.env, mode: "600"}
+        - {src: coredns/Corefile, dest: /etc/coredns/Corefile, mode: "644"}
+        - {src: cloudflared/config.yml, dest: /etc/cloudflared/config.yml, mode: "644"}
+        - {src: cloudflared/credentials.json, dest: "/etc/cloudflared/{tunnel_id}.json", mode: "600"}
+        - {src: systemd/caddy.service, dest: /etc/systemd/system/caddy.service, mode: "644"}
+        - {src: systemd/coredns.service, dest: /etc/systemd/system/coredns.service, mode: "644"}
+        - {src: systemd/cloudflared.service, dest: /etc/systemd/system/cloudflared.service, mode: "644"}
+        - {src: systemd/cloudflared-update.service, dest: /etc/systemd/system/cloudflared-update.service, mode: "644"}
+        - {src: systemd/cloudflared-update.timer, dest: /etc/systemd/system/cloudflared-update.timer, mode: "644"}
+      enable:  [caddy, coredns, cloudflared, cloudflared-update.timer]
+      reload:  [caddy]
+      restart: [coredns, cloudflared]
+    # Unit name is Debian/networkd's. Keyed on `server`, not `podman`: a `podman`
+    # group would start deploying /etc on mars too.
+    server:
+      files:
+        - {src: systemd/networkd-wait-online-ipv4.conf,
+           dest: /etc/systemd/system/systemd-networkd-wait-online.service.d/zz-wait-for-ipv4.conf,
+           mode: "644"}
+      # Present for the daemon-reload; also clears the failed unit.
+      enable: [systemd-networkd-wait-online]
+    # Unit names below (smb, wsdd) are Arch's; another distro's may differ.
+    samba:
+      files:
+        - {src: samba/smb.conf, dest: /etc/samba/smb.conf, mode: "644"}
+        - {src: avahi/smb.service, dest: /etc/avahi/services/smb.service, mode: "644"}
+      enable:  [avahi-daemon, smb, wsdd]
+      restart: [smb, wsdd]
+
+  hosts:
+    # Both are about this box: a USB wifi dongle only mars has, and CachyOS's
+    # KillUserProcesses. Neither takes enable/reload/restart -- modprobe options
+    # apply at module load and logind config at reload, so both are next-boot
+    # changes, and restarting logind kills the session.
+    mars:
+      files:
+        - {src: modprobe.d/88x2bu.conf, dest: /etc/modprobe.d/88x2bu.conf, mode: "644"}
+        - {src: logind/zz-keep-user-processes.conf,
+           dest: /etc/systemd/logind.conf.d/zz-keep-user-processes.conf, mode: "644"}

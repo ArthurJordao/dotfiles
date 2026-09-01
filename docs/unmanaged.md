@@ -47,6 +47,9 @@ non-tailnet. That breaks pluto's *own* outbound resolution — cloudflared crash
 are unaffected — and neither `tailscale down/up` nor a `tailscaled` restart self-heals it.
 `--accept-dns=false` stops Tailscale re-taking the file; the symlink actually restores it.
 
+`chezmoi apply` re-asserts the last two lines on every run. They stay here because `tailscale up`
+precedes the first apply.
+
 ### 3. chezmoi
 
 Not in Debian's archive.
