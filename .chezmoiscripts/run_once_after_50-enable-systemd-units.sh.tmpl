@@ -4,6 +4,13 @@
 #!/bin/bash
 set -euo pipefail
 
+# Without linger no user unit starts at boot. `enable --now` below masks its
+# absence in the current session, so the gap only surfaces at the next reboot.
+# Checked first so a host that already has it never reaches sudo.
+if [ "$(loginctl show-user "$USER" --property=Linger --value 2>/dev/null)" != "yes" ]; then
+    sudo loginctl enable-linger "$USER"
+fi
+
 systemctl --user daemon-reload
 {{ if has "podman" $roles -}}
 systemctl --user enable --now podman-auto-update.timer
