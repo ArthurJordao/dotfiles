@@ -57,12 +57,23 @@ etc:
       restart: [smb, wsdd]
 
   hosts:
-    # Both are about this box: a USB wifi dongle only mars has, and CachyOS's
-    # KillUserProcesses. Neither takes enable/reload/restart -- modprobe options
-    # apply at module load and logind config at reload, so both are next-boot
-    # changes, and restarting logind kills the session.
+    # None of these take enable/reload/restart -- modprobe options apply at
+    # module load and logind config at reload, so both are next-boot changes,
+    # and restarting logind kills the session.
+    #
+    # The logind drop-in is declared per host rather than by role because its
+    # trigger is the CachyOS image (it ships KillUserProcesses=True), and that
+    # is neither a role nor visible in `distro: arch`. The roles both boxes
+    # share are worse fits: `gui`/`dev` are carried by darwin neptune, `gaming`
+    # matches only by coincidence, and `emulation` would drag in phobos, where
+    # it is inert. Revisit if a third CachyOS host appears.
     mars:
       files:
+        # The wifi dongle is mars's alone.
         - {src: modprobe.d/88x2bu.conf, dest: /etc/modprobe.d/88x2bu.conf, mode: "644"}
+        - {src: logind/zz-keep-user-processes.conf,
+           dest: /etc/systemd/logind.conf.d/zz-keep-user-processes.conf, mode: "644"}
+    mercury:
+      files:
         - {src: logind/zz-keep-user-processes.conf,
            dest: /etc/systemd/logind.conf.d/zz-keep-user-processes.conf, mode: "644"}
