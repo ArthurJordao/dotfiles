@@ -50,8 +50,6 @@ packages:
       # under Network in Explorer.
       - wsdd
     server:
-      - cockpit
-      - cockpit-podman
       - olivetin-bin
       - podman
     sunshine:
