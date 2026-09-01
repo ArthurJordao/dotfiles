@@ -141,6 +141,12 @@ Silent failures worth knowing:
   `onepasswordDetailsFields`, which keys on the field's `purpose` instead.
 - A comment opening `# shellcheck ` is parsed as a **directive**, not prose, and an unparseable
   one is an error. Relevant to any script whose subject is shellcheck itself.
+- **`fisher` rewrites the managed `fish_plugins` when a plugin fails to install**, dropping it from
+  the manifest and exiting 0 — so the apply succeeds and the file silently drifts from the repo
+  forever. The usual cause is an untracked file of that plugin's from an earlier install: fisher
+  refuses to overwrite what its ledger does not own. Move the conflicting file aside, then
+  `fisher install <plugin>`. The ledger is fish universal variables, not a file
+  (`_fisher_plugins`, and `_fisher_<owner>_2F_<repo>_files` — `/` and `-` are hex-escaped).
 - A Go template comment can't be indented inside its own action: `{{- /* x */ -}}` parses,
   `{{-   /* x */ -}}` is `unexpected "/" in command`. A parse error in **any** `.chezmoitemplates`
   file fails *every* template call, so the reported filename may not be the one you ran.
@@ -777,7 +783,8 @@ themselves never leave the host.
   managed directory whose content lives elsewhere — that is why `Emulation/roms` on an arkos host
   is one.
 - **`chezmoi` consumes stdin**, so `ssh host bash <<'EOF' … chezmoi … EOF` eats the rest of the
-  heredoc and the script silently ends. Always `chezmoi … < /dev/null`.
+  heredoc and the script silently ends. Always `chezmoi … < /dev/null`. **`fisher` does the same** —
+  it swallows the next heredoc line as a plugin name (`fisher: Plugin not installed: "echo"`).
 - **vfat cannot hold the modes chezmoi wants, so chezmoi must not manage anything inside one.** It
   re-prompts `has changed since chezmoi last wrote it` on every apply and `chmod` is a no-op on
   FAT. Matching the mount masks is not a fix: `fmask=0113` strips +x from `*.sh` and breaks
