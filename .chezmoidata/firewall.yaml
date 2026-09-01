@@ -28,7 +28,7 @@ firewall:
 
   # navidrome 4533, slskd 5030, soulsync 8008 and coredns 8053 listen on the
   # wildcard address and are closed on purpose: clients reach them through
-  # Caddy, which connects over loopback. 50300 is not forwarded, 5355 is LLMNR.
+  # Caddy, which connects over loopback. 5355 is LLMNR, which nothing uses.
   pluto:
     - {rule: "allow from {lan_cidr} to any port 53", comment: "coredns: the LAN"}
     - {rule: "allow from 100.64.0.0/10 to any port 53", comment: "coredns: the tailnet"}
@@ -36,5 +36,8 @@ firewall:
     - {rule: "allow from 100.64.0.0/10 to any port 80,443 proto tcp", comment: "caddy: the tailnet"}
     - {rule: "allow from {lan_cidr} to any port 443 proto udp", comment: "caddy HTTP/3: the LAN"}
     - {rule: "allow from 100.64.0.0/10 to any port 443 proto udp", comment: "caddy HTTP/3: the tailnet"}
-    # Peers are on the internet, so this cannot be narrowed.
+    # Peers are on the internet, so these cannot be narrowed.
     - {rule: "allow 41641/udp", comment: "tailscale: direct peer connections"}
+    # Inert unless the router forwards 50300 to pluto. Open anyway: without it,
+    # adding that forward later would silently fail to reach slskd.
+    - {rule: "allow 50300/tcp", comment: "slskd: incoming soulseek peers"}
