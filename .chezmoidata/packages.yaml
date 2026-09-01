@@ -201,6 +201,7 @@ packages:
       - fish
       - git
       - jq
+      - just
       - rsync
       - fzf
       # Not in Debian's archive; install-packages.sh adds the repo.
