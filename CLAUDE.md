@@ -143,6 +143,10 @@ Silent failures worth knowing:
   `onepasswordDetailsFields`, which keys on the field's `purpose` instead.
 - A comment opening `# shellcheck ` is parsed as a **directive**, not prose, and an unparseable
   one is an error. Relevant to any script whose subject is shellcheck itself.
+- **`/usr/sbin` is not on a non-root `PATH` on Debian**, so `command -v <admin-tool>` reports
+  missing for a binary that is installed, while `sudo <admin-tool>` works — sudo's `secure_path`
+  includes it. Guard on `[ -x /usr/sbin/<tool> ]` as well. Arch puts everything in `/usr/bin`, so
+  this only bites on the Debian hosts.
 - **`fisher` rewrites the managed `fish_plugins` when a plugin fails to install**, dropping it from
   the manifest and exiting 0 — so the apply succeeds and the file silently drifts from the repo
   forever. The usual cause is an untracked file of that plugin's from an earlier install: fisher

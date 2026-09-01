@@ -8,7 +8,9 @@ set -euo pipefail
 
 {{ $rules := index .firewall .hostname -}}
 
-if ! command -v ufw >/dev/null 2>&1; then
+# /usr/sbin is not on a non-root PATH on Debian, so `command -v ufw` says no to
+# a binary that is there. Every call below goes through sudo, which finds it.
+if ! command -v ufw >/dev/null 2>&1 && [ ! -x /usr/sbin/ufw ]; then
     echo "ufw is not installed. Run ~/.local/scripts/install-packages first." >&2
     exit 1
 fi
