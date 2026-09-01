@@ -66,6 +66,11 @@ emu-merge-gamelists:
 check-live:
     ~/.local/scripts/check-live
 {{ end }}
+{{ if includeTemplate "has-firewall" . }}
+# Rebuild this host's ufw ruleset from .chezmoidata/firewall.yaml
+firewall:
+    ~/.local/scripts/firewall
+{{ end }}
 {{ if includeTemplate "has-binaries" . }}
 # Report pinned vs installed vs upstream for hand-installed binaries
 binaries-check:

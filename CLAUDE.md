@@ -54,10 +54,12 @@ Four rules that matter more than they look:
 JDKs, `packages.yaml` the package declarations, `binaries.yaml` the pinned upstream-release
 binaries, `secrets.yaml` the 1Password vault and item names, `cloudflare.yaml` the tunnel ID,
 `dns.yaml` the filter's lists and upstream, `dashboard.yaml` OliveTin's presentation and buttons,
-`etc.yaml` the `/etc` deploy table keyed by role and by host, and `theme.yaml`/`palettes.yaml` the colour
+`etc.yaml` the `/etc` deploy table keyed by role and by host, `firewall.yaml` the ufw rulesets keyed
+by host, and `theme.yaml`/`palettes.yaml` the colour
 scheme. chezmoi merges every file in that directory into one template data namespace, so templates
 read `.hosts` / `.domain` / `.syncthing` / `.minecraft` / `.packages` / `.binaries` / `.secrets` /
-`.cloudflare` / `.dns` / `.dashboard` / `.etc` / `.theme` / `.palettes` directly. Gate on the axis
+`.cloudflare` / `.dns` / `.dashboard` / `.etc` / `.firewall` / `.theme` / `.palettes` directly.
+Gate on the axis
 that is the actual reason a file isn't universal:
 
 | Axis | Mechanism | Use for |
@@ -603,6 +605,7 @@ lines: a trimming action (`-}}`) eats the leading spaces and `just` then rejects
 
 ```
 just check           # every repo check: templates, schemas, consistency, shellcheck
+just firewall        # rebuild this host's ufw ruleset (mars, pluto)
 just binaries-check  # pinned vs installed vs upstream for hand-installed binaries
 just packages        # install this host's declared packages, no prompt
 just packages-check  # macOS only: report installed-but-undeclared, removes nothing
@@ -656,6 +659,22 @@ What follows is only what the repo itself does.
   each app's `uuid` is how a client remembers it.
 - A sunshine prep-cmd runs **without a shell**, so `apps.json` needs absolute paths — no `~`, no
   `$HOME`, and no systemd `%h`. The path is rendered from the host's `user`.
+- **The firewall is ufw, declared in `.chezmoidata/firewall.yaml` and applied only by
+  `just firewall`** — never by an apply, because `ufw --force reset` leaves the box unprotected for
+  the length of the script. It is **rebuilt whole, not patched**: ufw is first-match, so the data
+  file's order *is* the ruleset's order, and `ufw insert N` (brittle to re-run) becomes unnecessary.
+  C24 rejects `insert` for that reason, plus a key that is not a managed host and a host with no
+  `ufw` package. Keyed by host, not role: a firewall is about one box's exposure, and every
+  plausible role over-matches — `podman` would put teamspeak's ports on pluto, `gaming` would start
+  a firewall on mercury, which has none. `ssh` is not in the data; the script emits it first,
+  hardcoded, because a locked-out headless box is the one mistake no later rule undoes. If the
+  script dies partway the host ends up with **no** firewall rather than an unreachable one.
+  Deployment is gated on `.chezmoitemplates/has-firewall`, read by both `.chezmoiignore` and the
+  justfile.
+- **pluto publishes four ports on the wildcard address that nothing should reach directly** —
+  navidrome 4533, slskd 5030, soulsync 8008 and coredns's 8053. Every client goes through Caddy on
+  443, and Caddy and cloudflared connect over loopback, which ufw does not filter, so the ruleset
+  closes them. Do not "fix" a connection refused on those by opening a port.
 - **DNS filtering is blocky**, a quadlet publishing only on loopback. CoreDNS forwards `.` to it
   with `policy sequential`, keeping Cloudflare as a second upstream, so a dead filter is
   unfiltered resolution rather than none. `policy sequential` is load-bearing: forward's default

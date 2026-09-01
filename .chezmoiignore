@@ -76,6 +76,9 @@ minecraft/**
       distro and roles together, so the answer is computed in one place. The
       units would otherwise deploy to every server/minecraft/agent host, whose
       .config/systemd gate is broader than this. */}}
+{{ if not (includeTemplate "has-firewall" .) }}
+.local/scripts/firewall
+{{ end }}
 {{ if not (includeTemplate "has-binaries" .) }}
 .local/scripts/binaries-check
 .local/scripts/binaries-build

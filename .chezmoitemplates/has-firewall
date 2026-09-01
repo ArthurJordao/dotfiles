@@ -1,0 +1,4 @@
+{{- /* "yes" when this host declares a ufw ruleset, else empty. One place
+       computing it: .chezmoiignore gates the script and the justfile gates the
+       recipe on the same answer. */ -}}
+{{- if hasKey .firewall .hostname }}yes{{ end -}}

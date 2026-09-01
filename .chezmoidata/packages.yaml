@@ -43,6 +43,12 @@ packages:
       - tmux
     moonlight:
       - moonlight-qt
+    podman:
+      # The hosts that publish container ports are the ones that need a
+      # firewall; `podman` is the role mars and pluto share and the handhelds
+      # do not. check-consistency C24 requires it wherever firewall.yaml has
+      # rules.
+      - ufw
     samba:
       - avahi
       - samba
@@ -212,4 +218,5 @@ packages:
       - nftables
       - passt
       - podman
+      - ufw
       - uidmap

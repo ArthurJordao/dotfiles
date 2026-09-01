@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "firewall",
+  "type": "object",
+  "required": ["firewall"],
+  "additionalProperties": false,
+  "properties": {
+    "firewall": {
+      "type": "object",
+      "description": "ufw rulesets keyed by hostname. Order within a host is significant: ufw is first-match and the script applies the list top to bottom.",
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["rule", "comment"],
+          "properties": {
+            "rule": {
+              "type": "string",
+              "description": "Arguments passed to ufw, verbatim. May contain {lan_cidr}, substituted at render time. Must not be an `insert` -- the ruleset is rebuilt in order, not patched.",
+              "minLength": 1,
+              "not": {"pattern": "(^|\\s)insert(\\s|$)"}
+            },
+            "comment": {
+              "type": "string",
+              "description": "Passed to ufw as `comment '...'`, so it shows in `ufw status`. Single quotes are not allowed; they would end the shell literal.",
+              "minLength": 1,
+              "not": {"pattern": "'"}
+            }
+          }
+        }
+      }
+    }
+  }
+}

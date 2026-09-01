@@ -86,7 +86,7 @@ def fail(rule, msg):
 data = json.loads(render("_checker", text=(
     '{{ dict "hosts" .hosts "packages" .packages "syncthing" .syncthing '
     '"minecraft" .minecraft "dashboard" .dashboard "binaries" .binaries '
-    '"etc" .etc | toJson }}')))
+    '"etc" .etc "firewall" .firewall | toJson }}')))
 hosts = data["hosts"]
 packages = data.get("packages") or {}
 folders = (data.get("syncthing") or {}).get("folders") or []
@@ -94,6 +94,7 @@ instances = (data.get("minecraft") or {}).get("instances") or []
 dashboard = data.get("dashboard") or {}
 binaries = data.get("binaries") or {}
 etc = data.get("etc") or {}
+firewall = data.get("firewall") or {}
 
 
 def declared_for(host, table):
@@ -307,6 +308,25 @@ for namespace, known in (("roles", all_roles), ("hosts", managed_hosts)):
             if not os.path.isfile(os.path.join(ETC_BODIES, src)):
                 fail("C23", "%s: src %r does not exist under "
                             ".chezmoitemplates/etc/" % (label, src))
+
+# C24 -- a firewall ruleset for a host that cannot receive it, or on a host with
+# no ufw, deploys a script that fails at the first line. `insert` is rejected
+# because the ruleset is rebuilt in order, not patched: a stale position is
+# exactly the bug the rebuild exists to remove.
+for host in sorted(firewall):
+    if host not in managed_hosts:
+        fail("C24", "firewall.%s is not a host in the inventory" % host)
+        continue
+    if "ufw" not in declared_for(hosts[host], packages):
+        fail("C24", "firewall.%s declares rules but no `ufw` package" % host)
+    for entry in firewall[host] or []:
+        rule = entry.get("rule") if isinstance(entry, dict) else None
+        if not rule:
+            fail("C24", "firewall.%s has an entry with no `rule`" % host)
+            continue
+        if "insert" in rule.split():
+            fail("C24", "firewall.%s: %r uses `insert`; order comes from this "
+                        "list instead" % (host, rule))
 
 # C16 -- an `except` naming no host excludes nothing, silently.
 # Membership, not the emulation role: a host is listed here before it gains

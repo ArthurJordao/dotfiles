@@ -1,0 +1,40 @@
+#!/bin/bash
+# GENERATED from .chezmoidata/firewall.yaml -- edit the rules there.
+#
+# Rebuilds this host's ufw ruleset whole rather than patching it. ufw is
+# first-match and `ufw insert N` positions are brittle to re-run, so the data
+# file's order is simply the ruleset's order.
+#
+# Deliberately not run by `chezmoi apply`: `ufw --force reset` leaves the
+# firewall down for the length of this script. If it dies partway the box ends
+# up with no firewall rather than an unreachable one -- fail open, on purpose,
+# because the recovery for a locked-out headless box is a power cycle.
+set -euo pipefail
+
+{{ $rules := index .firewall .hostname -}}
+
+if ! command -v ufw >/dev/null 2>&1; then
+    echo "ufw is not installed. Run 'just packages' first." >&2
+    exit 1
+fi
+
+echo "Rebuilding the ufw ruleset for {{ .hostname }}."
+echo "The firewall is down while this runs; established connections survive."
+
+sudo ufw --force reset
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+
+# Hardcoded, and first: everything else is data, but locking yourself out of a
+# headless box is the one mistake here that a later rule cannot undo.
+sudo ufw allow 22 comment 'ssh'
+
+{{ range $rules }}
+sudo ufw {{ .rule | replace "{lan_cidr}" $.lan_cidr }} comment '{{ .comment }}'
+{{- end }}
+
+sudo ufw --force enable
+
+echo
+echo "Final ruleset -- check the order against .chezmoidata/firewall.yaml:"
+sudo ufw status numbered
