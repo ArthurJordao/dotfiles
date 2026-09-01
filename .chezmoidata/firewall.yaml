@@ -1,34 +1,19 @@
 # yaml-language-server: $schema=../schemas/firewall.schema.json
 #
-# ufw rulesets, applied by `just firewall` and never during an apply:
-# `ufw --force reset` leaves the firewall down for the length of the script, and
-# that is not something an unattended apply should do to a headless box.
+# ufw rulesets, applied only by `just firewall`. Keyed by host: a firewall is
+# about one box's exposure, and every plausible role over-matches.
 #
-# Keyed by hostname, not by role. A firewall is about one box's exposure, and
-# every role that looked usable over-matches: `podman` would put teamspeak's
-# ports on pluto, `gaming` would start a firewall on mercury, which has none.
-# A host with no key here deploys no script and keeps whatever it has.
+# ORDER IS SIGNIFICANT -- ufw is first-match and the list is applied top to
+# bottom, which is why the ruleset is rebuilt rather than patched. ssh is not
+# declared here; the script emits it first.
 #
-# ORDER IS SIGNIFICANT -- ufw is first-match and the script applies this list
-# top to bottom. That is the whole reason the ruleset is rebuilt rather than
-# patched: `ufw insert N` is brittle to re-run, while a plain list makes the
-# order self-evident. ssh is NOT here; the script emits it first, hardcoded.
-#
-# {lan_cidr} is substituted at render time -- chezmoi does not re-template a
-# data value. Same placeholder trick as binaries.yaml and etc.yaml.
-#
-# 100.64.0.0/10 is the tailnet's CGNAT range.
+# {lan_cidr} is substituted at render time. 100.64.0.0/10 is the tailnet.
 
 firewall:
   mars:
-    # Exemptions before the limit, and before the blanket LAN accept below.
-    # 25565 is the only port the router forwards, and the only rate-limited
-    # one; reached after the blanket accept, the limit would never apply, and
-    # reached before these, it would throttle household players too.
+    # Both exemptions must precede the limit. 25565 is the only forwarded port.
     - {rule: "allow from {lan_cidr} to any port 25565 proto tcp", comment: "minecraft: LAN exempt"}
     - {rule: "allow from 100.64.0.0/10 to any port 25565 proto tcp", comment: "minecraft: tailscale exempt"}
-    # -m recent: 6 new connections per source per 30s, then REJECT. A Java
-    # client opens two per join, so an external player gets ~3 tries per 30s.
     - {rule: "limit 25565/tcp", comment: "minecraft: rate-limit external joins"}
     - {rule: "allow 9987/udp", comment: "teamspeak3 voice"}
     - {rule: "allow 10011/tcp", comment: "teamspeak3 serverquery"}
@@ -36,31 +21,20 @@ firewall:
     - {rule: "allow 10400:10401/udp", comment: "steam link / VR"}
     - {rule: "allow from {lan_cidr} to any port 27031", comment: "steam remote play"}
     - {rule: "allow from {lan_cidr} to any port 60000:61000 proto udp", comment: "mosh"}
-    # Last of the LAN rules: it accepts every port, so anything narrower placed
-    # below it never matches. The two above are redundant while it stands, and
-    # load-bearing the moment it is narrowed -- which is why they precede it.
+    # Accepts every port, so nothing narrower matches below it.
     - {rule: "allow from {lan_cidr}", comment: "LAN blanket accept"}
     - {rule: "allow in on tailscale0 to any port 60000:61000 proto udp", comment: "mosh over tailscale"}
-    # samba needs no LAN rule -- the blanket accept already covers 445.
     - {rule: "allow in on tailscale0 to any port 445 proto tcp", comment: "samba over tailscale"}
 
-  # Deliberately NOT opened here: 4533 navidrome, 5030 slskd, 8008 soulsync and
-  # 8053 coredns-over-https all listen on the wildcard address, but every client
-  # reaches them by hostname through Caddy on 443. Caddy and cloudflared connect
-  # over loopback, which ufw does not filter, so closing them costs nothing.
-  # 50300 (slskd's Soulseek peer port) is not forwarded by the router, so it is
-  # already unreachable from outside. 5355 is LLMNR, which nothing here uses.
+  # navidrome 4533, slskd 5030, soulsync 8008 and coredns 8053 listen on the
+  # wildcard address and are closed on purpose: clients reach them through
+  # Caddy, which connects over loopback. 50300 is not forwarded, 5355 is LLMNR.
   pluto:
-    # The whole house resolves through this box. Getting these two wrong is a
-    # fleet-wide DNS outage, not a pluto one.
     - {rule: "allow from {lan_cidr} to any port 53", comment: "coredns: the LAN"}
     - {rule: "allow from 100.64.0.0/10 to any port 53", comment: "coredns: the tailnet"}
-    # Caddy. Public traffic arrives through the tunnel, which is an outbound
-    # connection, so these serve LAN and tailnet clients only.
     - {rule: "allow from {lan_cidr} to any port 80,443 proto tcp", comment: "caddy: the LAN"}
     - {rule: "allow from 100.64.0.0/10 to any port 80,443 proto tcp", comment: "caddy: the tailnet"}
     - {rule: "allow from {lan_cidr} to any port 443 proto udp", comment: "caddy HTTP/3: the LAN"}
     - {rule: "allow from 100.64.0.0/10 to any port 443 proto udp", comment: "caddy HTTP/3: the tailnet"}
-    # Peers are on the internet, so this cannot be narrowed to the LAN. Without
-    # it tailscale still works, but only relayed through DERP.
+    # Peers are on the internet, so this cannot be narrowed.
     - {rule: "allow 41641/udp", comment: "tailscale: direct peer connections"}
