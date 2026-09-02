@@ -55,10 +55,11 @@ JDKs, `packages.yaml` the package declarations, `binaries.yaml` the pinned upstr
 binaries, `secrets.yaml` the 1Password vault and item names, `cloudflare.yaml` the tunnel ID,
 `dns.yaml` the filter's lists and upstream, `dashboard.yaml` OliveTin's presentation and buttons,
 `etc.yaml` the `/etc` deploy table keyed by role and by host, `firewall.yaml` the ufw rulesets keyed
-by host, and `theme.yaml`/`palettes.yaml` the colour
+by host, `gpg.yaml` the imported GPG keys, and `theme.yaml`/`palettes.yaml` the colour
 scheme. chezmoi merges every file in that directory into one template data namespace, so templates
 read `.hosts` / `.domain` / `.syncthing` / `.minecraft` / `.packages` / `.binaries` / `.secrets` /
-`.cloudflare` / `.dns` / `.dashboard` / `.etc` / `.firewall` / `.theme` / `.palettes` directly.
+`.cloudflare` / `.dns` / `.dashboard` / `.etc` / `.firewall` / `.gpg` / `.theme` / `.palettes`
+directly.
 Gate on the axis
 that is the actual reason a file isn't universal:
 
@@ -142,6 +143,9 @@ Silent failures worth knowing:
   lookup fails with `no entry for key "value"` — the trap to know when touching `tools/mock-op`.
   A login item's username/password are section-less for this purpose, so it needs
   `onepasswordDetailsFields`, which keys on the field's `purpose` instead.
+- **`tools/mock-op` renders every field as `mock:<name>`**, so a template that *parses* a
+  1Password value rather than passing it through fails only under `just check`. Give the field a
+  real value in mock-op's awk branch — `trust` is the one so far.
 - A comment opening `# shellcheck ` is parsed as a **directive**, not prose, and an unparseable
   one is an error. Relevant to any script whose subject is shellcheck itself.
 - **`/usr/sbin` is not on a non-root `PATH` on Debian**, so `command -v <admin-tool>` reports
@@ -628,6 +632,7 @@ just check-packages  # macOS only: report installed-but-undeclared, removes noth
 
 just packages        # install this host's declared packages, no prompt
 just packages-prune  # macOS only: remove installed-but-undeclared
+just gpg-renew       # re-import the signing key after a renewal, then recompute trust
 just paper-upgrade   # install the latest Paper build for the pinned version
 just binaries-build  # compile what must be built from source (caddy: ~7 minutes)
 just firewall        # rebuild this host's ufw ruleset (mars, pluto)
