@@ -40,6 +40,11 @@ for arg in "$@"; do
         --version)
             echo "0.0.0-mock"
             exit 0 ;;
+        document)
+            # onepasswordDocument inlines a document's bytes at render time. Only
+            # public keys go through it, so a stand-in armored block is enough.
+            printf -- '-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nmock\n-----END PGP PUBLIC KEY BLOCK-----\n'
+            exit 0 ;;
         item)
             { grep -rhoE 'index \$[a-zA-Z]+ "[^"]+"' --include='*.tmpl' . ;
               grep -rhoE 'index \$[a-zA-Z]+ "[^"]+"' .chezmoitemplates ;

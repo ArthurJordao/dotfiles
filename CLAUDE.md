@@ -146,6 +146,13 @@ Silent failures worth knowing:
 - **`tools/mock-op` renders every field as `mock:<name>`**, so a template that *parses* a
   1Password value rather than passing it through fails only under `just check`. Give the field a
   real value in mock-op's awk branch — `trust` is the one so far.
+- **chezmoi's 1Password session does not reach the scripts it runs.** It is held in-process for
+  the template functions, so a script calling `op` at run time is a fresh, session-less
+  invocation and dies with `You are not currently signed in` — in the same apply whose render
+  just unlocked fine. `just apply`/`just update` `eval "$(op signin)"` first and export one, so
+  the bootstrap path works where a bare `chezmoi apply` does not. Prefer `onepasswordDocument` at
+  render time for anything that is not secret; keep the run-time call for secrets, guard it on
+  `op whoami`, and say which command to run.
 - A comment opening `# shellcheck ` is parsed as a **directive**, not prose, and an unparseable
   one is an error. Relevant to any script whose subject is shellcheck itself.
 - **`/usr/sbin` is not on a non-root `PATH` on Debian**, so `command -v <admin-tool>` reports

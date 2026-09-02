@@ -6,8 +6,13 @@
 # gpg gives ultimate ownertrust only to keys it generates. An imported key lands
 # untrusted, so commits still sign but every verification warns.
 #
-# The trust numbers below are rendered from each key's 1Password document, so a
-# trust change there re-fires this script on the next apply.
+# Trust numbers, and the public keys themselves, are rendered from each key's
+# 1Password document -- so a change there re-fires this script on the next apply.
+#
+# Only the secret key is fetched at run time, and only when it is absent. That
+# call needs a session in the environment: chezmoi's own 1Password session is
+# held in-process for template functions and does NOT reach the scripts it runs,
+# which is why the bootstrap path is `just apply`.
 set -euo pipefail
 
 VAULT={{ $g.vault | quote }}
@@ -47,16 +52,24 @@ warn_expiry() {
 # {{ .name }} -- secret key, {{ $word }}
 if gpg --list-secret-keys {{ .fingerprint | quote }} >/dev/null 2>&1; then
     warn_expiry {{ .fingerprint | quote }} {{ .name | quote }}
-else
+elif op whoami >/dev/null 2>&1; then
     echo "Importing secret key {{ .name }} from 1Password..."
     op document get {{ .name | quote }} --vault "$VAULT" > "$tmp"
     gpg --import "$tmp"
+else
+    echo "secret key {{ .name }} is absent and no 1Password session is exported." >&2
+    echo "chezmoi's session does not reach its scripts -- run: just apply" >&2
+    exit 1
 fi
 trust+=({{ printf "%s:%s:" .fingerprint $n | quote }})
 {{ else -}}
 # {{ .name }} -- public key, {{ $word }}
-echo "Importing public key {{ .name }} from 1Password..."
-op document get {{ .name | quote }} --vault "$VAULT" > "$tmp"
+# Inlined at render time: a public key is not secret, so this costs nothing and
+# spares the script an `op` call it has no session for. It also means a refreshed
+# key changes these bytes and re-imports itself on the next apply.
+cat > "$tmp" <<'GPGKEY'
+{{ onepasswordDocument .name $g.vault | trimSuffix "\n" }}
+GPGKEY
 gpg --import "$tmp"
 trust+=("$(fpr_of "$tmp"):{{ $n }}:")
 {{ end -}}
