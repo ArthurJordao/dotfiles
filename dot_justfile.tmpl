@@ -70,6 +70,10 @@ check-live:
 # Report pinned Minecraft version vs installed Paper build vs upstream
 paper-check:
     ~/.local/scripts/paper-check
+
+# Install the latest Paper build for the pinned Minecraft version
+paper-upgrade *ARGS:
+    ~/.local/scripts/paper-upgrade {{ "{{ ARGS }}" }}
 {{ end }}
 {{ if includeTemplate "has-firewall" . }}
 # Rebuild this host's ufw ruleset from .chezmoidata/firewall.yaml

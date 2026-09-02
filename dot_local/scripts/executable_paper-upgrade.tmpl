@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+# paper-upgrade [instance ...] -- install the latest Paper build for each
+# instance's pinned Minecraft version. No arguments means every pinned instance.
+#
+# Never crosses a Minecraft version boundary: the version comes from
+# .chezmoidata/minecraft.yaml and only the build floats.
+set -uo pipefail
+
+{{ template "paper.sh" . }}
+{{ template "paper-net.sh" . }}
+{{ template "paper-fetch.sh" . }}
+
+rc=0
+
+upgrade_one() { # instance version
+    local inst="$1" version="$2"
+    local dir="$HOME/minecraft/$inst"
+    local have latest_line build sha name target tmp
+    local was_active=0 was_enabled=0 now_enabled=0
+
+    [ -d "$dir" ] || { echo "$inst: no directory $dir" >&2; return 1; }
+
+    have=$(paper_installed "$inst" "$version")
+    latest_line=$(paper_latest "$version")
+    read -r build sha name <<<"$latest_line"
+    if [ -z "${build:-}" ]; then
+        echo "$inst: cannot reach the PaperMC API; nothing changed" >&2
+        return 1
+    fi
+
+    if [ "$have" = "$build" ]; then
+        echo "$inst: already on $version-$build"
+        return 0
+    fi
+
+    target="$dir/paper-$version-$build.jar"
+    tmp="$target.part"
+
+    # Download BEFORE stopping anything: a failed fetch must not take the
+    # server down.
+    echo "$inst: $version-${have:-none} -> $version-$build"
+    if ! paper_fetch "$sha" "$name" "$tmp"; then
+        echo "$inst: download failed; nothing changed" >&2
+        rm -f "$tmp"
+        return 1
+    fi
+    mv -f "$tmp" "$target"
+
+    systemctl --user is-active  --quiet "minecraft@$inst.service" && was_active=1
+    systemctl --user is-enabled --quiet "minecraft@$inst.service" 2>/dev/null && was_enabled=1
+
+    if [ "$was_active" = 1 ]; then
+        echo "  stopping minecraft@$inst (ExecStop sends 'stop' to the console)"
+        systemctl --user stop "minecraft@$inst.service"
+    fi
+
+    # A plain file is the pre-adoption state: its build is unrecoverable, so
+    # keep it rather than delete the only copy.
+    if [ -e "$dir/paper.jar" ] && [ ! -L "$dir/paper.jar" ]; then
+        echo "  adopting: existing jar kept as paper.jar.preadopt"
+        mv -f "$dir/paper.jar" "$dir/paper.jar.preadopt"
+    fi
+    ln -sfn "paper-$version-$build.jar" "$dir/paper.jar"
+
+    if [ "$was_active" = 1 ]; then
+        echo "  starting minecraft@$inst"
+        systemctl --user start "minecraft@$inst.service"
+    else
+        echo "  was not running; left stopped"
+    fi
+
+    # `systemctl stop` does not disable, so enablement must be untouched.
+    # Asserted rather than restored: if this trips, something here is disabling
+    # boot and the server would not survive a reboot.
+    systemctl --user is-enabled --quiet "minecraft@$inst.service" 2>/dev/null && now_enabled=1
+    if [ "$now_enabled" != "$was_enabled" ]; then
+        echo "  WARNING: boot-enablement changed ($was_enabled -> $now_enabled)" >&2
+        rc=1
+    fi
+
+    case "$have" in
+        ''|unmanaged) echo "  done. Previous jar: $dir/paper.jar.preadopt" ;;
+        *) echo "  done. Roll back with: ln -sfn paper-$version-$have.jar $dir/paper.jar" ;;
+    esac
+}
+
+mapfile -t pins < <(printf '%s\n' "$PAPER_PINS" | grep -v '^$')
+if [ "$#" -gt 0 ]; then
+    for want in "$@"; do
+        found=0
+        for pin in "${pins[@]}"; do
+            [ "${pin%%|*}" = "$want" ] || continue
+            found=1
+            upgrade_one "$want" "${pin##*|}" || rc=1
+        done
+        if [ "$found" = 0 ]; then
+            echo "$want: no \`paper\` pin in .chezmoidata/minecraft.yaml" >&2
+            rc=1
+        fi
+    done
+else
+    for pin in "${pins[@]}"; do
+        upgrade_one "${pin%%|*}" "${pin##*|}" || rc=1
+    done
+fi
+exit "$rc"

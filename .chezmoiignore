@@ -45,6 +45,7 @@ Pictures/**
 .local/scripts/minecraft
 .local/scripts/minecraft-backup
 .local/scripts/paper-check
+.local/scripts/paper-upgrade
 minecraft
 minecraft/**
 {{ end }}
