@@ -209,6 +209,14 @@ packages:
       - shellcheck
       # Not in Debian's archive; install-packages.sh adds the repo.
       - tailscale
+      # Installs the `pipx` list below.
+      - pipx
+    # PyPI tools with no Debian package. Not a role key -- the installer reads
+    # this list separately from the common/role groups. pipx rather than pip
+    # because Debian's python is externally-managed and refuses a global
+    # install. Arch and darwin both package check-jsonschema natively.
+    pipx:
+      - check-jsonschema
     edge:
       - cloudflared
       # Pinned, and it provides no /usr/bin/go -- the caddy build puts

@@ -262,10 +262,13 @@ for folder in folders:
                    % (folder["id"], source))
 
 # C6 -- a package group keyed on a role nothing declares installs nothing.
+# `pipx` is not a role: it lists PyPI tools with no distro package, and the
+# installer reads it separately from the common/role groups.
+PKG_NON_ROLE_KEYS = {"common", "pipx"}
 all_roles = set(r for h in hosts.values() for r in (h.get("roles") or []))
 for family in ("arch", "debian"):
     for key in sorted(packages.get(family) or {}):
-        if key != "common" and key not in all_roles:
+        if key not in PKG_NON_ROLE_KEYS and key not in all_roles:
             fail("C6", "packages.%s.%s is not a role any host declares"
                        % (family, key))
 

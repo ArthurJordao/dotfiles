@@ -41,6 +41,15 @@ INSTALLED="$(dpkg-query -W -f='${Package}\n')"
 MISSING="$(comm -13 <(printf '%s\n' "$INSTALLED" | sort -u) \
                     <(printf '%s\n' "$DECLARED"  | sort -u))"
 
+# PyPI tools with no distro package, declared under `pipx` rather than in a
+# role group. Kept out of DECLARED: they are not apt/pacman names, so the comm
+# delta above must never see them.
+PIPX_MISSING=""   # one tool per line, like the BIN_* accumulators below
+{{- range (index $fam "pipx" | default list) }}
+command -v {{ . | quote }} >/dev/null 2>&1 || PIPX_MISSING="${PIPX_MISSING}{{ . }}
+"
+{{- end }}
+
 {{ template "binaries.sh" . }}
 {{ template "binaries-expand.sh" . }}
 {{ template "binaries-install.sh" . }}
@@ -70,13 +79,17 @@ done <<BINEOF
 $BINARIES
 BINEOF
 
-if [ -z "$MISSING" ] && [ -z "$BIN_OUTDATED" ] && [ -z "$BIN_BUILD" ] && [ -z "$BIN_MANUAL" ]; then
+if [ -z "$MISSING" ] && [ -z "$PIPX_MISSING" ] && [ -z "$BIN_OUTDATED" ] && [ -z "$BIN_BUILD" ] && [ -z "$BIN_MANUAL" ]; then
     exit 0
 fi
 
 if [ -n "$MISSING" ]; then
     echo "Declared but not installed (family={{ $family }}):"
     printf '%s\n' "$MISSING" | sed 's/^/  /'
+fi
+if [ -n "$PIPX_MISSING" ]; then
+    echo "Declared via pipx but not installed:"
+    printf '%s' "$PIPX_MISSING" | sed 's/^/  /'
 fi
 if [ -n "$BIN_OUTDATED" ]; then
     echo "Binaries not at their pinned version:"
@@ -94,7 +107,7 @@ if [ -n "$BIN_MANUAL" ]; then
 fi
 
 # A build or a manual binary on its own leaves nothing for this script to do.
-if [ -z "$MISSING" ] && [ -z "$BIN_OUTDATED" ]; then
+if [ -z "$MISSING" ] && [ -z "$PIPX_MISSING" ] && [ -z "$BIN_OUTDATED" ]; then
     exit 0
 fi
 
@@ -147,6 +160,16 @@ HINT
     xargs -a "$LIST" sudo apt-get install -y
 {{ end -}}
 fi
+
+while IFS= read -r tool; do
+    [ -n "$tool" ] || continue
+    echo "Installing $tool with pipx"
+    # ~/.local/bin must be on PATH for the tool to be found afterwards;
+    # `pipx ensurepath` is what fixes that, and it is not this script's job.
+    pipx install "$tool" || echo "  $tool: pipx install failed" >&2
+done <<PIPXEOF
+$PIPX_MISSING
+PIPXEOF
 
 while IFS='|' read -r bname brepo bversion bkind btag basset brestart; do
     [ -n "$bname" ] || continue
