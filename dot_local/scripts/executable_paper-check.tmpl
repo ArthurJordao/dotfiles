@@ -14,7 +14,7 @@ set -uo pipefail
 # Newest non-prerelease Minecraft version upstream, or empty. Relies on the API
 # listing families newest-first; a wrong answer is cosmetic, never actionable.
 paper_latest_version() {
-    curl -fsSL --max-time 15 "https://fill.papermc.io/v3/projects/paper" 2>/dev/null |
+    curl -fsSL --retry 2 --max-time 15 "https://fill.papermc.io/v3/projects/paper" 2>/dev/null |
     python3 -c '
 import json, sys
 try:
@@ -51,6 +51,14 @@ for pin in "${pins[@]}"; do
     have=$(paper_installed "$inst" "$version")
     latest=$(paper_latest "$version" | awk '{print $1}')
 
+    # BUILD is what is installed; STATUS is how it compares. A build number
+    # nobody can name renders as ? and a missing jar as -.
+    case "$have" in
+        '')        build_col="-" ;;
+        unmanaged) build_col="?" ;;
+        *)         build_col="$have" ;;
+    esac
+
     if [ -z "$latest" ]; then
         state="upstream unreachable"
         unknown=$((unknown + 1))
@@ -58,16 +66,16 @@ for pin in "${pins[@]}"; do
         state="NO JAR"
         broken=$((broken + 1))
     elif [ "$have" = unmanaged ]; then
-        state="unmanaged -> $latest (run paper-upgrade to adopt)"
+        state="unmanaged -> $latest (run paper-upgrade)"
         unmanaged=$((unmanaged + 1))
     elif [ "$have" = "$latest" ]; then
         state="current"
         current_build=$latest
     else
-        state="$have -> $latest"
+        state="behind -> $latest"
         behind=$((behind + 1))
     fi
-    rows="${rows}$(printf '%-12s %-8s %s' "$inst" "$version" "$state")
+    rows="${rows}$(printf '%-12s %-8s %-8s %s' "$inst" "$version" "$build_col" "$state")
 "
 done
 
@@ -97,7 +105,7 @@ if [ "$status_mode" = 1 ]; then
     exit 0
 fi
 
-printf '%-12s %-8s %s\n' INSTANCE PINNED BUILD
+printf '%-12s %-8s %-8s %s\n' INSTANCE PINNED BUILD STATUS
 printf '%s' "$rows"
 if [ -n "$newer_version" ]; then
     printf '\nMinecraft %s is out (pinned: %s).\n' "$newer_version" "${pinned_versions% }"
