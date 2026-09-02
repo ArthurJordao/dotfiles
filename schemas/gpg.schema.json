@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ArthurJordao/dotfiles/schemas/gpg.schema.json",
+  "title": "gpg key data",
+  "description": "Shape of .chezmoidata/gpg.yaml. Merged into the same template data as hosts.yaml. Validates structure only -- the trust level lives on the 1Password document, so nothing here can check it, and no schema can tell whether a declared document exists. tools/check-consistency C27 covers the private-key invariants.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "gpg"
+  ],
+  "properties": {
+    "gpg": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "vault",
+        "warn_days",
+        "keys"
+      ],
+      "properties": {
+        "vault": {
+          "type": "string",
+          "description": "1Password vault holding one document per declared key, each titled after the key's `name`.",
+          "minLength": 1
+        },
+        "warn_days": {
+          "type": "integer",
+          "description": "Print a renewal warning once the private key expires within this many days. Reporting only -- the import never re-fetches on its own.",
+          "minimum": 1
+        },
+        "keys": {
+          "type": "array",
+          "description": "Flat list, one entry per imported key.",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Identity-mapped to the 1Password document's title.",
+                "pattern": "^[a-z0-9-]+$"
+              },
+              "private": {
+                "type": "boolean",
+                "const": true,
+                "description": "The document holds a secret key. Exactly one entry may set it, and that entry must declare a fingerprint (C27). `false` is rejected on purpose -- every consumer reads this with hasKey, so absence is how a public key says so."
+              },
+              "fingerprint": {
+                "type": "string",
+                "description": "Full 40-character fingerprint. Declared only on the private key, which git signs with.",
+                "pattern": "^[0-9A-F]{40}$"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -89,3 +89,22 @@ check-binaries:
 binaries-build *ARGS:
     ~/.local/scripts/binaries-build {{ "{{ ARGS }}" }}
 {{ end }}
+{{ if has "dev" (index .hosts .hostname).roles }}
+{{- $g := .gpg -}}
+{{- $own := dict -}}
+{{- range $g.keys -}}
+{{- if hasKey . "private" }}{{ $own = . }}{{ end -}}
+{{- end }}
+# Re-import the signing key after a renewal, then recompute trust
+gpg-renew:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    op whoami >/dev/null 2>&1 || eval "$(op signin --account my.1password.com)"
+    tmp=$(mktemp)
+    chmod 600 "$tmp"
+    trap 'rm -f "$tmp"' EXIT
+    op document get {{ $own.name | quote }} --vault {{ $g.vault | quote }} > "$tmp"
+    gpg --import "$tmp"
+    gpg --check-trustdb
+    gpg --list-keys {{ $own.fingerprint | quote }}
+{{ end }}

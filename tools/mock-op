@@ -18,6 +18,9 @@
 # harvested from every source, including other items'.
 # Every field needs a `section` -- onepasswordItemFields drops the ones without,
 # leaving an empty map and `no entry for key "value"` at every lookup.
+# A field whose value must parse as something -- `trust`, mapped to a number by
+# .chezmoitemplates/gpg-trust -- gets a real value instead of a mock: prefix, or
+# the render fails on the placeholder.
 # A real login item's password/username/notesPlain carry no section (and a
 # `purpose` instead) -- onepasswordDetailsFields is the mirror image, keeping
 # only section-less fields keyed by id. Modeled here for those three ids: no
@@ -45,11 +48,12 @@ for arg in "$@"; do
                 | sed -E 's/\{name: ([a-z0-9-]+).*/\1_BEARER_TOKEN/' | tr 'a-z-' 'A-Z_' ; } \
                 | sed 's/.*"\(.*\)"/\1/' | sort -u \
                 | awk 'BEGIN { printf "{\"fields\":[" }
-                       { section = "\"section\":{\"id\":\"mock\"},"; purpose = ""
+                       { section = "\"section\":{\"id\":\"mock\"},"; purpose = ""; value = "mock:" $0
+                         if ($0 == "trust") { value = "full" }
                          if ($0 == "password") { section = ""; purpose = ",\"purpose\":\"PASSWORD\"" }
                          else if ($0 == "username") { section = ""; purpose = ",\"purpose\":\"USERNAME\"" }
                          else if ($0 == "notesPlain") { section = ""; purpose = ",\"purpose\":\"NOTES\"" }
-                         printf "%s{\"id\":\"%s\",\"label\":\"%s\",\"type\":\"STRING\",%s\"value\":\"mock:%s\"%s}", sep, $0, $0, section, $0, purpose; sep = "," }
+                         printf "%s{\"id\":\"%s\",\"label\":\"%s\",\"type\":\"STRING\",%s\"value\":\"%s\"%s}", sep, $0, $0, section, value, purpose; sep = "," }
                        END { print "]}" }'
             exit 0 ;;
     esac

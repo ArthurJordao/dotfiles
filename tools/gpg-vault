@@ -1,0 +1,177 @@
+#!/usr/bin/env bash
+# Create and populate the 1Password vault that .chezmoidata/gpg.yaml declares.
+#
+#   tools/gpg-vault status
+#   tools/gpg-vault migrate [--apply]
+#   tools/gpg-vault add <name> <fingerprint> <trust> [--apply]
+#
+# The repo declares key names only. Each key's material and its ownertrust level
+# live on a 1Password document titled after the name, which no apply can create
+# -- so this is the one part of the design that stays a command you run.
+#
+# Mutating commands are a dry run unless --apply is passed.
+set -euo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
+
+# The item this repo read before the vault existed, moved by `migrate`.
+LEGACY_ITEM=gpg-key
+LEGACY_VAULT=dotfiles
+
+command -v op >/dev/null 2>&1 || { echo "1password-cli not installed" >&2; exit 1; }
+
+tpl="$(mktemp)"
+trap 'rm -f "$tpl"' EXIT
+cat > "$tpl" <<'TPL'
+{{- $own := dict -}}
+{{- range .gpg.keys }}{{ if hasKey . "private" }}{{ $own = . }}{{ end }}{{ end -}}
+{{ .gpg.vault }} {{ $own.name }}
+{{ range .gpg.keys }}{{ .name }} {{ end }}
+TPL
+read -r VAULT OWN_NAME < <(./tools/simulate-host _checker execute-template < "$tpl")
+read -r -a DECLARED < <(./tools/simulate-host _checker execute-template < "$tpl" | sed -n 2p)
+
+APPLY=0
+args=()
+for arg in "$@"; do
+    case "$arg" in
+        --apply) APPLY=1 ;;
+        *) args+=("$arg") ;;
+    esac
+done
+set -- ${args[@]+"${args[@]}"}
+
+run() { # echo the command, and run it only under --apply
+    printf '  %s\n' "$*"
+    [ "$APPLY" -eq 1 ] || return 0
+    "$@"
+}
+
+note() { printf '%s\n' "$*"; }
+
+item_exists() { # $1 = title, $2 = vault
+    op item get "$1" --vault "$2" --format json >/dev/null 2>&1
+}
+
+vault_exists() {
+    op vault get "$1" --format json >/dev/null 2>&1
+}
+
+trust_of() { # $1 = title -- the document's declared ownertrust, or empty
+    op item get "$1" --vault "$VAULT" --fields label=trust 2>/dev/null || true
+}
+
+valid_trust() {
+    case "$1" in
+        undefined|never|marginal|full|ultimate) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+cmd_status() {
+    if vault_exists "$VAULT"; then
+        note "vault $VAULT: present"
+    else
+        note "vault $VAULT: MISSING -- run: tools/gpg-vault migrate --apply"
+    fi
+    for name in "${DECLARED[@]}"; do
+        if item_exists "$name" "$VAULT"; then
+            local t
+            t=$(trust_of "$name")
+            if [ -z "$t" ]; then
+                note "  $name: document present, NO trust field -- the apply will fail"
+            elif ! valid_trust "$t"; then
+                note "  $name: document present, trust '$t' is not an ownertrust level"
+            else
+                note "  $name: ok (trust $t)"
+            fi
+        else
+            note "  $name: MISSING from $VAULT"
+        fi
+    done
+    if item_exists "$LEGACY_ITEM" "$LEGACY_VAULT"; then
+        note "legacy $LEGACY_VAULT/$LEGACY_ITEM still present -- run: tools/gpg-vault migrate --apply"
+    fi
+}
+
+cmd_migrate() {
+    local trust=${1:-ultimate}
+    valid_trust "$trust" || { echo "not an ownertrust level: $trust" >&2; exit 1; }
+
+    if vault_exists "$VAULT"; then
+        note "vault $VAULT already exists"
+    else
+        note "create the vault:"
+        run op vault create "$VAULT"
+    fi
+
+    if item_exists "$OWN_NAME" "$VAULT"; then
+        note "$VAULT/$OWN_NAME already exists"
+    elif item_exists "$LEGACY_ITEM" "$LEGACY_VAULT"; then
+        note "move the signing key out of $LEGACY_VAULT and retitle it:"
+        run op item move "$LEGACY_ITEM" --current-vault "$LEGACY_VAULT" \
+            --destination-vault "$VAULT"
+        run op item edit "$LEGACY_ITEM" --vault "$VAULT" --title "$OWN_NAME"
+    else
+        echo "neither $VAULT/$OWN_NAME nor $LEGACY_VAULT/$LEGACY_ITEM exists" >&2
+        exit 1
+    fi
+
+    if [ -n "$(trust_of "$OWN_NAME")" ]; then
+        note "$OWN_NAME already carries a trust field"
+    else
+        note "declare its ownertrust (the field must sit in a section, or"
+        note "onepasswordItemFields drops it and every lookup fails):"
+        run op item edit "$OWN_NAME" --vault "$VAULT" "gpg.trust[text]=$trust"
+    fi
+
+    if [ "$APPLY" -eq 0 ]; then
+        note ""
+        note "dry run -- pass --apply to act"
+    fi
+}
+
+cmd_add() {
+    local name=$1 fpr=$2 trust=$3
+    valid_trust "$trust" || { echo "not an ownertrust level: $trust" >&2; exit 1; }
+    vault_exists "$VAULT" || { echo "vault $VAULT does not exist; run migrate first" >&2; exit 1; }
+    if item_exists "$name" "$VAULT"; then
+        echo "$VAULT/$name already exists; delete it in 1Password to replace it" >&2
+        exit 1
+    fi
+    gpg --list-keys "$fpr" >/dev/null 2>&1 || {
+        echo "$fpr is not in the local keyring; gpg --recv-keys it first" >&2
+        exit 1
+    }
+
+    note "export the public key and store it as $VAULT/$name:"
+    note "  gpg --export --armor $fpr | op document create - --title $name --vault $VAULT --file-name $name.asc"
+    if [ "$APPLY" -eq 1 ]; then
+        gpg --export --armor "$fpr" \
+            | op document create - --title "$name" --vault "$VAULT" \
+                --file-name "$name.asc" >/dev/null
+    fi
+    note "declare its ownertrust:"
+    run op item edit "$name" --vault "$VAULT" "gpg.trust[text]=$trust"
+
+    if [ "$APPLY" -eq 1 ]; then
+        note ""
+        note "now add this line to .chezmoidata/gpg.yaml:"
+        note "    - {name: $name}"
+    else
+        note ""
+        note "dry run -- pass --apply to act"
+    fi
+}
+
+case "${1:-status}" in
+    status)  cmd_status ;;
+    migrate) shift || true; cmd_migrate "${1:-ultimate}" ;;
+    add)
+        shift
+        [ $# -eq 3 ] || { echo "usage: tools/gpg-vault add <name> <fingerprint> <trust> [--apply]" >&2; exit 1; }
+        cmd_add "$1" "$2" "$3" ;;
+    *)
+        sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
+        exit 1 ;;
+esac

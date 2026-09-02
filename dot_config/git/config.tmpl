@@ -6,7 +6,7 @@
 [user]
 	name = Arthur Bernardi Jordão
 	email = arthurbernardijordao@gmail.com
-	signingkey = 3AF402314526D39D45CBACA8D62340DADE749208
+	signingkey = {{ includeTemplate "gpg-fingerprint" .gpg }}
 [core]
 	excludesFile = ~/.config/git/ignore
 [pull]

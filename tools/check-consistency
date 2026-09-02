@@ -86,7 +86,7 @@ def fail(rule, msg):
 data = json.loads(render("_checker", text=(
     '{{ dict "hosts" .hosts "packages" .packages "syncthing" .syncthing '
     '"minecraft" .minecraft "dashboard" .dashboard "binaries" .binaries '
-    '"etc" .etc "firewall" .firewall | toJson }}')))
+    '"etc" .etc "firewall" .firewall "gpg" .gpg | toJson }}')))
 hosts = data["hosts"]
 packages = data.get("packages") or {}
 folders = (data.get("syncthing") or {}).get("folders") or []
@@ -95,6 +95,7 @@ dashboard = data.get("dashboard") or {}
 binaries = data.get("binaries") or {}
 etc = data.get("etc") or {}
 firewall = data.get("firewall") or {}
+gpg_keys = (data.get("gpg") or {}).get("keys") or []
 
 
 def declared_for(host, table):
@@ -463,6 +464,33 @@ for action in all_actions:
     if "paper-upgrade" in (action.get("shell") or "") and not paper_instances:
         fail("C26", "dashboard.actions[%r] upgrades Paper but no minecraft "
                     "instance declares a `paper` pin" % action.get("title"))
+
+
+# C27 -- the gpg key list. Trust lives on each 1Password document, so nothing
+# here can validate it and no check can tell whether a declared document
+# exists; that surfaces at apply time as `op: item not found`. What is checkable
+# is the private-key invariant: git signs with exactly one key and reads its
+# fingerprint at render time, and a public key must declare none, since one
+# document per key is what makes its fingerprint derivable.
+private = [k for k in gpg_keys if k.get("private")]
+if len(private) != 1:
+    fail("C27", "gpg.keys: %d keys marked `private: true`, expected exactly one "
+                "-- git/config.tmpl signs with one key" % len(private))
+for key in private:
+    if not key.get("fingerprint"):
+        fail("C27", "gpg key %r is private and declares no fingerprint, which "
+                    "git/config.tmpl needs at render time" % key["name"])
+for key in gpg_keys:
+    if not key.get("private") and key.get("fingerprint"):
+        fail("C27", "gpg key %r declares a fingerprint but is not the private "
+                    "key; a public key's is derived from the imported document"
+                    % key["name"])
+seen_keys = set()
+for key in gpg_keys:
+    if key["name"] in seen_keys:
+        fail("C27", "gpg key %r is declared twice; the name is the 1Password "
+                    "document title" % key["name"])
+    seen_keys.add(key["name"])
 
 if failures:
     for line in failures:

@@ -1,0 +1,13 @@
+{{- /* Ownertrust word -> the number gpg --import-ownertrust expects.
+
+         {{ includeTemplate "gpg-trust" "full" }}   -> 5
+
+       The export format numbers trust 2-6 while the --edit-key menu numbers
+       the same levels 1-5, so the word is what gets declared and this is the
+       only place the mapping lives. The value comes off the key's 1Password
+       document, where a typo cannot be schema-checked -- hence the fail. */ -}}
+{{- $n := index (dict "undefined" 2 "never" 3 "marginal" 4 "full" 5 "ultimate" 6) . -}}
+{{- if not $n -}}
+{{- fail (printf "gpg-trust: %q is not an ownertrust level (undefined, never, marginal, full, ultimate)" .) -}}
+{{- end -}}
+{{- $n -}}

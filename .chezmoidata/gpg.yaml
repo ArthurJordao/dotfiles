@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=../schemas/gpg.schema.json
+#
+# GPG keys imported on a `dev` host. The repo declares names only: one
+# 1Password document per key, titled after `name` in the vault below, carries
+# both the key material and its ownertrust level as a `gpg.trust` field.
+#
+# gpg gives ultimate ownertrust only to keys it generates, so an imported key
+# lands untrusted and every verification warns until the trust line is set.
+#
+# `private: true` marks the one document holding a secret key. It declares
+# `fingerprint` because git/config.tmpl's signingkey needs it at render time
+# and cannot run gpg; a public key declares none, since one document per key
+# makes it derivable from the imported key. Read `private` with hasKey, never
+# `| default` -- sprig treats false as empty and flips it to true.
+#
+# Trust lives in 1Password, so `just check` cannot validate it. An unknown word
+# fails the render in .chezmoitemplates/gpg-trust.
+#
+# Adding a key: tools/gpg-vault add <name> <fingerprint> <trust>, then a line
+# here.
+gpg:
+  vault: gpg-keys
+  warn_days: 90
+  keys:
+    - {name: arthur, private: true, fingerprint: 3AF402314526D39D45CBACA8D62340DADE749208}
+    - {name: collin}

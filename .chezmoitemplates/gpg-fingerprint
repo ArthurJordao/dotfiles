@@ -1,0 +1,17 @@
+{{- /* Fingerprint of the private key in .chezmoidata/gpg.yaml.
+
+         signingkey = {{ includeTemplate "gpg-fingerprint" .gpg }}
+
+       git signs with exactly one key and needs its fingerprint at render time,
+       where it cannot shell out to gpg. Reading it from the data keeps the
+       fingerprint from being duplicated into git's config and script 40. */ -}}
+{{- $fpr := "" -}}
+{{- range .keys -}}
+{{- if hasKey . "private" -}}
+{{- $fpr = .fingerprint -}}
+{{- end -}}
+{{- end -}}
+{{- if eq $fpr "" -}}
+{{- fail "gpg-fingerprint: no key with `private: true` and a fingerprint in .chezmoidata/gpg.yaml" -}}
+{{- end -}}
+{{- $fpr -}}

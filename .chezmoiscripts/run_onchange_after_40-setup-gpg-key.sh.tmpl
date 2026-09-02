@@ -1,0 +1,68 @@
+{{ if has "dev" (index .hosts .hostname).roles -}}
+{{- $g := .gpg -}}
+#!/bin/bash
+# Import the GPG keys declared in .chezmoidata/gpg.yaml and set their ownertrust.
+#
+# gpg gives ultimate ownertrust only to keys it generates. An imported key lands
+# untrusted, so commits still sign but every verification warns.
+#
+# The trust numbers below are rendered from each key's 1Password document, so a
+# trust change there re-fires this script on the next apply.
+set -euo pipefail
+
+VAULT={{ $g.vault | quote }}
+WARN_DAYS={{ $g.warn_days }}
+
+tmp="$(mktemp)"
+chmod 600 "$tmp"
+trap 'rm -f "$tmp"' EXIT
+trust=()
+
+# Primary fingerprint of an armored key file, read without importing it. This is
+# why each key gets its own document: one key per file makes the fingerprint
+# derivable, so no third party's fingerprint has to live in the repo.
+fpr_of() {
+    gpg --show-keys --with-colons "$1" | awk -F: '/^fpr:/ { print $10; exit }'
+}
+
+# Warn while renewing is still cheap. Renewal rewrites a self-signature only, so
+# the fingerprint never changes and nothing here needs updating after one. The
+# import deliberately never re-fetches on its own: that would mean a 1Password
+# unlock during an ordinary apply.
+warn_expiry() {
+    local fpr=$1 name=$2 epoch days expires_on
+    epoch=$(gpg --list-keys --with-colons "$fpr" | awk -F: '/^pub:/ { print $7; exit }')
+    [ -n "$epoch" ] || return 0
+    days=$(( (epoch - $(date +%s)) / 86400 ))
+    [ "$days" -le "$WARN_DAYS" ] || return 0
+    expires_on=$(gpg --list-keys "$fpr" | sed -n 's/.*\[expire[sd]: \([0-9-]*\)\].*/\1/p' | head -1)
+    printf 'GPG key %s (%s) expires in %d days (%s).\n' "$name" "$fpr" "$days" "$expires_on"
+    printf 'Renew it, re-upload the document to the %s vault, then run: just gpg-renew\n' "$VAULT"
+}
+{{ range $g.keys }}
+{{- $op := onepasswordItemFields .name $g.vault -}}
+{{- $word := (index $op "trust").value -}}
+{{- $n := includeTemplate "gpg-trust" $word }}
+{{ if hasKey . "private" -}}
+# {{ .name }} -- secret key, {{ $word }}
+if gpg --list-secret-keys {{ .fingerprint | quote }} >/dev/null 2>&1; then
+    warn_expiry {{ .fingerprint | quote }} {{ .name | quote }}
+else
+    echo "Importing secret key {{ .name }} from 1Password..."
+    op document get {{ .name | quote }} --vault "$VAULT" > "$tmp"
+    gpg --import "$tmp"
+fi
+trust+=({{ printf "%s:%s:" .fingerprint $n | quote }})
+{{ else -}}
+# {{ .name }} -- public key, {{ $word }}
+echo "Importing public key {{ .name }} from 1Password..."
+op document get {{ .name | quote }} --vault "$VAULT" > "$tmp"
+gpg --import "$tmp"
+trust+=("$(fpr_of "$tmp"):{{ $n }}:")
+{{ end -}}
+{{ end }}
+# --import-ownertrust writes the trustdb but does not recompute validity, so an
+# `ultimate` line keeps rendering as [full] until the db is checked.
+printf '%s\n' "${trust[@]}" | gpg --import-ownertrust
+gpg --check-trustdb
+{{ end -}}
