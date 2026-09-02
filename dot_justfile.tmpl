@@ -25,7 +25,7 @@ packages:
     brew bundle --file ~/Brewfile
 
 # Report installed packages that aren't declared
-packages-check:
+check-packages:
     brew bundle cleanup --file ~/Brewfile
 
 # Remove installed packages that aren't declared
@@ -54,7 +54,7 @@ upgrade:
 {{ end }}
 {{ if has "emulation" (index .hosts .hostname).roles }}
 # Report emulation sync drift: conflicts, versions, stray emulator files
-emu-sync-check:
+check-emu-sync:
     ~/.local/scripts/emu-sync-check
 
 # Merge ES-DE gamelist sync-conflicts back into the live gamelists
@@ -68,7 +68,7 @@ check-live:
 {{ end }}
 {{ if has "minecraft" (index .hosts .hostname).roles }}
 # Report pinned Minecraft version vs installed Paper build vs upstream
-paper-check:
+check-paper:
     ~/.local/scripts/paper-check
 
 # Install the latest Paper build for the pinned Minecraft version
@@ -82,7 +82,7 @@ firewall:
 {{ end }}
 {{ if includeTemplate "has-binaries" . }}
 # Report pinned vs installed vs upstream for hand-installed binaries
-binaries-check:
+check-binaries:
     ~/.local/scripts/binaries-check --upstream
 
 # Compile the binaries that must be built from source (caddy: ~7 minutes)

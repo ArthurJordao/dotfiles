@@ -265,7 +265,7 @@ Seed the first sync **on the LAN** — it is ~17 GB, and local discovery finds t
 directly. Away from home it goes over Tailscale, since global discovery and relaying
 are both disabled.
 
-Check for drift at any time with `just emu-sync-check`, which reports sync conflicts,
+Check for drift at any time with `just check-emu-sync`, which reports sync conflicts,
 `.stversions` growth, and emulator files inside the ROM tree that `.stignore` doesn't
 cover.
 
@@ -379,10 +379,20 @@ An empty list means the fields are outside a section. Without `--real-op` this g
 ```bash
 just apply           # Apply dotfiles from the local source dir
 just update          # Pull from the remote first, then apply (= chezmoi update)
-just check           # Every repo check: templates, schemas, consistency, shellcheck
+
+# Anything that only reports is named check-*. Nothing here changes state.
+just check           # Every repo check: tree, templates, schemas, consistency, coverage, shellcheck
+just check-live      # What this podman host runs vs what the repo declares
+just check-binaries  # Pinned vs installed vs upstream for hand-installed binaries
+just check-paper     # Pinned Minecraft version vs installed Paper build vs upstream
+just check-emu-sync  # Emulation sync drift: conflicts, versions, stray emulator files
+just check-packages  # macOS only: report installed packages that aren't declared
+
 just packages        # Install this host's declared packages, no prompt
-just packages-check  # macOS only: report installed packages that aren't declared
 just packages-prune  # macOS only: remove installed packages that aren't declared
+just paper-upgrade   # Install the latest Paper build for the pinned version
+just binaries-build  # Compile what must be built from source (caddy: ~7 minutes)
+just firewall        # Rebuild this host's ufw ruleset
 just upgrade         # Full system upgrade, then install declared packages (macOS: installs declared first, then upgrades)
 ```
 
@@ -390,9 +400,9 @@ just upgrade         # Full system upgrade, then install declared packages (macO
 in the source dir first. On the machine you author from, that rebases whatever you have in
 flight — reach for `apply` while you're iterating locally.
 
-`packages-check` and `packages-prune` only exist on macOS — Linux has no orphan-removal
+`check-packages` and `packages-prune` only exist on macOS — Linux has no orphan-removal
 equivalent. On macOS, `upgrade` used to prune undeclared packages as part of upgrading; now it
-doesn't touch undeclared packages at all — use `packages-check` to report them or
+doesn't touch undeclared packages at all — use `check-packages` to report them or
 `packages-prune` to remove them.
 
 Both sign in to 1Password first if `op whoami` says you aren't, since applying reads

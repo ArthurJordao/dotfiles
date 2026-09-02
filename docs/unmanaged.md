@@ -108,7 +108,7 @@ That grep must print the module. Debian's versioned Go packages install under
 `/usr/lib/go-1.27/bin` and provide no `/usr/bin/go`; the build puts it on `PATH` itself.
 
 `binaries-check` reports pinned vs installed vs upstream — daily via `binaries-check.timer`, on
-the dashboard's Server fieldset, and as `just binaries-check`.
+the dashboard's Server fieldset, and as `just check-binaries`.
 
 ---
 

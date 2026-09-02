@@ -615,13 +615,22 @@ upgrade -y` — `upgrade`, not `full-upgrade`, which removes packages to satisfy
 recipe body has to stay indented, so the branch picks a command *string* rather than wrapping the
 lines: a trimming action (`-}}`) eats the leading spaces and `just` then rejects the file.
 
+**A recipe that only reports is named `check-*`; one that changes something is not.** That is the
+whole convention, and it is what makes `just --list` readable.
+
 ```
-just check           # every repo check: templates, schemas, consistency, shellcheck
-just firewall        # rebuild this host's ufw ruleset (mars, pluto)
-just binaries-check  # pinned vs installed vs upstream for hand-installed binaries
+just check           # every repo check: tree, templates, schemas, consistency, coverage, shellcheck
+just check-live      # what this podman host runs vs what the repo declares
+just check-binaries  # pinned vs installed vs upstream for hand-installed binaries
+just check-paper     # pinned Minecraft version vs installed Paper build vs upstream
+just check-emu-sync  # emulation sync drift: conflicts, versions, stray emulator files
+just check-packages  # macOS only: report installed-but-undeclared, removes nothing
+
 just packages        # install this host's declared packages, no prompt
-just packages-check  # macOS only: report installed-but-undeclared, removes nothing
 just packages-prune  # macOS only: remove installed-but-undeclared
+just paper-upgrade   # install the latest Paper build for the pinned version
+just binaries-build  # compile what must be built from source (caddy: ~7 minutes)
+just firewall        # rebuild this host's ufw ruleset (mars, pluto)
 just upgrade         # full system upgrade, then install declared (macOS: installs declared first, then upgrades)
 ```
 
@@ -785,7 +794,7 @@ themselves never leave the host.
 - **`~/Emulation/roms/` is not pure content.** EmuDeck installs emulators inside it — Cemu in
   `wiiu/`, the Sega Model 2 emulator in `model2/`, launcher scripts in `emulators/`. Those are
   per-host and are excluded by `Emulation/roms/.stignore`. Write structural rules there, not a list
-  of files you noticed. `just emu-sync-check` reports what is uncovered.
+  of files you noticed. `just check-emu-sync` reports what is uncovered.
 - **XML comments cannot contain `--`**, so the config template cannot write a `--flag` in a
   comment. Syncthing rejects the whole file.
 - **`emu-save-dolphin`'s folder root is Dolphin's whole flatpak data dir**, so its `.stignore`
