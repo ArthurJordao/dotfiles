@@ -204,6 +204,9 @@ packages:
       - just
       - rsync
       - fzf
+      # `just check` runs on every managed host and check-shell needs this.
+      # Common rather than role-gated, matching packages.arch.
+      - shellcheck
       # Not in Debian's archive; install-packages.sh adds the repo.
       - tailscale
     edge:
