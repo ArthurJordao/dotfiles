@@ -96,6 +96,17 @@ dashboard:
       - {title: Stop Minecraft server, on: mars, icon: "mdi:stop", shell: minecraft stop, timeout: 120, family: true}
       # Also reports which instance is enabled at boot, which the widget omits.
       - {title: Minecraft status, on: mars, icon: "mdi:information", shell: minecraft status, timeout: 15, family: true, popup: true}
+      # Restarts the instance if it is running, so deliberately not family:.
+      # Crosses no Minecraft version boundary -- only the build floats.
+      - title: Upgrade Paper
+        on: mars
+        icon: "mdi:cube-outline"
+        shell: "paper-upgrade {{ instance }}"
+        timeout: 300
+        confirm: true
+        popup: true
+        argument: {name: instance, title: Server, choices_from: minecraft-instances}
+      - {title: Paper versions, on: mars, icon: "mdi:information", shell: paper-check, timeout: 60, popup: true}
       # The timer runs this daily; the button is for "before I install a mod".
       - {title: Backup Minecraft now, on: mars, icon: "mdi:content-save", shell: "systemctl --user start minecraft-backup.service && journalctl --user -u minecraft-backup.service -n 20 --no-pager", timeout: 900, confirm: true, family: true, popup: true}
 
