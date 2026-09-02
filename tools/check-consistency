@@ -437,6 +437,30 @@ for group in sorted(dashboard.get("status") or {}):
         fail("C15", "dashboard.status[%r] names no group in dashboard.actions "
                     "-- the status line renders nowhere" % group)
 
+# C25 -- paper and java_env are mutually exclusive. An instance wrapping a
+# modpack-shipped launcher picks its own jar, so a managed Paper jar would be
+# fetched and never used.
+for inst in instances:
+    if inst.get("paper") and inst.get("java_env"):
+        fail("C25", "minecraft instance %r declares both `paper` and "
+                    "`java_env` -- a modpack launcher ignores a managed jar"
+                    % inst["name"])
+
+# C26 -- the paper dashboard field and the upgrade button both render against
+# the instances carrying a pin. With none, they show nothing and nothing else
+# would say so.
+paper_instances = [i["name"] for i in instances if i.get("paper")]
+status_fields = set(f.get("field")
+                    for group in (dashboard.get("status") or {}).values()
+                    for f in (group or []))
+if "paper" in status_fields and not paper_instances:
+    fail("C26", "dashboard.status has a `paper` field but no minecraft "
+                "instance declares a `paper` pin")
+for action in all_actions:
+    if "paper-upgrade" in (action.get("shell") or "") and not paper_instances:
+        fail("C26", "dashboard.actions[%r] upgrades Paper but no minecraft "
+                    "instance declares a `paper` pin" % action.get("title"))
+
 if failures:
     for line in failures:
         print(line)

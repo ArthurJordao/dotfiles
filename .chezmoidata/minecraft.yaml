@@ -11,9 +11,13 @@
 # This is the only place an instance is declared. A host runs them by having the
 # `minecraft` role — `units` carries no minecraft entries, and both the unit's
 # Conflicts= and gaming-mode's CANDIDATES derive from here.
+#
+# `paper` pins the Minecraft version only. The build floats and is resolved at
+# upgrade time, so a new build needs no commit. A version jump does — it breaks
+# plugins and locks out clients on older launchers.
 
 minecraft:
   instances:
     - {name: atm10-tts, jdk: 21, java_env: ATM10_JAVA}
-    - {name: matcha, jdk: 25, xms: 2G, xmx: 4G}
-    - {name: vanilla, jdk: 25, xms: 2G, xmx: 4G}
+    - {name: matcha, jdk: 25, xms: 2G, xmx: 4G, paper: {version: "26.2"}}
+    - {name: vanilla, jdk: 25, xms: 2G, xmx: 4G, paper: {version: "26.2"}}

@@ -48,6 +48,21 @@
           "minimum": 8,
           "maximum": 99
         },
+        "paper": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version"
+          ],
+          "description": "Managed Paper jar. Only the Minecraft version is pinned -- the build floats and is resolved at upgrade time, which is what removes a commit per build. A version jump breaks plugins and locks out clients on older launchers, so that stays a deliberate edit.",
+          "properties": {
+            "version": {
+              "type": "string",
+              "pattern": "^[0-9]+(\\.[0-9]+)*$",
+              "description": "Minecraft version as PaperMC names it, e.g. 26.2 or 1.21.11."
+            }
+          }
+        },
         "java_env": {
           "type": "string",
           "pattern": "^[A-Z][A-Z0-9_]*$",
