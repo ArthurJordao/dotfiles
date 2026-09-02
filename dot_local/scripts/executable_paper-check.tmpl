@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+# paper-check -- pinned Minecraft version vs installed Paper build vs upstream.
+#
+#   paper-check            human-readable table
+#   paper-check --status   two lines: summary, then good|warn|bad
+#
+# Exit 0 when the answer is known, drift included. Non-zero only when it cannot
+# be determined -- that is how pluto's cache knows to keep its previous value.
+set -uo pipefail
+
+{{ template "paper.sh" . }}
+{{ template "paper-net.sh" . }}
+
+# Newest non-prerelease Minecraft version upstream, or empty. Relies on the API
+# listing families newest-first; a wrong answer is cosmetic, never actionable.
+paper_latest_version() {
+    curl -fsSL --max-time 15 "https://fill.papermc.io/v3/projects/paper" 2>/dev/null |
+    python3 -c '
+import json, sys
+try:
+    d = json.load(sys.stdin)
+    for _family, vers in d["versions"].items():
+        for v in vers:
+            if "-rc" not in v and "-pre" not in v:
+                print(v)
+                sys.exit(0)
+except Exception:
+    pass
+sys.exit(1)
+' 2>/dev/null || true
+}
+
+status_mode=0
+[ "${1:-}" = "--status" ] && status_mode=1
+
+mapfile -t pins < <(printf '%s\n' "$PAPER_PINS" | grep -v '^$')
+if [ "${#pins[@]}" -eq 0 ]; then
+    [ "$status_mode" = 1 ] && printf 'no pins\ngood\n'
+    exit 0
+fi
+
+rows=""
+behind=0
+unmanaged=0
+broken=0
+unknown=0
+current_build=""
+for pin in "${pins[@]}"; do
+    inst=${pin%%|*}
+    version=${pin##*|}
+    have=$(paper_installed "$inst" "$version")
+    latest=$(paper_latest "$version" | awk '{print $1}')
+
+    if [ -z "$latest" ]; then
+        state="upstream unreachable"
+        unknown=$((unknown + 1))
+    elif [ -z "$have" ]; then
+        state="NO JAR"
+        broken=$((broken + 1))
+    elif [ "$have" = unmanaged ]; then
+        state="unmanaged -> $latest (run paper-upgrade to adopt)"
+        unmanaged=$((unmanaged + 1))
+    elif [ "$have" = "$latest" ]; then
+        state="current"
+        current_build=$latest
+    else
+        state="$have -> $latest"
+        behind=$((behind + 1))
+    fi
+    rows="${rows}$(printf '%-12s %-8s %s' "$inst" "$version" "$state")
+"
+done
+
+pinned_versions=$(printf '%s\n' "${pins[@]}" | cut -d'|' -f2 | sort -u | tr '\n' ' ')
+upstream_version=$(paper_latest_version)
+newer_version=""
+if [ -n "$upstream_version" ] &&
+   ! printf '%s' "$pinned_versions" | grep -qw "$upstream_version"; then
+    newer_version="$upstream_version"
+fi
+
+if [ "$status_mode" = 1 ]; then
+    # A version bump is never actionable from the dashboard -- it is a commit.
+    if   [ "$broken"    -gt 0 ]; then summary="$broken broken";        level=bad
+    elif [ "$unmanaged" -gt 0 ]; then summary="$unmanaged unmanaged";  level=warn
+    elif [ "$behind"    -gt 0 ]; then summary="$behind behind";        level=warn
+    elif [ "$unknown"   -gt 0 ]; then exit 1
+    else summary="current${current_build:+ ($current_build)}";         level=good
+    fi
+    # Only ever an upgrade from good: a broken install stays `bad` even when a
+    # newer version happens to be out.
+    if [ -n "$newer_version" ]; then
+        summary="$summary - $newer_version avail"
+        [ "$level" = good ] && level=warn
+    fi
+    printf '%s\n%s\n' "$summary" "$level"
+    exit 0
+fi
+
+printf '%-12s %-8s %s\n' INSTANCE PINNED BUILD
+printf '%s' "$rows"
+if [ -n "$newer_version" ]; then
+    printf '\nMinecraft %s is out (pinned: %s).\n' "$newer_version" "${pinned_versions% }"
+    printf 'A version jump breaks plugins and older clients -- edit .chezmoidata/minecraft.yaml.\n'
+fi
+[ "$unknown" -gt 0 ] && exit 1
+exit 0

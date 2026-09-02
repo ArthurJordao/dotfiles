@@ -44,6 +44,7 @@ Pictures/**
 .config/systemd/user/minecraft-backup.timer
 .local/scripts/minecraft
 .local/scripts/minecraft-backup
+.local/scripts/paper-check
 minecraft
 minecraft/**
 {{ end }}

@@ -66,6 +66,11 @@ emu-merge-gamelists:
 check-live:
     ~/.local/scripts/check-live
 {{ end }}
+{{ if has "minecraft" (index .hosts .hostname).roles }}
+# Report pinned Minecraft version vs installed Paper build vs upstream
+paper-check:
+    ~/.local/scripts/paper-check
+{{ end }}
 {{ if includeTemplate "has-firewall" . }}
 # Rebuild this host's ufw ruleset from .chezmoidata/firewall.yaml
 firewall:
