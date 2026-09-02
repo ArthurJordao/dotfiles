@@ -93,6 +93,7 @@ everything and is what to run after moving or renaming any source file:
 
 | | Checks |
 |---|---|
+| `tools/check-tree` | no stray `.chezmoidata` below the root, no worktree inside the source dir |
 | `tools/check-templates` | renders every template for every host, `.chezmoitemplates/etc/` included |
 | `tools/check-schemas` | each `.chezmoidata` file against the schema its own header names |
 | `tools/check-consistency` | the quadlets/units/endpoints/folders/packages cross-references |
@@ -186,6 +187,13 @@ Silent failures worth knowing:
   out a full 2s per query until its health check marks the upstream down. blocky's filter port is
   `5533` for this reason; any replacement needs **no** other listener. `15353` is reserved by
   convention for throwaway CoreDNS tests.
+- **chezmoi merges `.chezmoidata` from every directory of the source state, not just the root**, and
+  `.chezmoiignore` does not exempt it — that file governs what *deploys*, not what *loads*. So a
+  second checkout anywhere under the source dir (a git worktree, a backup copy) merges its own
+  `.chezmoidata` over the real one, key by key, in traversal order. The failures point nowhere near
+  the cause: a stale `secrets.yaml` made `.secrets.items.slskd` render as the string `slskd`
+  instead of its map, and 61 checks failed at once with the repo entirely correct. **Never put a
+  git worktree inside the source dir.** `tools/check-tree` runs first and is what catches this.
 - **Every** file in `.chezmoidata/` is loaded as template data, JSON included — so the JSON Schemas
   live in `schemas/`, not next to the YAML they describe. Putting `hosts.schema.json` in there
   merges its `title`, `type`, `$schema` and `properties` keys into the top-level namespace, where

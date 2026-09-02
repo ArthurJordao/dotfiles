@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# Assert the source tree has nothing in it that silently poisons template data.
+#
+#   tools/check-tree
+#
+# Runs first, because everything it catches makes the other checks fail in ways
+# that point nowhere near the cause.
+#
+# chezmoi merges `.chezmoidata` from EVERY directory of the source state, not
+# just the root, and .chezmoiignore does not exempt it -- that file governs what
+# deploys, not what loads as data. So a second checkout anywhere under the
+# source dir (a git worktree, a backup copy, an unpacked tarball) merges its own
+# .chezmoidata over the real one, key by key, in directory-traversal order.
+#
+# Seen 2026-09-02 on mars: two abandoned worktrees under .claude/worktrees/ each
+# carried a pre-refactor secrets.yaml, so `.secrets.items.slskd` rendered as the
+# string "slskd" instead of its {item_name, vault} map and 61 checks failed at
+# once. Nothing in the repo was wrong.
+set -uo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
+
+fail=0
+
+# Any .chezmoidata below the root is a second data source.
+stray=$(find . -name '.chezmoidata*' -not -path './.git/*' -not -path './.chezmoidata' | sort)
+if [ -n "$stray" ]; then
+    echo "Stray .chezmoidata below the source root -- chezmoi merges these over" >&2
+    echo "the real data and every downstream check fails misleadingly:" >&2
+    printf '%s\n' "$stray" | sed 's/^/  /' >&2
+    echo >&2
+    echo "A git worktree inside the source dir is the usual cause. Remove it with" >&2
+    echo "'git worktree remove <path>' (the branch ref survives), or move it out" >&2
+    echo "of the source dir entirely." >&2
+    fail=1
+fi
+
+# A worktree registered inside the source dir will re-create one.
+if command -v git >/dev/null 2>&1 && git rev-parse --git-dir >/dev/null 2>&1; then
+    root=$(pwd -P)
+    inside=$(git worktree list --porcelain 2>/dev/null |
+             sed -n 's/^worktree //p' |
+             while IFS= read -r w; do
+                 case "$(cd "$w" 2>/dev/null && pwd -P)" in
+                     "$root") ;;
+                     "$root"/*) echo "$w" ;;
+                 esac
+             done)
+    if [ -n "$inside" ]; then
+        echo "git worktree registered INSIDE the source dir:" >&2
+        printf '%s\n' "$inside" | sed 's/^/  /' >&2
+        echo "Its .chezmoidata merges into this one. Put worktrees outside the" >&2
+        echo "source dir." >&2
+        fail=1
+    fi
+fi
+
+if [ "$fail" -eq 0 ]; then
+    echo "ok: no stray template data in the source tree"
+fi
+exit "$fail"
