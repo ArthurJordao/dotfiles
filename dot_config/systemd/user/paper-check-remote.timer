@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily Paper build status pull from mars
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+RandomizedDelaySec=1h
+
+[Install]
+WantedBy=timers.target

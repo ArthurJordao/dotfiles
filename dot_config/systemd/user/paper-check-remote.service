@@ -1,0 +1,14 @@
+[Unit]
+Description=Cache mars's Paper build status for the dashboard
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+# Temp-then-move, never a plain redirect: mars is powered off routinely, and a
+# truncated cache would blank the dashboard field instead of leaving the last
+# known answer. Exits 0 on failure -- a failed unit would itself surface as
+# drift in dashboard-status's `failed` field.
+# ssh -n: ssh reads stdin by default and would swallow whatever it is given,
+# which is the same trap chezmoi and fisher set.
+ExecStart=/bin/bash -c 't=$$(mktemp); if ssh -n -o BatchMode=yes -o ConnectTimeout=5 mars.arthurjordao.dev "~/.local/scripts/paper-check --status" > "$$t" 2>/dev/null && [ -s "$$t" ]; then mv -f "$$t" %h/.local/state/paper-check.status; else rm -f "$$t"; fi'

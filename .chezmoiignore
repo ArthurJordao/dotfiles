@@ -69,6 +69,8 @@ minecraft/**
 .config/systemd/user/olivetin.service
 .config/systemd/user/notes-backup.service
 .config/systemd/user/notes-backup.timer
+.config/systemd/user/paper-check-remote.service
+.config/systemd/user/paper-check-remote.timer
 .config/OliveTin
 .config/OliveTin/**
 .local/scripts/dashboard-status

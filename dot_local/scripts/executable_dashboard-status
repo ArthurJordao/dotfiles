@@ -50,6 +50,24 @@ fi
 bins=${bins//\"/}
 bins=${bins//\\/}
 
+# Paper builds on mars -- paper-check-remote.timer writes this daily. A file
+# read, not a network call: this runs on every status refresh. A stale value is
+# kept and coloured WARN rather than blanked, because mars is often off.
+paper_cache="${XDG_STATE_HOME:-$HOME/.local/state}/paper-check.status"
+if [ -r "$paper_cache" ]; then
+    paper=$(sed -n 1p "$paper_cache")
+    case $(sed -n 2p "$paper_cache") in
+        good) paper_color="$GOOD" ;;
+        warn) paper_color="$WARN" ;;
+        *)    paper_color="$BAD" ;;
+    esac
+else
+    paper="n/a"
+    paper_color="$WARN"
+fi
+paper=${paper//\"/}
+paper=${paper//\\/}
+
 # Warn late: disks fill slowly and a nag is worse than no signal.
 disk_color() {
     local n=${1%\%}
@@ -83,7 +101,8 @@ for spec in "$@"; do
     fi
 done
 
-printf '{%s"mc":"%s","mc_color":"%s","gm":"%s","gm_color":"%s","failed":"%s","failed_color":"%s","binaries":"%s","binaries_color":"%s","root":"%s","root_color":"%s","ext":"%s","ext_color":"%s"}\n' \
+printf '{%s"mc":"%s","mc_color":"%s","gm":"%s","gm_color":"%s","failed":"%s","failed_color":"%s","binaries":"%s","binaries_color":"%s","paper":"%s","paper_color":"%s","root":"%s","root_color":"%s","ext":"%s","ext_color":"%s"}\n' \
     "$svc_fields" "$mc" "$mc_color" "$gm" "$gm_color" "$failed" "$failed_color" \
     "$bins" "$bins_color" \
+    "$paper" "$paper_color" \
     "$root" "$(disk_color "$root")" "$ext" "$(disk_color "$ext")"

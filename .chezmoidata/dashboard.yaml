@@ -43,6 +43,10 @@ dashboard:
   status:
     Minecraft:
       - {field: svc_minecraft, label: Server, icon: "mdi:minecraft"}
+      # Written daily by paper-check-remote.timer, which pulls it off mars over
+      # ssh; "n/a" until it first runs. A stale value stays put rather than
+      # blanking, because mars is powered off routinely.
+      - {field: paper, label: Paper, icon: "mdi:cube-outline"}
 
     Server:
       - {field: failed, label: Failed units, icon: "mdi:alert-circle"}
