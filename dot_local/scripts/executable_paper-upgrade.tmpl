@@ -38,7 +38,11 @@ upgrade_one() { # instance version
 
     # Download BEFORE stopping anything: a failed fetch must not take the
     # server down.
-    echo "$inst: $version-${have:-none} -> $version-$build"
+    case "$have" in
+        '')        echo "$inst: none -> $version-$build" ;;
+        unmanaged) echo "$inst: unmanaged jar -> $version-$build" ;;
+        *)         echo "$inst: $version-$have -> $version-$build" ;;
+    esac
     if ! paper_fetch "$sha" "$name" "$tmp"; then
         echo "$inst: download failed; nothing changed" >&2
         rm -f "$tmp"
