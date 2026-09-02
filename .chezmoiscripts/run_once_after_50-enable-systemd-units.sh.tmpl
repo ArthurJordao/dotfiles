@@ -29,10 +29,10 @@ systemctl --user enable --now syncthing.service
 {{ if has "server" $roles -}}
 systemctl --user enable --now olivetin.service
 systemctl --user enable --now notes-backup.timer
-systemctl --user enable --now paper-check-remote.timer
+systemctl --user enable --now check-paper-remote.timer
 {{ end -}}
 {{ if $binaries -}}
-systemctl --user enable --now binaries-check.timer
+systemctl --user enable --now check-binaries.timer
 {{ end -}}
 {{ if has "agent" $roles -}}
 # Needs a `claude` login on this host first; without one it restarts forever.

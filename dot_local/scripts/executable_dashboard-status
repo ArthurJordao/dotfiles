@@ -32,9 +32,9 @@ case ${#bad_units[@]} in
     *) failed="${#bad_units[@]} units"; failed_color="$BAD" ;;
 esac
 
-# Hand-installed binaries -- binaries-check.timer writes this daily. A file
+# Hand-installed binaries -- check-binaries.timer writes this daily. A file
 # read, not a network call: this runs on every status refresh.
-bin_cache="${XDG_STATE_HOME:-$HOME/.local/state}/binaries-check.status"
+bin_cache="${XDG_STATE_HOME:-$HOME/.local/state}/check-binaries.status"
 if [ -r "$bin_cache" ]; then
     bins=$(sed -n 1p "$bin_cache")
     case $(sed -n 2p "$bin_cache") in
@@ -50,10 +50,10 @@ fi
 bins=${bins//\"/}
 bins=${bins//\\/}
 
-# Paper builds on mars -- paper-check-remote.timer writes this daily. A file
+# Paper builds on mars -- check-paper-remote.timer writes this daily. A file
 # read, not a network call: this runs on every status refresh. A stale value is
 # kept and coloured WARN rather than blanked, because mars is often off.
-paper_cache="${XDG_STATE_HOME:-$HOME/.local/state}/paper-check.status"
+paper_cache="${XDG_STATE_HOME:-$HOME/.local/state}/check-paper.status"
 if [ -r "$paper_cache" ]; then
     paper=$(sed -n 1p "$paper_cache")
     case $(sed -n 2p "$paper_cache") in

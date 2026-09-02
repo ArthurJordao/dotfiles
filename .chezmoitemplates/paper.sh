@@ -1,5 +1,5 @@
 {{- /* Instance -> pinned Minecraft version, plus the installed-build reader.
-       Shared by paper-check and paper-upgrade. */ -}}
+       Shared by check-paper and paper-upgrade. */ -}}
 # name|version, one line per instance declaring a `paper` pin.
 PAPER_PINS=$(cat <<'PAPERPINEOF'
 {{ range .minecraft.instances }}{{ if hasKey . "paper" }}{{ .name }}|{{ .paper.version }}

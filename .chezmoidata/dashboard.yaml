@@ -43,14 +43,14 @@ dashboard:
   status:
     Minecraft:
       - {field: svc_minecraft, label: Server, icon: "mdi:minecraft"}
-      # Written daily by paper-check-remote.timer, which pulls it off mars over
+      # Written daily by check-paper-remote.timer, which pulls it off mars over
       # ssh; "n/a" until it first runs. A stale value stays put rather than
       # blanking, because mars is powered off routinely.
       - {field: paper, label: Paper, icon: "mdi:cube-outline"}
 
     Server:
       - {field: failed, label: Failed units, icon: "mdi:alert-circle"}
-      # Written daily by binaries-check.timer; "n/a" until it first runs.
+      # Written daily by check-binaries.timer; "n/a" until it first runs.
       - {field: binaries, label: Binaries, icon: "mdi:package-variant"}
       - {field: root, label: "/", icon: "mdi:harddisk"}
       - {field: svc_files, label: x9pro share, icon: "mdi:folder-network"}
@@ -106,7 +106,7 @@ dashboard:
         confirm: true
         popup: true
         argument: {name: instance, title: Server, choices_from: minecraft-instances}
-      - {title: Paper versions, on: mars, icon: "mdi:information", shell: paper-check, timeout: 60, popup: true}
+      - {title: Paper versions, on: mars, icon: "mdi:information", shell: check-paper, timeout: 60, popup: true}
       # The timer runs this daily; the button is for "before I install a mod".
       - {title: Backup Minecraft now, on: mars, icon: "mdi:content-save", shell: "systemctl --user start minecraft-backup.service && journalctl --user -u minecraft-backup.service -n 20 --no-pager", timeout: 900, confirm: true, family: true, popup: true}
 
@@ -120,7 +120,7 @@ dashboard:
       - {title: Uptime, icon: "mdi:speedometer", shell: "uptime && free -h", timeout: 15, family: true, popup: true}
       # The widget is a day stale at worst; this asks GitHub now, and is the
       # only thing that names which binary is behind what.
-      - {title: Binary versions, icon: "mdi:package-variant-closed", shell: "binaries-check --upstream", timeout: 60, popup: true}
+      - {title: Binary versions, icon: "mdi:package-variant-closed", shell: "check-binaries --upstream", timeout: 60, popup: true}
       # The timer already does this; the button is "pull now". It restarts
       # whatever it updates, hence the confirmation.
       - {title: Update containers, icon: "mdi:update", shell: "systemctl --user start podman-auto-update.service && journalctl --user -u podman-auto-update.service -n 30 --no-pager", timeout: 600, confirm: true, popup: true}

@@ -1,4 +1,4 @@
-{{- /* The upstream lookup, used only by binaries-check. */ -}}
+{{- /* The upstream lookup, used only by check-binaries. */ -}}
 # The newest release upstream, or empty if GitHub cannot be reached.
 # Unauthenticated, which is 60 requests an hour per IP -- ample for a daily
 # check over a handful of repos.

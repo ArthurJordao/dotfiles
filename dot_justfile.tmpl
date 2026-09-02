@@ -55,7 +55,7 @@ upgrade:
 {{ if has "emulation" (index .hosts .hostname).roles }}
 # Report emulation sync drift: conflicts, versions, stray emulator files
 check-emu-sync:
-    ~/.local/scripts/emu-sync-check
+    ~/.local/scripts/check-emu-sync
 
 # Merge ES-DE gamelist sync-conflicts back into the live gamelists
 emu-merge-gamelists:
@@ -69,7 +69,7 @@ check-live:
 {{ if has "minecraft" (index .hosts .hostname).roles }}
 # Report pinned Minecraft version vs installed Paper build vs upstream
 check-paper:
-    ~/.local/scripts/paper-check
+    ~/.local/scripts/check-paper
 
 # Install the latest Paper build for the pinned Minecraft version
 paper-upgrade *ARGS:
@@ -83,7 +83,7 @@ firewall:
 {{ if includeTemplate "has-binaries" . }}
 # Report pinned vs installed vs upstream for hand-installed binaries
 check-binaries:
-    ~/.local/scripts/binaries-check --upstream
+    ~/.local/scripts/check-binaries --upstream
 
 # Compile the binaries that must be built from source (caddy: ~7 minutes)
 binaries-build *ARGS:

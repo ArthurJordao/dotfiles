@@ -585,10 +585,10 @@ reports it and `just binaries-build` acts on it. C22 requires the `toolchain` pa
 declared for that host — Debian's `golang-<X.Y>-go` installs under `/usr/lib/go-<X.Y>/bin` and
 provides no `/usr/bin/go`, so the build puts it on `PATH` itself.
 
-`dot_local/scripts/executable_binaries-check.tmpl` answers both questions at once and they fail
+`dot_local/scripts/executable_check-binaries.tmpl` answers both questions at once and they fail
 differently: **installed ≠ pinned** means the host is behind the repo (`chezmoi update`),
-**pinned ≠ latest** means the repo is behind upstream (edit the data). `binaries-check.timer`
-runs it daily into `~/.local/state/binaries-check.status`, which `dashboard-status` reads for
+**pinned ≠ latest** means the repo is behind upstream (edit the data). `check-binaries.timer`
+runs it daily into `~/.local/state/check-binaries.status`, which `dashboard-status` reads for
 OliveTin's `binaries` field — a file read, never a network call, since that script runs on every
 status refresh. `--cache` exits 0 even on drift: a failed unit there would show up as drift of its
 own in the `failed` field. Deploy is gated on `.chezmoitemplates/has-binaries`, which is neither

@@ -107,7 +107,7 @@ caddy list-modules | grep dns.providers.cloudflare
 That grep must print the module. Debian's versioned Go packages install under
 `/usr/lib/go-1.27/bin` and provide no `/usr/bin/go`; the build puts it on `PATH` itself.
 
-`binaries-check` reports pinned vs installed vs upstream — daily via `binaries-check.timer`, on
+`check-binaries` reports pinned vs installed vs upstream — daily via `check-binaries.timer`, on
 the dashboard's Server fieldset, and as `just check-binaries`.
 
 ---

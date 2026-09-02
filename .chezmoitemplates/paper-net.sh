@@ -1,5 +1,5 @@
 {{- /* PaperMC Fill v3 build lookup. v2 is sunset and answers
-       {"ok":false,"error":"sunset"}. Shared by paper-check and paper-upgrade. */ -}}
+       {"ok":false,"error":"sunset"}. Shared by check-paper and paper-upgrade. */ -}}
 # Memoised per version: instances usually share one pinned version, and asking
 # twice for the same answer is what makes a rate-limited API report itself as
 # unreachable. Only successes are cached, so a transient failure retries.

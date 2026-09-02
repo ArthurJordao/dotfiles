@@ -44,7 +44,7 @@ Pictures/**
 .config/systemd/user/minecraft-backup.timer
 .local/scripts/minecraft
 .local/scripts/minecraft-backup
-.local/scripts/paper-check
+.local/scripts/check-paper
 .local/scripts/paper-upgrade
 minecraft
 minecraft/**
@@ -69,8 +69,8 @@ minecraft/**
 .config/systemd/user/olivetin.service
 .config/systemd/user/notes-backup.service
 .config/systemd/user/notes-backup.timer
-.config/systemd/user/paper-check-remote.service
-.config/systemd/user/paper-check-remote.timer
+.config/systemd/user/check-paper-remote.service
+.config/systemd/user/check-paper-remote.timer
 .config/OliveTin
 .config/OliveTin/**
 .local/scripts/dashboard-status
@@ -84,10 +84,10 @@ minecraft/**
 .local/scripts/firewall
 {{ end }}
 {{ if not (includeTemplate "has-binaries" .) }}
-.local/scripts/binaries-check
+.local/scripts/check-binaries
 .local/scripts/binaries-build
-.config/systemd/user/binaries-check.service
-.config/systemd/user/binaries-check.timer
+.config/systemd/user/check-binaries.service
+.config/systemd/user/check-binaries.timer
 {{ end }}
 {{ if has "arkos" $roles }}
 {{/* The ROM tree is a vfat mount: it cannot store the modes chezmoi wants,
@@ -104,7 +104,7 @@ Emulation/**
 .var/**
 .local/state
 .local/state/**
-.local/scripts/emu-sync-check
+.local/scripts/check-emu-sync
 .local/scripts/emu-merge-gamelists
 {{ end }}
 {{ if ne $me.os "linux" }}
