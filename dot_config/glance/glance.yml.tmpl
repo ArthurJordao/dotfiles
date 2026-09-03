@@ -1,4 +1,3 @@
-{{- $me := index .hosts .hostname -}}
 {{- /* Same tile model OliveTin's dashboard reads -- a service is never
        declared twice, just rendered twice. Only endpoints with a port and not
        `web: false` have a page to link to. */ -}}
@@ -9,15 +8,6 @@
 {{- if hasKey . "web" }}{{ $web = .web }}{{ end -}}
 {{- if and (hasKey . "port") $web }}{{ $_ := set $ported .name true }}{{ end -}}
 {{- end -}}
-{{- end -}}
-{{- /* Loopback port for this host's own endpoints, so the monitor widget's
-       health check never depends on this box resolving its own public
-       hostname. Skipped for `served_by`: that port belongs to a
-       non-container process (coredns, olivetin) fronted by Caddy with its
-       own TLS quirks, not a plain container port. */ -}}
-{{- $localPort := dict -}}
-{{- range (index $me "endpoints" | default list) -}}
-{{- if and (hasKey . "port") (not (hasKey . "served_by")) }}{{ $_ := set $localPort .name .port }}{{ end -}}
 {{- end -}}
 {{- $tiled := dict -}}
 {{- $groups := list -}}
@@ -115,9 +105,6 @@ pages:
 {{- range $t := $g.tiles }}
               - title: {{ $t.label | quote }}
                 url: https://{{ $t.name }}.{{ $.domain }}
-{{- if hasKey $localPort $t.name }}
-                check-url: http://127.0.0.1:{{ index $localPort $t.name }}
-{{- end }}
 {{- with $t.icon }}
                 icon: {{ . | replace "selfhst:" "sh:" }}
 {{- end }}
