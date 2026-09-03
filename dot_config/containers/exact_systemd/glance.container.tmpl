@@ -10,8 +10,14 @@ StartLimitIntervalSec=0
 [Container]
 Image=docker.io/glanceapp/glance:latest
 AutoUpdate=registry
-# Loopback only — Caddy is the way in.
-PublishPort=127.0.0.1:{{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "glance") }}:8080
+# Host networking, not PublishPort: the monitor widget checks every other
+# service's own loopback-bound port, and a rootless container's 127.0.0.1 is
+# its own network namespace, never the host's -- pasta can't hairpin a
+# connection back to the host's own address either, confirmed on pluto (curl
+# from the host works, the same request from inside a bridged container was
+# refused). glance.yml binds its own listener to 127.0.0.1 to keep the
+# "Caddy is the way in" rule intact despite sharing the host's network.
+Network=host
 
 Environment=TZ={{ .timezone }}
 EnvironmentFile=%h/.config/containers/systemd/glance.env

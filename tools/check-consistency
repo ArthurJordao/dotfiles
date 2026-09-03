@@ -109,6 +109,11 @@ def declared_for(host, table):
 
 files = quadlet_files()
 top_level = set(f.split(os.sep)[0] for f in files)
+# Populated per host in the main loop below (C4 already renders every quadlet
+# file), read back by C21: a `Network=host` container binds its endpoint's
+# port directly rather than through PublishPort, so it is a legitimate third
+# answer to "what serves this port" alongside a package and a binary.
+host_networked = {}
 
 
 for name in sorted(hosts):
@@ -166,6 +171,7 @@ for name in sorted(hosts):
 
     # C4 -- an endpoint nothing listens on is a 502.
     published = set()
+    networked = set()
     for f in deployed:
         made = generated_unit(f)
         if not made or made[1] not in STOPPABLE:
@@ -174,6 +180,9 @@ for name in sorted(hosts):
         text = render(name, path=path) if f.endswith(".tmpl") else open(path).read()
         for match in re.finditer(r"^PublishPort=(?:[\d.]+:)?(\d+):", text, re.M):
             published.add(int(match.group(1)))
+        if re.search(r"^Network=host$", text, re.M):
+            networked.add(target_name(f).split(".")[0])
+    host_networked[name] = networked
     for endpoint in endpoints:
         if "port" not in endpoint or endpoint.get("served_by"):
             continue
@@ -204,17 +213,20 @@ for name in sorted(hosts):
 # C21 -- `served_by` names the non-container service on that port, which is the
 # field that separates "intentionally not a container" from "forgot the
 # quadlet". If nothing declares it either, nothing installs it: that is how
-# coredns and olivetin ran on pluto undeclared.
+# coredns and olivetin ran on pluto undeclared. A `Network=host` container is
+# a third case -- it binds the port directly instead of through PublishPort,
+# so C4 can't find it either, but it is a quadlet, not a package or binary.
 for name in sorted(hosts):
     host = hosts[name]
     if host.get("managed") is False:
         continue
-    declared = declared_for(host, packages) | declared_for(host, binaries)
+    declared = declared_for(host, packages) | declared_for(host, binaries) | host_networked.get(name, set())
     for endpoint in host.get("endpoints") or []:
         server = endpoint.get("served_by")
         if server and server not in declared:
             fail("C21", "%s: endpoint %r is served_by %r, which is neither a "
-                        "declared package nor a declared binary for %s"
+                        "declared package, a declared binary, nor a "
+                        "Network=host quadlet for %s"
                         % (name, endpoint["name"], server,
                            host.get("distro") or "?"))
 
