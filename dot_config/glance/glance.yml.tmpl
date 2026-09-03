@@ -19,7 +19,8 @@
 {{- $shown = append $shown (dict
       "name" $name
       "label" (index $tile "label" | default $name)
-      "icon" (index $tile "icon" | default "")) -}}
+      "icon" (index $tile "icon" | default "")
+      "alt_status" (index $tile "alt_status" | default list)) -}}
 {{- end -}}
 {{- end -}}
 {{- if $shown }}{{ $groups = append $groups (dict "name" $group "tiles" $shown) }}{{ end -}}
@@ -28,7 +29,7 @@
        silently missing here while showing up on OliveTin. */ -}}
 {{- $other := list -}}
 {{- range $name := (keys $ported | sortAlpha) -}}
-{{- if not (hasKey $tiled $name) }}{{ $other = append $other (dict "name" $name "label" $name "icon" "") }}{{ end -}}
+{{- if not (hasKey $tiled $name) }}{{ $other = append $other (dict "name" $name "label" $name "icon" "" "alt_status" list) }}{{ end -}}
 {{- end -}}
 {{- if $other }}{{ $groups = append $groups (dict "name" "Other" "tiles" $other) }}{{ end -}}
 # GENERATED from .chezmoidata/ — edit hosts.yaml and dashboard.yaml, not this.
@@ -110,6 +111,9 @@ pages:
                 url: https://{{ $t.name }}.{{ $.domain }}
 {{- with $t.icon }}
                 icon: {{ . | replace "selfhst:" "sh:" }}
+{{- end }}
+{{- if $t.alt_status }}
+                alt-status-codes: [{{ range $i, $c := $t.alt_status }}{{ if $i }}, {{ end }}{{ $c }}{{ end }}]
 {{- end }}
 {{- end }}
 {{- end }}

@@ -1,6 +1,7 @@
 # yaml-language-server: $schema=../schemas/dashboard.schema.json
 #
-# Presentation, logins and buttons for OliveTin. The fifth flat list: like
+# Presentation, logins and buttons for OliveTin -- and `tiles` doubles as
+# glance's service list. The fifth flat list: like
 # quadlets/units/endpoints/syncthing.folders, nothing errors when it disagrees
 # with reality, so tools/check-consistency C12/C13 cross-reference it.
 #
@@ -20,8 +21,11 @@ dashboard:
     Infra:
       dash: {icon: "mdi:view-dashboard", label: OliveTin, description: Controls}
       glance: {icon: "selfhst:glance", label: Glance, description: Overview}
-      dns: {icon: "selfhst:coredns", label: CoreDNS, description: Split-horizon DNS}
-      sunshine: {icon: "selfhst:sunshine", label: Sunshine, description: Game streaming}
+      # alt_status: glance's health check hits `/`, which is a legitimate
+      # non-2xx on both of these (coredns's status port has no root index,
+      # sunshine requires login) -- not the service being down.
+      dns: {icon: "selfhst:coredns", label: CoreDNS, description: Split-horizon DNS, alt_status: [404]}
+      sunshine: {icon: "selfhst:sunshine", label: Sunshine, description: Game streaming, alt_status: [401]}
 
     Notes:
       notes: {icon: "mdi:notebook-outline", label: SilverBullet, description: Notes}
