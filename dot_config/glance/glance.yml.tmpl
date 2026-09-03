@@ -1,0 +1,136 @@
+{{- $me := index .hosts .hostname -}}
+{{- /* Same tile model OliveTin's dashboard reads -- a service is never
+       declared twice, just rendered twice. Only endpoints with a port and not
+       `web: false` have a page to link to. */ -}}
+{{- $ported := dict -}}
+{{- range $hostname, $host := .hosts -}}
+{{- range (index $host "endpoints" | default list) -}}
+{{- $web := true -}}
+{{- if hasKey . "web" }}{{ $web = .web }}{{ end -}}
+{{- if and (hasKey . "port") $web }}{{ $_ := set $ported .name true }}{{ end -}}
+{{- end -}}
+{{- end -}}
+{{- /* Loopback port for this host's own endpoints, so the monitor widget's
+       health check never depends on this box resolving its own public
+       hostname. Skipped for `served_by`: that port belongs to a
+       non-container process (coredns, olivetin) fronted by Caddy with its
+       own TLS quirks, not a plain container port. */ -}}
+{{- $localPort := dict -}}
+{{- range (index $me "endpoints" | default list) -}}
+{{- if and (hasKey . "port") (not (hasKey . "served_by")) }}{{ $_ := set $localPort .name .port }}{{ end -}}
+{{- end -}}
+{{- $tiled := dict -}}
+{{- $groups := list -}}
+{{- range $group, $members := .dashboard.tiles -}}
+{{- $shown := list -}}
+{{- range $name, $tile := $members -}}
+{{- $_ := set $tiled $name true -}}
+{{- if hasKey $ported $name -}}
+{{- $shown = append $shown (dict
+      "name" $name
+      "label" (index $tile "label" | default $name)
+      "icon" (index $tile "icon" | default "")) -}}
+{{- end -}}
+{{- end -}}
+{{- if $shown }}{{ $groups = append $groups (dict "name" $group "tiles" $shown) }}{{ end -}}
+{{- end -}}
+{{- /* An endpoint in no group still gets a tile, so a new service is never
+       silently missing here while showing up on OliveTin. */ -}}
+{{- $other := list -}}
+{{- range $name := (keys $ported | sortAlpha) -}}
+{{- if not (hasKey $tiled $name) }}{{ $other = append $other (dict "name" $name "label" $name "icon" "") }}{{ end -}}
+{{- end -}}
+{{- if $other }}{{ $groups = append $groups (dict "name" "Other" "tiles" $other) }}{{ end -}}
+# GENERATED from .chezmoidata/ — edit hosts.yaml and dashboard.yaml, not this.
+#
+# glance's own {{ "{{ }}" }} template placeholders (inside `template:` blocks
+# below) must be emitted as literals: chezmoi would otherwise evaluate them.
+
+server:
+  port: 8080
+
+theme:
+  # catppuccin-latte is the only light variant in theme.yaml; anything else is dark.
+  light: {{ eq .theme.active "catppuccin-latte" }}
+
+pages:
+  - name: {{ .hostname }}
+    columns:
+      - size: small
+        widgets:
+          - type: clock
+            hour-format: 24h
+            timezone: {{ .timezone }}
+
+          - type: search
+            search-engine: duckduckgo
+
+          - type: custom-api
+            title: My Open PRs
+            cache: 15m
+            url: https://api.github.com/search/issues
+            parameters:
+              q: "is:open is:pr author:${GLANCE_GITHUB_USERNAME}"
+              sort: updated
+              per_page: "10"
+            headers:
+              Authorization: "Bearer ${GLANCE_GITHUB_TOKEN}"
+              Accept: application/vnd.github+json
+            template: |
+              <ul class="list list-gap-10">
+              {{ "{{" }} range .JSON.Array "items" {{ "}}" }}
+                <li>
+                  <a href="{{ "{{" }} .String "html_url" {{ "}}" }}" target="_blank">{{ "{{" }} .String "title" {{ "}}" }}</a>
+                </li>
+              {{ "{{" }} end {{ "}}" }}
+              </ul>
+
+          - type: custom-api
+            title: Review Requested
+            cache: 15m
+            url: https://api.github.com/search/issues
+            parameters:
+              q: "is:open is:pr review-requested:${GLANCE_GITHUB_USERNAME}"
+              sort: updated
+              per_page: "10"
+            headers:
+              Authorization: "Bearer ${GLANCE_GITHUB_TOKEN}"
+              Accept: application/vnd.github+json
+            template: |
+              <ul class="list list-gap-10">
+              {{ "{{" }} range .JSON.Array "items" {{ "}}" }}
+                <li>
+                  <a href="{{ "{{" }} .String "html_url" {{ "}}" }}" target="_blank">{{ "{{" }} .String "title" {{ "}}" }}</a>
+                </li>
+              {{ "{{" }} end {{ "}}" }}
+              </ul>
+
+      - size: full
+        widgets:
+{{- range $g := $groups }}
+          - type: monitor
+            title: {{ $g.name }}
+            cache: 2m
+            sites:
+{{- range $t := $g.tiles }}
+              - title: {{ $t.label | quote }}
+                url: https://{{ $t.name }}.{{ $.domain }}
+{{- if hasKey $localPort $t.name }}
+                check-url: http://127.0.0.1:{{ index $localPort $t.name }}
+{{- end }}
+{{- with $t.icon }}
+                icon: {{ . | replace "selfhst:" "sh:" }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+      - size: small
+        widgets:
+          - type: docker-containers
+            sock-path: /var/run/docker.sock
+            hide-by-default: false
+
+          - type: server-stats
+            servers:
+              - type: local
+                name: {{ .hostname }}

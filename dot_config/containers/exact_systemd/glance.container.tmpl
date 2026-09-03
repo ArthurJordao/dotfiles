@@ -1,0 +1,30 @@
+[Unit]
+Description=Glance — service dashboard
+Wants=network-online.target
+After=network-online.target
+# The docker-containers widget reads container state through this socket.
+Requires=podman.socket
+After=podman.socket
+StartLimitIntervalSec=0
+
+[Container]
+Image=docker.io/glanceapp/glance:latest
+AutoUpdate=registry
+# Loopback only — Caddy is the way in.
+PublishPort=127.0.0.1:{{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "glance") }}:8080
+
+Environment=TZ={{ .timezone }}
+EnvironmentFile=%h/.config/containers/systemd/glance.env
+
+Volume=%h/.config/glance:/app/config
+# The rootless socket speaks the docker API; uid 0 so container-root maps to
+# the host user that owns it (same trick as the music stack).
+Volume=%t/podman/podman.sock:/var/run/docker.sock:ro
+User=0
+
+[Service]
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

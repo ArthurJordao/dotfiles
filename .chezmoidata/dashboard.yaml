@@ -18,7 +18,8 @@ dashboard:
       wallabag: {icon: "selfhst:wallabag", label: wallabag, description: Read later}
 
     Infra:
-      dash: {icon: "mdi:view-dashboard", label: This dashboard}
+      dash: {icon: "mdi:view-dashboard", label: OliveTin, description: Controls}
+      glance: {icon: "selfhst:glance", label: Glance, description: Overview}
       dns: {icon: "selfhst:coredns", label: CoreDNS, description: Split-horizon DNS}
       sunshine: {icon: "selfhst:sunshine", label: Sunshine, description: Game streaming}
 
