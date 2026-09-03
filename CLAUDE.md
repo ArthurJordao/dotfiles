@@ -47,6 +47,11 @@ Four rules that matter more than they look:
 4. **Do not delete a "ruled out" finding.** Negative knowledge is the most expensive thing here to
    re-derive and the easiest to lose in a tidy-up.
 
+Those rules govern where a *new* fact goes. When the wrong things have already accumulated in the
+wrong places, the store has a procedure for digging out — `dotfiles/reference/docs cleanup
+runbook`: inventory before judging, classify by kind rather than topic, extract state and rulings
+before collapsing a solved problem, and repair the `[[links]]` that retitling breaks.
+
 ## Host gating: three axes
 
 `.chezmoidata/` is the only place hosts are named — `hosts.yaml` holds the per-host inventory,
