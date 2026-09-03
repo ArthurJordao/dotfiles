@@ -20,7 +20,7 @@ dashboard:
 
     Infra:
       dash: {icon: "mdi:view-dashboard", label: OliveTin, description: Controls}
-      glance: {icon: "selfhst:glance", label: Glance, description: Overview}
+      home: {icon: "selfhst:glance", label: Glance, description: Overview}
       # alt_status: glance's health check hits `/`, which is a legitimate
       # non-2xx on both of these (coredns's status port has no root index,
       # sunshine requires login) -- not the service being down.

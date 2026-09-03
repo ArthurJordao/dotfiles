@@ -41,7 +41,7 @@ server:
   # Loopback only — Caddy is the way in, same as every other service, even
   # though Network=host means this binds pluto's own port directly.
   host: 127.0.0.1
-  port: {{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "glance") }}
+  port: {{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "home") }}
 
 theme:
   # catppuccin-latte is the only light variant in theme.yaml; anything else is dark.
