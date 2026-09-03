@@ -57,9 +57,10 @@ etc:
       restart: [smb, wsdd]
 
   hosts:
-    # None of these take enable/reload/restart -- modprobe options apply at
-    # module load and logind config at reload, so both are next-boot changes,
-    # and restarting logind kills the session.
+    # The modprobe and logind files take no enable/reload/restart -- modprobe
+    # options apply at module load and logind config at reload, so both are
+    # next-boot changes, and restarting logind kills the session. The x9pro
+    # units below do take one; they are a unit, not a config file.
     #
     # The logind drop-in is declared per host rather than by role because its
     # trigger is the CachyOS image (it ships KillUserProcesses=True), and that
@@ -73,6 +74,14 @@ etc:
         - {src: modprobe.d/88x2bu.conf, dest: /etc/modprobe.d/88x2bu.conf, mode: "644"}
         - {src: logind/zz-keep-user-processes.conf,
            dest: /etc/systemd/logind.conf.d/zz-keep-user-processes.conf, mode: "644"}
+        # The external disk is this box's, so it is keyed here and not by role.
+        # Unit names are the escaped mount point and cannot be chosen.
+        - {src: systemd/mnt-x9pro.mount,
+           dest: /etc/systemd/system/mnt-x9pro.mount, mode: "644"}
+        - {src: systemd/mnt-x9pro.automount,
+           dest: /etc/systemd/system/mnt-x9pro.automount, mode: "644"}
+      # The automount is the boot-started half; the .mount is pulled in on access.
+      enable: [mnt-x9pro.automount]
     mercury:
       files:
         - {src: logind/zz-keep-user-processes.conf,

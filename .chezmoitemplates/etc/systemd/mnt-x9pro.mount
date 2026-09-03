@@ -1,0 +1,12 @@
+[Unit]
+Description=x9pro external drive
+# The drive is often unplugged. Without a bound here, anything touching the
+# path waits the default 90s for a device that will never appear.
+# x-systemd.device-timeout= is fstab-only and ignored in a unit's Options=.
+JobTimeoutSec=1s
+
+[Mount]
+What=/dev/disk/by-uuid/30CD-0AC4
+Where=/mnt/x9pro
+Type=exfat
+Options=uid=1000,gid=1000,umask=022

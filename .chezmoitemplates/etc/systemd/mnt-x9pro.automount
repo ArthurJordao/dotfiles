@@ -1,0 +1,10 @@
+[Unit]
+Description=Automount x9pro external drive
+
+[Automount]
+Where=/mnt/x9pro
+# Unmount once nothing is using it, so an unplugged drive leaves no stale mount.
+TimeoutIdleSec=300
+
+[Install]
+WantedBy=multi-user.target
