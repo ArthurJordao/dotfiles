@@ -1,4 +1,6 @@
-{{- $roles := (index .hosts .hostname).roles -}}
+{{- $me := index .hosts .hostname -}}
+{{- $roles := $me.roles -}}
+{{- $quadlets := index $me "quadlets" | default list -}}
 {{- $binaries := includeTemplate "has-binaries" . -}}
 {{ if or (has "minecraft" $roles) (has "podman" $roles) (has "sunshine" $roles) (has "emulation" $roles) (has "server" $roles) (has "agent" $roles) $binaries -}}
 #!/bin/bash
@@ -14,6 +16,11 @@ fi
 systemctl --user daemon-reload
 {{ if has "podman" $roles -}}
 systemctl --user enable --now podman-auto-update.timer
+{{ end -}}
+{{ if has "glance" $quadlets -}}
+# The docker-containers widget reads container state through this socket,
+# which only exists once it's up.
+systemctl --user enable --now podman.socket
 {{ end -}}
 {{ if has "minecraft" $roles -}}
 systemctl --user enable --now minecraft-backup.timer

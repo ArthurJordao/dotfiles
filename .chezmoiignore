@@ -121,6 +121,10 @@ Emulation/**
 .config/blocky/**
 .local/scripts/blocky
 {{ end }}
+{{ if not (has "glance" (index $me "quadlets" | default list)) }}
+.config/glance
+.config/glance/**
+{{ end }}
 {{ if not (has "podman" $roles) }}
 .config/containers
 .config/containers/**
