@@ -1,9 +1,12 @@
 # The USB-SATA bridge reports no rotation rate, so the kernel calls the SSD a
-# spinning disk and picks bfq. Matched on the bridge's own USB ID: a different
-# enclosure stops matching rather than tuning the wrong device.
+# spinning disk. Matched on the bridge's own USB ID: a different enclosure stops
+# matching rather than tuning the wrong device.
 #
-# Do not add `cache_type` here. The bridge also hides a real write cache, but
-# writing that attribute is a silent no-op through it -- the write returns
-# success and the value stays `write through`, which would assert a protection
-# that is not there.
-ACTION=="add|change", SUBSYSTEM=="block", KERNEL=="sd[a-z]", SUBSYSTEMS=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="9201", ATTR{queue/rotational}="0", ATTR{queue/scheduler}="mq-deadline"
+# Do not set `queue/scheduler` here -- Armbian's hardware-optimization script
+# derives it from `rotational` and runs after udev, so this rule is what makes
+# it pick `none`. ssd-io-scheduler.service overrides that afterwards.
+#
+# Do not set `cache_type` here either: writing it is a silent no-op through this
+# bridge, and it also triggers a revalidate that resets `rotational` back to 1.
+# ssd-write-cache.service handles the cache from the drive side instead.
+ACTION=="add|change", SUBSYSTEM=="block", KERNEL=="sd[a-z]", SUBSYSTEMS=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="9201", ATTR{queue/rotational}="0"

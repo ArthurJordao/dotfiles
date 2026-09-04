@@ -1,0 +1,24 @@
+[Unit]
+Description=Use mq-deadline for the root SSD instead of Armbian's none
+ConditionPathExists=/sys/block/sda/queue/scheduler
+After=armbian-hardware-optimize.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# Armbian's armbian-hardware-optimization derives the scheduler from
+# `rotational`: 1 -> bfq, 0 -> none. So the udev rule that correctly calls this
+# an SSD is what makes Armbian choose none, and there is no config knob for it.
+#
+# Measured here, read latency for 1 MB of direct 4k reads under a 400 MB write:
+# none 5258/3386/2864 ms worst-case, mq-deadline 1073-1878 ms across the whole
+# window. Idle costs 0.43 -> 0.54 ms per read. Nine containers behind a 33 MB/s
+# link make a multi-second read stall the worse trade.
+#
+# `set_io_scheduler &` runs backgrounded, so After= alone is a race the loser
+# never notices: write once a second for five seconds to outlast it, then assert
+# the read-back so a lost race fails loudly instead of silently reverting.
+ExecStart=/bin/sh -c 'for _ in 1 2 3 4 5; do echo mq-deadline > /sys/block/sda/queue/scheduler; sleep 1; done; grep -q "\[mq-deadline\]" /sys/block/sda/queue/scheduler'
+
+[Install]
+WantedBy=multi-user.target

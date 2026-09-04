@@ -100,7 +100,9 @@ etc:
            dest: /etc/systemd/system/check-disk.timer, mode: "644"}
         - {src: systemd/ssd-write-cache.service,
            dest: /etc/systemd/system/ssd-write-cache.service, mode: "644"}
-      enable: [check-disk.timer, ssd-write-cache]
+        - {src: systemd/ssd-io-scheduler.service,
+           dest: /etc/systemd/system/ssd-io-scheduler.service, mode: "644"}
+      enable: [check-disk.timer, ssd-write-cache, ssd-io-scheduler]
       # The timer is the boot-started half; run the oneshot now so the widget
       # has a reading instead of "n/a" until tomorrow.
       restart: [check-disk]
