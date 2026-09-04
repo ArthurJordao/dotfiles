@@ -1,0 +1,25 @@
+[Unit]
+Description=Turn off the root SSD's volatile write cache
+ConditionPathExists=/dev/sda
+After=local-fs.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# The USB bridge reports the write cache disabled while the drive buffers, so
+# the kernel sends no flushes and ext4's journal loses its ordering guarantee.
+# Removing the cache makes that report true. Writing the kernel's own
+# `cache_type` instead is a silent no-op through this bridge.
+#
+# Costs +0.8 ms per synchronous 4k write and 3% on bulk: the BOT round-trip
+# already dominates, so a faster link would change that trade.
+#
+# ATA resets the setting on every power cycle, hence a unit and not a one-off.
+# The second call is the assertion -- smartctl's exit code is a bitmask this
+# bridge muddies, so trust the read-back. Failing loudly is the point here: it
+# surfaces in dashboard-status's `failed` field, the opposite call from
+# check-disk.service.
+ExecStart=/bin/sh -c '/usr/sbin/smartctl -s wcache,off -d sat /dev/sda >/dev/null 2>&1; /usr/sbin/smartctl -g wcache -d sat /dev/sda | grep -qi "write cache is: *disabled"'
+
+[Install]
+WantedBy=multi-user.target

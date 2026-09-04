@@ -1,11 +1,9 @@
 # The USB-SATA bridge reports no rotation rate, so the kernel calls the SSD a
-# spinning disk and picks bfq. Over Bulk-Only it also reports the write cache
-# disabled while the drive's IDENTIFY says enabled, so the kernel elides the
-# cache flushes ext4 asks for -- losing the journal's ordering guarantee, not
-# just recent writes. `write back` makes it flush.
+# spinning disk and picks bfq. Matched on the bridge's own USB ID: a different
+# enclosure stops matching rather than tuning the wrong device.
 #
-# Matched on the bridge's own USB ID: a different enclosure stops matching
-# rather than tuning the wrong device.
-ACTION=="add|change", SUBSYSTEM=="block", KERNEL=="sd[a-z]", SUBSYSTEMS=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="9201", \
-  ATTR{queue/rotational}="0", ATTR{queue/scheduler}="mq-deadline", \
-  ATTR{device/scsi_disk/*/cache_type}="write back"
+# Do not add `cache_type` here. The bridge also hides a real write cache, but
+# writing that attribute is a silent no-op through it -- the write returns
+# success and the value stays `write through`, which would assert a protection
+# that is not there.
+ACTION=="add|change", SUBSYSTEM=="block", KERNEL=="sd[a-z]", SUBSYSTEMS=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="9201", ATTR{queue/rotational}="0", ATTR{queue/scheduler}="mq-deadline"
