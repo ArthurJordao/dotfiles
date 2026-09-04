@@ -1,0 +1,4 @@
+# The USB-SATA bridge reports no rotation rate, so the kernel calls the SSD a
+# spinning disk and picks bfq. Matched on the bridge's own USB ID: a different
+# enclosure stops matching rather than tuning the wrong device.
+ACTION=="add|change", SUBSYSTEM=="block", KERNEL=="sd[a-z]", SUBSYSTEMS=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="9201", ATTR{queue/rotational}="0", ATTR{queue/scheduler}="mq-deadline"

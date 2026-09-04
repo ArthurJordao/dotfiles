@@ -100,6 +100,15 @@ ETC_EOF
 install_etc {{ $f.dest | replace "{tunnel_id}" $.cloudflare.tunnel_id }} {{ $f.mode }}
 
 {{ end -}}
+{{- $udev := false -}}
+{{- range $f := $files }}{{ if hasPrefix "/etc/udev/rules.d/" $f.dest }}{{ $udev = true }}{{ end }}{{ end -}}
+{{ if $udev -}}
+# A rules file applies only to devices added after it, and the root disk is
+# never re-added.
+sudo udevadm control --reload
+sudo udevadm trigger --action=change --subsystem-match=block
+
+{{ end -}}
 {{ if $enable -}}
 sudo systemctl daemon-reload
 sudo systemctl enable --now {{ join " " $enable }}

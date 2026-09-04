@@ -86,3 +86,19 @@ etc:
       files:
         - {src: logind/zz-keep-user-processes.conf,
            dest: /etc/systemd/logind.conf.d/zz-keep-user-processes.conf, mode: "644"}
+    # Both entries name this box's hardware: the root SSD sits behind a USB-SATA
+    # bridge that reports no rotation rate and answers SMART only as `-d sat`.
+    # Keyed here and not by role -- /dev/sda and that bridge ID are true of this
+    # box, not of a purpose that could move.
+    pluto:
+      files:
+        - {src: udev/ssd-usb-bridge.rules,
+           dest: /etc/udev/rules.d/60-ssd-usb-bridge.rules, mode: "644"}
+        - {src: systemd/check-disk.service,
+           dest: /etc/systemd/system/check-disk.service, mode: "644"}
+        - {src: systemd/check-disk.timer,
+           dest: /etc/systemd/system/check-disk.timer, mode: "644"}
+      enable: [check-disk.timer]
+      # The timer is the boot-started half; run the oneshot now so the widget
+      # has a reading instead of "n/a" until tomorrow.
+      restart: [check-disk]

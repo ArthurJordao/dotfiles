@@ -81,6 +81,36 @@ root=$(df --output=pcent / 2>/dev/null | tail -1 | tr -d ' ')
 ext=$(df --output=pcent /mnt/x9pro 2>/dev/null | tail -1 | tr -d ' ')
 ext=${ext:-n/a}
 
+# Root SSD health -- check-disk.timer writes this report daily. A system unit,
+# because smartctl needs root; a file read here, not a smartctl call, since this
+# runs on every status refresh.
+ssd="n/a"
+ssd_color="$WARN"
+ssd_report=/var/lib/check-disk.report
+if [ -r "$ssd_report" ]; then
+    # RAW_VALUE is field 10 of smartctl's -A table; NF skips the sections above.
+    attr() {
+        local v
+        v=$(awk -v id="$1" 'NF >= 10 && $1 == id {print $10; exit}' "$ssd_report")
+        printf '%s' "${v//[!0-9]/}"
+    }
+    realloc=$(attr 5); pending=$(attr 197); uncorr=$(attr 198)
+    crc=$(attr 199); temp=$(attr 194)
+    if [ -n "$temp" ]; then
+        if [ $(( ${realloc:-0} + ${pending:-0} + ${uncorr:-0} )) -gt 0 ]; then
+            ssd="realloc ${realloc:-0} pending ${pending:-0} bad ${uncorr:-0}"
+            ssd_color="$BAD"
+        elif [ "${crc:-0}" -gt 0 ]; then
+            # A link error is the bridge or the cable, not the flash.
+            ssd="$crc link errors"
+            ssd_color="$WARN"
+        else
+            ssd="OK, ${temp}C"
+            ssd_color="$GOOD"
+        fi
+    fi
+fi
+
 # Service probes. A TCP connect, which answers "is something listening" without
 # caring about TLS or HTTP semantics. Each argument is name:port for a service
 # on this host, or name:host:port for one reached over the network -- minecraft
@@ -101,8 +131,9 @@ for spec in "$@"; do
     fi
 done
 
-printf '{%s"mc":"%s","mc_color":"%s","gm":"%s","gm_color":"%s","failed":"%s","failed_color":"%s","binaries":"%s","binaries_color":"%s","paper":"%s","paper_color":"%s","root":"%s","root_color":"%s","ext":"%s","ext_color":"%s"}\n' \
+printf '{%s"mc":"%s","mc_color":"%s","gm":"%s","gm_color":"%s","failed":"%s","failed_color":"%s","binaries":"%s","binaries_color":"%s","paper":"%s","paper_color":"%s","root":"%s","root_color":"%s","ext":"%s","ext_color":"%s","ssd":"%s","ssd_color":"%s"}\n' \
     "$svc_fields" "$mc" "$mc_color" "$gm" "$gm_color" "$failed" "$failed_color" \
     "$bins" "$bins_color" \
     "$paper" "$paper_color" \
-    "$root" "$(disk_color "$root")" "$ext" "$(disk_color "$ext")"
+    "$root" "$(disk_color "$root")" "$ext" "$(disk_color "$ext")" \
+    "$ssd" "$ssd_color"

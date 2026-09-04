@@ -1,0 +1,13 @@
+[Unit]
+Description=Record SMART health for the root SSD
+ConditionPathExists=/dev/sda
+
+[Service]
+Type=oneshot
+# The bridge does not answer smartctl's auto-detect, hence -d sat. `|| true`
+# because smartctl's exit code is a bitmask and this bridge returns no ATA
+# output registers for SMART RETURN STATUS -- a failed unit here would show up
+# as drift in dashboard-status's `failed` field.
+ExecStart=/bin/sh -c '/usr/sbin/smartctl -H -i -A -d sat /dev/sda > /var/lib/check-disk.report 2>&1 || true'
+# dashboard-status reads the report as the unprivileged user.
+UMask=0022

@@ -58,6 +58,9 @@ dashboard:
       # Written daily by check-binaries.timer; "n/a" until it first runs.
       - {field: binaries, label: Binaries, icon: "mdi:package-variant"}
       - {field: root, label: "/", icon: "mdi:harddisk"}
+      # Written daily by check-disk.timer, a system unit -- smartctl needs root.
+      # "n/a" until it first runs, and on any host without the report.
+      - {field: ssd, label: SSD, icon: "mdi:heart-pulse"}
       - {field: svc_files, label: x9pro share, icon: "mdi:folder-network"}
 
   # Keyed by the Controls fieldset the buttons sit in -- the group is the key,
@@ -119,6 +122,9 @@ dashboard:
       # The timer runs hourly; the button is for "before I do something drastic".
       - {title: Back up notes now, icon: "mdi:content-save-cog", shell: "systemctl --user start notes-backup.service && journalctl --user -u notes-backup.service -n 10 --no-pager", timeout: 120, popup: true}
       - {title: Disk space, icon: "mdi:harddisk", shell: "df -h /", timeout: 15, family: true, popup: true}
+      # The timer's own report, a day stale at worst: smartctl needs root, so
+      # this reads the file rather than the device.
+      - {title: SSD health, icon: "mdi:heart-pulse", shell: "cat /var/lib/check-disk.report", timeout: 15, popup: true}
       # check-live reads gaming-mode's state file, so a stopped stack reports as
       # intentional rather than as drift.
       - {title: Stack health, icon: "mdi:heart-pulse", shell: check-live, timeout: 120, popup: true}

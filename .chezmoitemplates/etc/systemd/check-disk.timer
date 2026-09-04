@@ -1,0 +1,9 @@
+[Unit]
+Description=Daily SMART health reading
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target
