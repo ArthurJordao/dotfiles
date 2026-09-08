@@ -32,6 +32,11 @@ packages:
       - xcaddy-bin
     emulation:
       - syncthing
+    gaming:
+      # gamescope-session.target declares it. Without it Steam never learns the
+      # controller's input nodes exist, and the DualSense touchpad drives the
+      # compositor cursor instead of reaching the game.
+      - steamos-manager
     gui:
       - 1password
       - firefox
