@@ -163,6 +163,7 @@ packages:
       - sevenzip
       - shellcheck
       - tree-sitter-cli
+      - typst
       - vivid
       - watchman
       - yazi
