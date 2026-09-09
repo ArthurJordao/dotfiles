@@ -15,7 +15,7 @@
       },
       "additionalProperties": {
         "type": "object",
-        "required": ["palette", "vivid", "fish", "bat", "wezterm", "nvim"],
+        "required": ["palette", "vivid", "fish", "bat", "wezterm", "herdr", "nvim"],
         "additionalProperties": false,
         "properties": {
           "palette": {
@@ -34,6 +34,10 @@
           "wezterm": {
             "type": "string",
             "description": "A wezterm built-in color scheme name."
+          },
+          "herdr": {
+            "type": "string",
+            "description": "A herdr built-in theme name; catppuccin is the mocha flavour."
           },
           "nvim": {
             "type": "object",

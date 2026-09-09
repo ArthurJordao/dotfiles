@@ -24,6 +24,7 @@ packages:
       - tailscale
     agent:
       - claude-code
+      - herdr-bin
     dev:
       - github-cli
     edge:
@@ -132,6 +133,7 @@ packages:
       - gnupg
       - go
       - grep
+      - herdr
       - hugo
       - libheif
       - libraw

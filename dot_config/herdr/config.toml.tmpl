@@ -1,0 +1,11 @@
+{{- $t := index .theme .theme.active -}}
+# `herdr --default-config` prints every key with its default. Only what differs
+# from a default belongs here.
+
+[theme]
+name = "{{ $t.herdr }}"
+
+[worktrees]
+# Must stay outside every checkout. A worktree under the chezmoi source dir
+# merges its own .chezmoidata over the real one and breaks every render.
+directory = "~/.herdr/worktrees"
