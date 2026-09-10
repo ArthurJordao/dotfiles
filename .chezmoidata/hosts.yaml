@@ -86,9 +86,6 @@ hosts:
       # No port: SMB is not HTTP, so there is no Caddy block. probe_port only
       # earns the dashboard tile, reached at mars.arthurjordao.dev:445.
       - {name: files, probe_port: 445}
-      # herdr-studio (herdr-gui binary) is installed by hand, not a quadlet —
-      # served_by points at its `binaries.yaml` entry instead.
-      - {name: herdr-studio, port: 8787, served_by: herdr-gui}
 
   mercury:
     roles: [gui, dev, gaming, moonlight, emulation]

@@ -21,20 +21,6 @@
 #   manual       never installed -- pinned and reported only
 
 binaries:
-  arch:
-    agent:
-      # Installed by the vendor's own script into ~/.local/bin, and self-owns
-      # its systemd --user unit (`herdr-gui service install`) -- this script
-      # never touches it. Pinned only so `served_by: herdr-gui` on mars's
-      # endpoint resolves for check-consistency C21, and so `check-binaries`
-      # reports drift against upstream. Still named herdr-gui upstream even
-      # though the product is now branded Herdr Studio.
-      - name: herdr-gui
-        repo: powerfooI/herdr-studio
-        version: "0.6.0"
-        install: manual
-        tag: "v{version}"
-        version_cmd: "herdr-gui --version"
   debian:
     edge:
       # Built, never fetched: the release binaries carry no Cloudflare DNS
