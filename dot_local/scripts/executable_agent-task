@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# agent-task <note> [slug] -- hand a task to a Claude session on this host.
+#
+# Cuts a worktree, starts an interactive Claude in it and points it at a note in
+# the store. Interactive on purpose: under `-p` Claude Code disables permission
+# prompts and questions, which are exactly what the Telegram channel relays.
+set -euo pipefail
+
+NOTE=${1:?usage: agent-task <note permalink or title> [slug]}
+SLUG=${2:-$(printf '%s' "$NOTE" | tr '[:upper:]' '[:lower:]' | tr -cs '[:alnum:]' '-' \
+    | sed 's/^-*//; s/-*$//' | cut -c1-40)}
+CHANNEL=plugin:telegram@claude-plugins-official
+
+for tool in herdr jq git; do
+    command -v "$tool" >/dev/null || { echo "agent-task: $tool not installed" >&2; exit 1; }
+done
+
+REPO=$(git rev-parse --show-toplevel)
+BASE=${AGENT_TASK_BASE:-$(git symbolic-ref --short HEAD)}
+BRANCH="agent/$SLUG"
+
+# herdr's socket API answers in JSON already -- `--json` is only for the commands
+# whose default output is a table, such as `machine list`.
+created=$(herdr worktree create --cwd "$REPO" --branch "$BRANCH" --base "$BASE" \
+    --label "$SLUG" --no-focus)
+err=$(printf '%s' "$created" | jq -r '.error.message // empty')
+if [ -n "$err" ]; then
+    echo "agent-task: worktree create failed: $err" >&2
+    exit 1
+fi
+pane=$(printf '%s' "$created" | jq -r '.result.root_pane.pane_id // empty')
+if [ -z "$pane" ]; then
+    echo "agent-task: no pane id in the worktree create response:" >&2
+    printf '%s\n' "$created" >&2
+    exit 1
+fi
+
+# Startup waits for readiness and defaults to 30s, which a cold claude can exceed.
+herdr agent start "$SLUG" --kind claude --pane "$pane" --timeout 120000 -- \
+    --permission-mode auto --channels "$CHANNEL"
+
+prompt=$(cat <<EOF
+Work the task described in the note "$NOTE".
+
+Read it with the memory MCP: search_notes for the title, then read_note. The note is the
+description -- there is no ticket.
+
+Implement it in this worktree, on branch $BRANCH. When it is complete and 'just check' passes,
+open a PR with gh.
+
+You cannot run 'chezmoi apply' or anything needing sudo. Ask me instead, giving the exact
+command, and use the output I paste back as the result.
+EOF
+)
+
+# --wait settles on idle, done or blocked; non-zero also covers stalled and timed
+# out. None of those prove the prompt went undelivered, so never resubmit blindly.
+if ! herdr agent prompt "$SLUG" "$prompt" --wait --timeout 3600000; then
+    echo "agent-task: prompt returned non-zero (blocked, stalled or timed out)" >&2
+fi
+
+herdr agent read "$SLUG" --source recent-unwrapped --lines 40 || true
+echo "agent-task: attach with 'herdr' here, or 'herdr --remote $(uname -n)' from elsewhere"
