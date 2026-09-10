@@ -662,7 +662,7 @@ What follows is only what the repo itself does.
 
 - `dot_config/systemd/user/` — hand-written units: `minecraft@.service.tmpl` (unit template;
   instances are mutually exclusive), `minecraft-backup` (service+timer) and
-  `claude-remote-control` (the `agent` role).
+  `herdr` (the `agent` role).
 - **Minecraft instances are declared in exactly one place**: `.chezmoidata/minecraft.yaml`. A host
   runs them by having the `minecraft` role — `units` carries no minecraft entries. Both
   `minecraft@.service`'s `Conflicts=` and `gaming-mode`'s `CANDIDATES` derive from that list, so

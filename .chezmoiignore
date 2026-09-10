@@ -36,7 +36,6 @@ Pictures/**
 .config/systemd/**
 {{ end }}
 {{ if not (has "agent" $roles) }}
-.config/systemd/user/claude-remote-control.service
 .config/systemd/user/herdr.service
 .config/herdr/telegram.env
 {{ end }}

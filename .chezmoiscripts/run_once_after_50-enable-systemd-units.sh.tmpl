@@ -42,7 +42,7 @@ systemctl --user enable --now check-paper-remote.timer
 systemctl --user enable --now check-binaries.timer
 {{ end -}}
 {{ if has "agent" $roles -}}
-# Needs a `claude` login on this host first; without one it restarts forever.
-systemctl --user enable --now claude-remote-control.service
+# Needs a `claude` login on this host first; without one the agent panes are useless.
+systemctl --user enable --now herdr.service
 {{ end -}}
 {{ end }}
