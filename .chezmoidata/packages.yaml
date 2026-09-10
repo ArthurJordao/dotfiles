@@ -15,6 +15,7 @@ packages:
       - git
       - gnupg
       - go
+      - jq
       - just
       - mosh
       - neovim
@@ -23,6 +24,8 @@ packages:
       - shellcheck
       - tailscale
     agent:
+      # Channel plugins are Bun scripts; Claude Code bundles no runtime.
+      - bun
       - claude-code
       - herdr-bin
     dev:
