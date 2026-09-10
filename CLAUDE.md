@@ -515,6 +515,7 @@ Anything needing a package goes after 10; gaps of 10 leave room to insert. Keep 
 | 30 | `set-default-shell` | `fish` |
 | 35 | `reset-bat` | — |
 | 40 | `setup-gpg-key` | `gpg`, `op` |
+| 45 | `install-fish-plugins` | `fish` |
 | 50 | `enable-systemd-units` | units deployed |
 | 55 | `prune-unclaimed` | — |
 | 60 | `set-wallpaper` | `Pictures/` deployed |
