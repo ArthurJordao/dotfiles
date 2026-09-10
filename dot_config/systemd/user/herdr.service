@@ -1,0 +1,22 @@
+[Unit]
+Description=herdr server for agent sessions
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+# `herdr server` with no subcommand runs the headless server in the foreground.
+# A client connecting over SSH auto-starts one too, so this unit exists to keep
+# agent sessions alive when no client is attached at all.
+Type=simple
+WorkingDirectory=%h
+# Reaches every pane the server spawns: a pane's process environment is the
+# server's own. Verified for the tmux chain on mars 2026-08-30.
+Environment=PATH=%h/.local/bin:%h/.local/scripts:/usr/local/bin:/usr/bin:/bin
+EnvironmentFile=%h/.config/herdr/telegram.env
+ExecStart=/usr/bin/herdr server
+ExecStop=/usr/bin/herdr server stop
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=default.target
