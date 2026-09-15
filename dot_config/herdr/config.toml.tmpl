@@ -2,6 +2,9 @@
 # `herdr --default-config` prints every key with its default. Only what differs
 # from a default belongs here.
 
+# Set by herdr's first-run flow; declared so a fresh host skips it.
+onboarding = false
+
 [theme]
 name = "{{ $t.herdr }}"
 
@@ -9,3 +12,7 @@ name = "{{ $t.herdr }}"
 # Must stay outside every checkout. A worktree under the chezmoi source dir
 # merges its own .chezmoidata over the real one and breaks every render.
 directory = "~/.herdr/worktrees"
+
+[ui.toast]
+# Desktop notifications through the OS service, not in-app toasts.
+delivery = "system"
