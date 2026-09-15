@@ -79,6 +79,7 @@ packages:
       - {name: qmk/qmk, trusted: true}
       - {name: sst/tap, trusted: true}
       - {name: unisonweb/unison, trusted: true}
+      - {name: abue-ammar/tinycast, trusted: true}
     brews:
       - act
       - glib
@@ -193,7 +194,6 @@ packages:
       - obsidian
       - opcode
       - qmk-toolbox
-      - raycast
       - signal
       - steam
       - tableplus
@@ -204,6 +204,7 @@ packages:
       - prismlauncher
       - slack
       - 1password-cli
+      - abue-ammar/tinycast/tinycast
     go:
       - github.com/mightymoud/sidekick
   debian:
