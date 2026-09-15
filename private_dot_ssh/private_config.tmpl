@@ -5,6 +5,10 @@
 Host *
     IdentityFile ~/.ssh/id_rsa
     AddKeysToAgent yes
+
+Host github.com
+    IdentityFile ~/.ssh/id_rsa.pub
+    IdentitiesOnly yes
 {{ range $hostname, $host := .hosts }}
 {{- if index $host "user" }}
 {{-   $aliases := list $hostname (printf "%s.local" $hostname) (printf "%s.%s" $hostname $domain) }}
