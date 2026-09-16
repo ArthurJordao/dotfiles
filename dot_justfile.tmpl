@@ -34,7 +34,7 @@ packages-prune:
 
 # Install declared packages, then upgrade everything
 upgrade: packages
-    brew upgrade --cask --greedy
+    brew upgrade --cask
 {{ else -}}
 {{- $sysupgrade := "paru -Syu" -}}
 {{- if eq (index (index .hosts .hostname) "distro" | default "") "debian" -}}
