@@ -2,11 +2,11 @@
 # `herdr --default-config` prints every key with its default. Only what differs
 # from a default belongs here.
 
-# Set by herdr's first-run flow; declared so a fresh host skips it.
 onboarding = false
 
 [theme]
 name = "{{ $t.herdr }}"
+auto_switch = false
 
 [worktrees]
 # Must stay outside every checkout. A worktree under the chezmoi source dir
@@ -14,5 +14,4 @@ name = "{{ $t.herdr }}"
 directory = "~/.herdr/worktrees"
 
 [ui.toast]
-# Desktop notifications through the OS service, not in-app toasts.
 delivery = "system"
