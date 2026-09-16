@@ -9,6 +9,10 @@ sourceDir = {{ .chezmoi.sourceDir | quote }}
 [onepassword]
   command = "op"
 
+[merge]
+  command = "nvim"
+  args = ["-d", "{{ `{{ .Destination }}` }}", "{{ `{{ .Source }}` }}", "{{ `{{ .Target }}` }}"]
+
 # Installs the 1Password CLI before source state is read, so templates reading
 # a secret always find `op`.
 [hooks.read-source-state.pre]
