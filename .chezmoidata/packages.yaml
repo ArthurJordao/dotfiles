@@ -250,7 +250,6 @@ packages:
     # Not `common`: phobos is the other debian host and reads SMART off nothing.
     # check-disk.service is the consumer, and the bridge needs `smartctl -d sat`.
     server:
-      - rclone
       - smartmontools
       # pdf2epub turns pymupdf4llm's markdown into EPUB.
       - pandoc
