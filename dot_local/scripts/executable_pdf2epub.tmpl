@@ -2,7 +2,7 @@
 #!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["pymupdf4llm==0.0.31"]
+# dependencies = ["pymupdf4llm==1.28.2"]
 # ///
 """pdf2epub -- convert PDFs waiting in CWA's ingest dir into EPUBs.
 
@@ -22,8 +22,16 @@ import tempfile
 from collections import Counter
 from pathlib import Path
 
-INGEST = Path(os.path.expanduser("{{ $media }}".replace("%h", "~"))) / "book-ingest"
-ARCHIVE = INGEST / ".converted"
+MEDIA = Path(os.path.expanduser("{{ $media }}".replace("%h", "~")))
+INGEST = MEDIA / "book-ingest"
+# Deliberately a SIBLING of the ingest dir, never a subdirectory of it. CWA's
+# polling watcher walks the tree and re-emits CLOSE_WRITE every scan for any
+# file whose mtime is older than its stabilize window -- the sentinel that is
+# meant to stop a refire only defeats the other half of that condition. So a
+# PDF left anywhere under the ingest dir spins a full ingest-processor every
+# 5 seconds forever.
+ARCHIVE = MEDIA / "book-archive"
+FAILED = ARCHIVE / "failed"
 STATUS = Path(os.environ.get("XDG_STATE_HOME", os.path.expanduser("~/.local/state"))) / "pdf2epub.status"
 
 # CWA prefixes uploads with new_<n>_<date>_<time>_<rand>_. Strip it so the
@@ -98,7 +106,7 @@ def strip_furniture(pages):
     return "\n".join(kept)
 
 
-def convert(pdf, workdir):
+def convert(pdf, workdir, dest):
     import pymupdf4llm
 
     images = workdir / "img"
@@ -116,7 +124,7 @@ def convert(pdf, workdir):
     md_path.write_text(markdown, encoding="utf-8")
 
     title = UPLOAD_PREFIX.sub("", pdf.stem).replace("_", " ").strip() or pdf.stem
-    epub = pdf.with_suffix(".epub")
+    epub = dest / (pdf.stem + ".epub")
     subprocess.run(
         [
             "pandoc", str(md_path),
@@ -147,28 +155,28 @@ def main():
         print("pdf2epub: no ingest dir at %s" % INGEST, file=sys.stderr)
         return 1
 
-    pdfs = sorted(p for p in INGEST.glob("*.pdf") if p.is_file())
-    failed = 0
+    ARCHIVE.mkdir(parents=True, exist_ok=True)
+    pdfs = sorted(p for p in INGEST.glob("*.pdf") if p.is_file() and p.stat().st_size)
     for pdf in pdfs:
-        # A partially uploaded file converts to a truncated book. Size stability
-        # is the only signal available -- the uploader does not rename.
-        first = pdf.stat().st_size
-        if first == 0:
-            continue
+        # Move it out of the watched tree FIRST. Every second a PDF spends in
+        # the ingest dir costs CWA one ingest-processor, and a conversion that
+        # raises would otherwise leave it there spinning forever.
+        source = ARCHIVE / pdf.name
+        shutil.move(str(pdf), str(source))
         print("pdf2epub: converting %s" % pdf.name, flush=True)
         try:
             with tempfile.TemporaryDirectory() as tmp:
-                epub = convert(pdf, Path(tmp))
+                epub = convert(source, Path(tmp), INGEST)
         except Exception as exc:  # noqa: BLE001 -- one bad PDF must not stop the rest
             print("pdf2epub: %s failed: %s" % (pdf.name, exc), file=sys.stderr)
-            failed += 1
+            FAILED.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(source), str(FAILED / pdf.name))
             continue
-        ARCHIVE.mkdir(parents=True, exist_ok=True)
-        shutil.move(str(pdf), str(ARCHIVE / pdf.name))
         print("pdf2epub: wrote %s" % epub.name, flush=True)
 
-    remaining = len([p for p in INGEST.glob("*.pdf") if p.is_file()])
-    write_status(remaining, failed)
+    pending = len([p for p in INGEST.glob("*.pdf") if p.is_file()])
+    failed = len(list(FAILED.glob("*.pdf"))) if FAILED.is_dir() else 0
+    write_status(pending, failed)
     return 1 if failed else 0
 
 
