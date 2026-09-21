@@ -249,3 +249,5 @@ packages:
     # check-disk.service is the consumer, and the bridge needs `smartctl -d sat`.
     server:
       - smartmontools
+      # pdf2epub turns pymupdf4llm's markdown into EPUB.
+      - pandoc

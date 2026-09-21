@@ -8,8 +8,10 @@
 # bump here changes that script's hash and the bump IS the upgrade. No
 # fingerprint on this file is needed -- do not add one.
 #
-# `tag` and `asset` take {version} and {arch}. Arch is resolved on the host
-# (dpkg --print-architecture), so one declaration serves amd64 and arm64.
+# `tag` and `asset` take {version}, {arch} and {machine}. Arch is resolved on the
+# host (dpkg --print-architecture), machine is `uname -m` -- Rust releases name
+# their assets aarch64/x86_64 rather than arm64/amd64. Either way one
+# declaration serves both.
 #
 # install:
 #   deb          fetch the .deb, dpkg -i; version comes from dpkg-query
@@ -59,3 +61,12 @@ binaries:
         tag: "{version}"
         asset: "OliveTin_linux_{arch}.deb"
         restart: "systemctl --user restart olivetin"
+      # Runs pdf2epub's PEP 723 script: it resolves pymupdf4llm into its own
+      # cache, so nothing is installed into Debian's externally-managed python.
+      - name: uv
+        repo: astral-sh/uv
+        version: "0.12.17"
+        install: tarball
+        tag: "{version}"
+        asset: "uv-{machine}-unknown-linux-gnu.tar.gz"
+        version_cmd: "uv --version"

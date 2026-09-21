@@ -63,6 +63,11 @@ dashboard:
       - {field: ssd, label: SSD, icon: "mdi:heart-pulse"}
       - {field: svc_files, label: x9pro share, icon: "mdi:folder-network"}
 
+    Books:
+      # CWA ignores PDFs so pdf2epub can have them; it therefore reports nothing
+      # about them itself. Written by pdf2epub after every run.
+      - {field: pdfs, label: PDFs to convert, icon: "mdi:file-pdf-box"}
+
   # Keyed by the Controls fieldset the buttons sit in -- the group is the key,
   # so it cannot name a section that does not exist. Fieldsets render in sorted
   # key order.
@@ -117,6 +122,15 @@ dashboard:
       - {title: Paper versions, on: mars, icon: "mdi:information", shell: check-paper, timeout: 60, popup: true}
       # The timer runs this daily; the button is for "before I install a mod".
       - {title: Backup Minecraft now, on: mars, icon: "mdi:content-save", shell: "systemctl --user start minecraft-backup.service && journalctl --user -u minecraft-backup.service -n 20 --no-pager", timeout: 900, confirm: true, family: true, popup: true}
+
+    Books:
+      # The .path unit does this on upload; the button is for a conversion that
+      # failed, since nothing retries one on its own.
+      - title: Convert pending PDFs
+        icon: "mdi:file-pdf-box"
+        shell: "systemctl --user start pdf2epub.service && journalctl _SYSTEMD_USER_UNIT=pdf2epub.service -n 20 --no-pager"
+        timeout: 1800
+        popup: true
 
     Server:
       # The timer runs hourly; the button is for "before I do something drastic".

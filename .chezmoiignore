@@ -76,6 +76,9 @@ minecraft/**
 .config/OliveTin/**
 .local/scripts/dashboard-status
 .local/scripts/notes-backup
+.config/systemd/user/pdf2epub.path
+.config/systemd/user/pdf2epub.service
+.local/scripts/pdf2epub
 {{ end }}
 {{/* Not a role: whether a host has hand-installed binaries falls out of its
       distro and roles together, so the answer is computed in one place. The

@@ -1,0 +1,11 @@
+{{- $media := includeTemplate "storage-path" (dict "hosts" .hosts "name" "media") -}}
+[Unit]
+Description=Watch CWA's ingest dir for PDFs to convert
+
+[Path]
+# CWA leaves PDFs alone (auto_ingest_ignored_formats), so anything matching
+# here is ours to convert. Fires on any change to the directory.
+PathChanged={{ $media }}/book-ingest
+
+[Install]
+WantedBy=default.target

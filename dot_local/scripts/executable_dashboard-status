@@ -68,6 +68,24 @@ fi
 paper=${paper//\"/}
 paper=${paper//\\/}
 
+# PDFs waiting on pdf2epub -- the converter writes this after every run. CWA is
+# told to ignore PDFs, so it reports nothing about them: without this field a
+# stalled converter is silent, which is the failure this whole path replaced.
+pdf_cache="${XDG_STATE_HOME:-$HOME/.local/state}/pdf2epub.status"
+if [ -r "$pdf_cache" ]; then
+    pdfs=$(sed -n 1p "$pdf_cache")
+    case $(sed -n 2p "$pdf_cache") in
+        good) pdfs_color="$GOOD" ;;
+        warn) pdfs_color="$WARN" ;;
+        *)    pdfs_color="$BAD" ;;
+    esac
+else
+    pdfs="n/a"
+    pdfs_color="$WARN"
+fi
+pdfs=${pdfs//\"/}
+pdfs=${pdfs//\\/}
+
 # Warn late: disks fill slowly and a nag is worse than no signal.
 disk_color() {
     local n=${1%\%}
@@ -131,9 +149,10 @@ for spec in "$@"; do
     fi
 done
 
-printf '{%s"mc":"%s","mc_color":"%s","gm":"%s","gm_color":"%s","failed":"%s","failed_color":"%s","binaries":"%s","binaries_color":"%s","paper":"%s","paper_color":"%s","root":"%s","root_color":"%s","ext":"%s","ext_color":"%s","ssd":"%s","ssd_color":"%s"}\n' \
+printf '{%s"mc":"%s","mc_color":"%s","gm":"%s","gm_color":"%s","failed":"%s","failed_color":"%s","binaries":"%s","binaries_color":"%s","paper":"%s","paper_color":"%s","pdfs":"%s","pdfs_color":"%s","root":"%s","root_color":"%s","ext":"%s","ext_color":"%s","ssd":"%s","ssd_color":"%s"}\n' \
     "$svc_fields" "$mc" "$mc_color" "$gm" "$gm_color" "$failed" "$failed_color" \
     "$bins" "$bins_color" \
     "$paper" "$paper_color" \
+    "$pdfs" "$pdfs_color" \
     "$root" "$(disk_color "$root")" "$ext" "$(disk_color "$ext")" \
     "$ssd" "$ssd_color"

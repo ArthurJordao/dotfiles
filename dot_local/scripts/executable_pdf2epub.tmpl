@@ -1,0 +1,176 @@
+{{- $media := includeTemplate "storage-path" (dict "hosts" .hosts "name" "media") -}}
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["pymupdf4llm==0.0.31"]
+# ///
+"""pdf2epub -- convert PDFs waiting in CWA's ingest dir into EPUBs.
+
+calibre's PDF input interleaves page furniture into the body text and leaves
+hyphenated line breaks literal. pymupdf4llm reflows properly; pandoc turns its
+markdown into EPUB, which CWA then ingests as it would any upload.
+
+CWA must have `pdf` in auto_ingest_ignored_formats or it converts them first.
+"""
+
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+from collections import Counter
+from pathlib import Path
+
+INGEST = Path(os.path.expanduser("{{ $media }}".replace("%h", "~"))) / "book-ingest"
+ARCHIVE = INGEST / ".converted"
+STATUS = Path(os.environ.get("XDG_STATE_HOME", os.path.expanduser("~/.local/state"))) / "pdf2epub.status"
+
+# CWA prefixes uploads with new_<n>_<date>_<time>_<rand>_. Strip it so the
+# EPUB carries a sane title rather than the upload's bookkeeping.
+UPLOAD_PREFIX = re.compile(r"^new_\d+_\d{8}_\d{6}_\d+_")
+
+# Furniture is positional as well as repetitive: a running header or footer sits
+# at the top or bottom of its page. Matching on repetition alone deletes body
+# text, because normalise() strips digits and similar sentences then collide.
+# Headers run ~45 chars; pymupdf4llm emits each body paragraph as one ~250-char
+# line, so the gap is wide. Known limit: short numbered lines that sit at a page
+# edge on most pages and differ only by their number are removed as furniture.
+MAX_FURNITURE_LEN = 70
+MIN_REPEATS = 3
+FURNITURE_PAGE_FRACTION = 0.25
+EDGE_LINES = 2
+
+
+def normalise(line):
+    """Page furniture differs only by its page number.
+
+    A bare page number normalises to nothing, so it gets its own key rather than
+    an empty one -- otherwise it is never counted and never stripped.
+    """
+    stripped = line.strip()
+    if stripped and not re.sub(r"[\d\s.,ivxlcIVXLC-]+", "", stripped):
+        return "\x00pagenum"
+    return re.sub(r"\d+", "", stripped).strip().lower()
+
+
+def edge_indices(lines):
+    """Indices of the first and last few non-blank lines -- where furniture sits."""
+    filled = [i for i, line in enumerate(lines) if line.strip()]
+    return set(filled[:EDGE_LINES]) | set(filled[-EDGE_LINES:])
+
+
+def strip_furniture(pages):
+    """Drop repeated page-edge lines -- running headers and footers."""
+    split = [page.splitlines() for page in pages]
+    counts = Counter()
+    for lines in split:
+        seen = set()
+        for i in edge_indices(lines):
+            stripped = lines[i].strip()
+            if len(stripped) > MAX_FURNITURE_LEN:
+                continue
+            key = normalise(stripped)
+            if key and key not in seen:
+                seen.add(key)
+                counts[key] += 1
+
+    threshold = max(MIN_REPEATS, int(len(pages) * FURNITURE_PAGE_FRACTION))
+    furniture = {key for key, n in counts.items() if n >= threshold}
+    if not furniture:
+        return "\n".join(pages)
+
+    kept = []
+    for lines in split:
+        edges = edge_indices(lines)
+        kept.append(
+            "\n".join(
+                line
+                for i, line in enumerate(lines)
+                if not (
+                    i in edges
+                    and line.strip()
+                    and len(line.strip()) <= MAX_FURNITURE_LEN
+                    and normalise(line.strip()) in furniture
+                )
+            )
+        )
+    return "\n".join(kept)
+
+
+def convert(pdf, workdir):
+    import pymupdf4llm
+
+    images = workdir / "img"
+    images.mkdir(parents=True, exist_ok=True)
+    chunks = pymupdf4llm.to_markdown(
+        str(pdf),
+        page_chunks=True,
+        write_images=True,
+        image_path=str(images),
+        image_format="jpg",
+    )
+    markdown = strip_furniture([c["text"] for c in chunks])
+
+    md_path = workdir / "book.md"
+    md_path.write_text(markdown, encoding="utf-8")
+
+    title = UPLOAD_PREFIX.sub("", pdf.stem).replace("_", " ").strip() or pdf.stem
+    epub = pdf.with_suffix(".epub")
+    subprocess.run(
+        [
+            "pandoc", str(md_path),
+            "-o", str(epub),
+            "--toc", "--toc-depth=2",
+            # Without this pandoc drops every image with only a warning.
+            "--resource-path", str(workdir),
+            "--metadata", "title=" + title,
+        ],
+        check=True,
+    )
+    return epub
+
+
+def write_status(pending, failed):
+    if failed:
+        text, severity = "%d failed" % failed, "bad"
+    elif pending:
+        text, severity = "%d pending" % pending, "warn"
+    else:
+        text, severity = "none", "good"
+    STATUS.parent.mkdir(parents=True, exist_ok=True)
+    STATUS.write_text(text + "\n" + severity + "\n", encoding="utf-8")
+
+
+def main():
+    if not INGEST.is_dir():
+        print("pdf2epub: no ingest dir at %s" % INGEST, file=sys.stderr)
+        return 1
+
+    pdfs = sorted(p for p in INGEST.glob("*.pdf") if p.is_file())
+    failed = 0
+    for pdf in pdfs:
+        # A partially uploaded file converts to a truncated book. Size stability
+        # is the only signal available -- the uploader does not rename.
+        first = pdf.stat().st_size
+        if first == 0:
+            continue
+        print("pdf2epub: converting %s" % pdf.name, flush=True)
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                epub = convert(pdf, Path(tmp))
+        except Exception as exc:  # noqa: BLE001 -- one bad PDF must not stop the rest
+            print("pdf2epub: %s failed: %s" % (pdf.name, exc), file=sys.stderr)
+            failed += 1
+            continue
+        ARCHIVE.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(pdf), str(ARCHIVE / pdf.name))
+        print("pdf2epub: wrote %s" % epub.name, flush=True)
+
+    remaining = len([p for p in INGEST.glob("*.pdf") if p.is_file()])
+    write_status(remaining, failed)
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

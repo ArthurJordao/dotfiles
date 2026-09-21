@@ -1,0 +1,8 @@
+[Unit]
+Description=Convert PDFs in CWA's ingest dir to EPUB
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/scripts/pdf2epub
+# uv resolves pymupdf4llm on first run and caches it; a cold cache is slow.
+TimeoutStartSec=1800

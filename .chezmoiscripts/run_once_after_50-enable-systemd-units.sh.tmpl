@@ -37,6 +37,8 @@ systemctl --user enable --now syncthing.service
 systemctl --user enable --now olivetin.service
 systemctl --user enable --now notes-backup.timer
 systemctl --user enable --now check-paper-remote.timer
+# The .path unit is what arms the converter; its .service is triggered, never enabled.
+systemctl --user enable --now pdf2epub.path
 {{ end -}}
 {{ if $binaries -}}
 systemctl --user enable --now check-binaries.timer

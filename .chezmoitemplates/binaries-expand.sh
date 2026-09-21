@@ -12,7 +12,14 @@ bin_arch() {
     esac
 }
 
-# Substitute {version} and {arch} in a tag, asset or build command.
+# `uname -m`'s name for the machine. Rust-ecosystem releases name their assets
+# after this (aarch64/x86_64) rather than Debian's arm64/amd64.
+bin_machine() {
+    uname -m
+}
+
+# Substitute {version}, {arch} and {machine} in a tag, asset or build command.
 bin_expand() { # pattern version
-    printf '%s' "$1" | sed -e "s/{version}/$2/g" -e "s/{arch}/$(bin_arch)/g"
+    printf '%s' "$1" |
+        sed -e "s/{version}/$2/g" -e "s/{arch}/$(bin_arch)/g" -e "s/{machine}/$(bin_machine)/g"
 }

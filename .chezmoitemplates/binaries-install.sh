@@ -21,7 +21,10 @@ bin_install() { # name repo version install tag asset restart
             sudo dpkg -i "$tmp/$asset" || rc=1
             ;;
         tarball)
-            if tar -xzf "$tmp/$asset" -C "$tmp" "$name"; then
+            # Flat first, then one directory deep -- Rust releases ship
+            # <name>-<triple>/<name> rather than the bare binary.
+            if tar -xzf "$tmp/$asset" -C "$tmp" "$name" 2>/dev/null ||
+               tar -xzf "$tmp/$asset" -C "$tmp" --strip-components=1 --wildcards "*/$name" 2>/dev/null; then
                 sudo install -m755 "$tmp/$name" "/usr/bin/$name" || rc=1
             else
                 echo "  $name: $asset contains no file named $name" >&2
