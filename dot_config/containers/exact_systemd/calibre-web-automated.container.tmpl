@@ -17,6 +17,9 @@ Environment=PUID=0
 Environment=PGID=0
 Environment=UMASK=022
 Environment=TZ={{ .timezone }}
+# The inotify watcher misses files written while it restarts and never rescans,
+# stranding them forever. The polling watcher CWA ships has no missed-event mode.
+Environment=CWA_WATCH_MODE=poll
 
 Volume=cwa-config:/config
 Volume={{ $media }}/books:/calibre-library
