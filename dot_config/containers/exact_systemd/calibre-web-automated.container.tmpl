@@ -20,6 +20,11 @@ Environment=TZ={{ .timezone }}
 # The inotify watcher misses files written while it restarts and never rescans,
 # stranding them forever. The polling watcher CWA ships has no missed-event mode.
 Environment=CWA_WATCH_MODE=poll
+# Stops cwa-init chowning the ingest dir to abc:abc on every start, which it
+# does regardless of PUID -- leaving a directory the host user cannot delete
+# from, so pdf2epub could not move a PDF out of it. Also forces the polling
+# watcher, which is why CWA_WATCH_MODE above is belt and braces.
+Environment=NETWORK_SHARE_MODE=true
 
 Volume=cwa-config:/config
 Volume={{ $media }}/books:/calibre-library

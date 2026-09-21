@@ -175,6 +175,7 @@ packages:
       - zig
       - zk
       - rclone
+      - poppler
       - noborus/tap/trdsql
       - qmk/qmk/qmk
       - {name: sst/tap/opencode, trusted: true}
