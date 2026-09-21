@@ -17,6 +17,8 @@ import os
 import re
 import shutil
 import subprocess
+import xml.etree.ElementTree as ET
+import zipfile
 import sys
 import tempfile
 from collections import Counter
@@ -37,6 +39,16 @@ STATUS = Path(os.environ.get("XDG_STATE_HOME", os.path.expanduser("~/.local/stat
 # CWA prefixes uploads with new_<n>_<date>_<time>_<rand>_. Strip it so the
 # EPUB carries a sane title rather than the upload's bookkeeping.
 UPLOAD_PREFIX = re.compile(r"^new_\d+_\d{8}_\d{6}_\d+_")
+
+# pymupdf4llm emits raw <sup>/<sub> for maths. pandoc passes raw HTML through
+# verbatim while applying _.._ emphasis independently, so the two interleave --
+# <sup><em>d_model</sup><sup></em>xdk</sup> -- and the EPUB is not well-formed
+# XML, which readers reject outright. Strip the tags and let pandoc own the
+# markup; the inner text survives.
+HTML_TAG = re.compile(r"</?[A-Za-z][^>]*>")
+# pymupdf4llm marks italics with underscores. Once the tags around them are
+# gone pandoc prints them literally (_Wi__Q_), so they have to go too.
+STRAY_UNDERSCORE = re.compile(r"(?<=\w)_+(?=\W)|(?<=\W)_+(?=\w)")
 
 # Furniture is positional as well as repetitive: a running header or footer sits
 # at the top or bottom of its page. Matching on repetition alone deletes body
@@ -118,7 +130,11 @@ def convert(pdf, workdir, dest):
         image_path=str(images),
         image_format="jpg",
     )
+    # Superscripts flatten into the line. Mapping them to pandoc's ^x^ was
+    # tried and is worse: a stray caret in the text pairs with one of ours and
+    # swallows everything between, re-nesting the tags it was meant to fix.
     markdown = strip_furniture([c["text"] for c in chunks])
+    markdown = STRAY_UNDERSCORE.sub("", HTML_TAG.sub("", markdown))
 
     md_path = workdir / "book.md"
     md_path.write_text(markdown, encoding="utf-8")
@@ -129,6 +145,9 @@ def convert(pdf, workdir, dest):
         [
             "pandoc", str(md_path),
             "-o", str(epub),
+            # Belt and braces with HTML_TAG above: anything tag-shaped that got
+            # through is escaped as text rather than passed into the XHTML.
+            "-f", "markdown-raw_html",
             "--toc", "--toc-depth=2",
             # Without this pandoc drops every image with only a warning.
             "--resource-path", str(workdir),
@@ -136,7 +155,20 @@ def convert(pdf, workdir, dest):
         ],
         check=True,
     )
+    validate(epub)
     return epub
+
+
+def validate(epub):
+    """A malformed EPUB is rejected by readers, so fail here instead."""
+    with zipfile.ZipFile(epub) as z:
+        for name in z.namelist():
+            if not name.endswith((".xhtml", ".opf", ".ncx")):
+                continue
+            try:
+                ET.fromstring(z.read(name))
+            except ET.ParseError as exc:
+                raise RuntimeError("%s is not well-formed XML: %s" % (name, exc)) from exc
 
 
 def write_status(pending, failed):
