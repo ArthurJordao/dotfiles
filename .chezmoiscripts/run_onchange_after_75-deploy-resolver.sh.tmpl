@@ -14,6 +14,9 @@
 # resolves at all — which is how moving `edge` broke neptune while the phone,
 # which follows the tailnet route, kept working.
 #
+# The public upstream comes last: off-LAN and off the personal tailnet, public
+# names still resolve instead of every query timing out.
+#
 # The tailnet's split-DNS entry for this domain is set in the Cloudflare-style
 # admin console and is NOT managed here. Moving `edge` means updating both.
 set -euo pipefail
@@ -24,13 +27,16 @@ trap 'rm -f "$STAGE"' EXIT
 cat > "$STAGE" <<'RESOLVER_EOF'
 nameserver {{ $ip.lan }}
 nameserver {{ $ip.tailscale }}
+{{- range .dns.upstream.ips }}
+nameserver {{ . }}
+{{- end }}
 RESOLVER_EOF
 
 if cmp -s "$STAGE" "/etc/resolver/{{ .domain }}"; then
     exit 0
 fi
 
-echo "Updating /etc/resolver/{{ .domain }} -> {{ $ip.lan }}, {{ $ip.tailscale }}"
+echo "Updating /etc/resolver/{{ .domain }} -> {{ $ip.lan }}, {{ $ip.tailscale }}, {{ join ", " .dns.upstream.ips }}"
 sudo install -d -m 755 /etc/resolver
 sudo install -m 644 -o root -g wheel "$STAGE" "/etc/resolver/{{ .domain }}"
 sudo killall -HUP mDNSResponder
