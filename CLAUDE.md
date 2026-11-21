@@ -274,7 +274,7 @@ Fixed facts:
 - Layout: root level for standalone services (`calibre-web-automated.container`,
   `cloudflare-ddns.container`, `shelfmark.container`, `teamspeak3.container`); subdirs for service
   groups that share a network/pod
-  (`exact_music/` = slskd + navidrome + soulsync on `music.network`). A pod gets its own subdir
+  (`exact_music/` = slskd + aurral on `music.network`). A pod gets its own subdir
   plus a top-level `.pod` file.
 - **Mount points and the timezone are data, not per-service facts.** `{{ .timezone }}` is
   fleet-wide, read directly. Mount points are per-host under `storage` and read through a
@@ -378,7 +378,7 @@ pluto:
   distro: debian                  # linux only; picks the package family
   ip: {lan: 192.168.15.32, tailscale: 100.122.236.32}
   quadlets: [calibre-web-automated, cloudflare-ddns, music, shelfmark, wallabag]
-  units: [navidrome, slskd, soulsync, calibre-web-automated, cloudflare-ddns,
+  units: [aurral, slskd, calibre-web-automated, cloudflare-ddns,
           shelfmark, wallabag, {name: blocky, stop_for_gaming: false}]
   endpoints:
     - {name: books, port: 8083, public: true}
@@ -710,10 +710,9 @@ What follows is only what the repo itself does.
   script dies partway the host ends up with **no** firewall rather than an unreachable one.
   Deployment is gated on `.chezmoitemplates/has-firewall`, read by both `.chezmoiignore` and the
   justfile.
-- **pluto publishes four ports on the wildcard address that nothing should reach directly** —
-  navidrome 4533, slskd 5030, soulsync 8008 and coredns's 8053. Every client goes through Caddy on
-  443, and Caddy and cloudflared connect over loopback, which ufw does not filter, so the ruleset
-  closes them. Do not "fix" a connection refused on those by opening a port.
+- **pluto publishes two ports on the wildcard address that nothing should reach directly** —
+  slskd 5030 and coredns's 8053. Every client goes through Caddy on 443, and Caddy and cloudflared
+  connect over loopback, which ufw does not filter, so the ruleset closes them. Do not "fix" a connection refused on those by opening a port.
 - **DNS filtering is blocky**, a quadlet publishing only on loopback. CoreDNS forwards `.` to it
   with `policy sequential`, keeping Cloudflare as a second upstream, so a dead filter is
   unfiltered resolution rather than none. `policy sequential` is load-bearing: forward's default
@@ -887,7 +886,7 @@ tools/simulate-host mercury execute-template < dot_local/state/private_syncthing
 
    `units` takes every unit the container files generate, not just one per quadlet.
    `endpoints` takes one entry per hostname — a service can have none (`teamspeak3`) or
-   several (`music` → music/slskd/soulsync), and the name need not match the quadlet
+   several (`music` → music/slskd), and the name need not match the quadlet
    (`calibre-web-automated` → `books`). That endpoint name is also what step 1 looks up.
 3. Verify before applying: `just check` catches a missed list (step 2 is exactly what
    `check-consistency` cross-references). Then `./tools/simulate-host <host> managed | grep <svc>`

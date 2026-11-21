@@ -1,5 +1,5 @@
 [Unit]
-Description=Music network (slskd <-> SoulSync)
+Description=Music network (slskd <-> Aurral)
 
 [Network]
 

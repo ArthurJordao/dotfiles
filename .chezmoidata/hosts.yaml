@@ -157,9 +157,7 @@ hosts:
       - wallabag
     units:
       - {name: aurral}
-      - {name: navidrome}
       - {name: slskd}
-      - {name: soulsync}
       - {name: calibre-web-automated}
       - {name: cloudflare-ddns}
       - {name: shelfmark}
@@ -171,15 +169,13 @@ hosts:
       - {name: basic-memory, stop_for_gaming: false}
       - {name: silverbullet, stop_for_gaming: false}
     endpoints:
-      - {name: aurral, port: 8089}
       - {name: books, port: 8083, public: true}
       - {name: dash, port: 1337, served_by: olivetin}
       - {name: dns, port: 8053, scheme: https, tls_insecure: true, log: false, served_by: coredns}
       - {name: home, port: 8088, served_by: glance}
       - {name: memory, port: 8086, public: true, auth: bearer, web: false}
-      - {name: music, port: 4533}
+      - {name: music, port: 8089}
       - {name: notes, port: 8087}
       - {name: shelfmark, port: 8084}
       - {name: slskd, port: 5030}
-      - {name: soulsync, port: 8008}
       - {name: wallabag, port: 8085}

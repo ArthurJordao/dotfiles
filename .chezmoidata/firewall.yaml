@@ -26,9 +26,8 @@ firewall:
     - {rule: "allow in on tailscale0 to any port 60000:61000 proto udp", comment: "mosh over tailscale"}
     - {rule: "allow in on tailscale0 to any port 445 proto tcp", comment: "samba over tailscale"}
 
-  # navidrome 4533, slskd 5030, soulsync 8008 and coredns 8053 listen on the
-  # wildcard address and are closed on purpose: clients reach them through
-  # Caddy, which connects over loopback. 5355 is LLMNR, which nothing uses.
+  # slskd 5030 and coredns 8053 listen on the wildcard address and are closed
+  # on purpose: clients reach them through Caddy, which connects over loopback. 5355 is LLMNR, which nothing uses.
   # slskd's peer port 50300 is closed too: the router has never forwarded it, so
   # a rule here would be inert. Opening it takes both -> [[slskd]] in the notes.
   pluto:
