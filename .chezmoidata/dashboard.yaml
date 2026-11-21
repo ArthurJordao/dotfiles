@@ -31,6 +31,7 @@ dashboard:
       notes: {icon: "mdi:notebook-outline", label: SilverBullet, description: Notes}
 
     Media:
+      aurral: {icon: "selfhst:aurral", label: Aurral, description: Discovery}
       music: {icon: "selfhst:navidrome", label: Navidrome, description: Music}
       slskd: {icon: "selfhst:slskd", label: slskd, description: Soulseek}
       soulsync: {icon: "mdi:playlist-music", label: SoulSync}

@@ -1,0 +1,33 @@
+{{- $media := includeTemplate "storage-path" (dict "hosts" .hosts "name" "media") -}}
+[Unit]
+Description=Aurral Music Discovery
+Wants=network-online.target
+After=network-online.target slskd.service
+StartLimitIntervalSec=0
+
+[Container]
+Image=ghcr.io/lklynet/aurral:latest
+ContainerName=aurral
+AutoUpdate=registry
+Network=music.network
+PublishPort=127.0.0.1:{{ template "endpoint-port" (dict "hosts" .hosts "endpoint" "aurral") }}:3001
+# uid 0 maps to the host user under rootless podman; the entrypoint then skips
+# its setpriv drop, so it can write the host-owned media dirs.
+Environment=PUID=0
+Environment=PGID=0
+Environment=TZ={{ .timezone }}
+# Downloads at slskd's own container path: Aurral opens the paths slskd reports.
+# Its Library stays out of the real one, which it only reads.
+Environment=LIBRARY_FOLDER=/downloads/aurral
+Environment=FILE_BROWSE_ROOTS=/downloads,/music
+Volume=aurral-config:/config
+Volume={{ $media }}/downloads:/downloads
+Volume={{ $media }}/music:/music:ro
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target
